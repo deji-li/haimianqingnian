@@ -68,12 +68,12 @@ npm run docker:up
 npm run dev
 
 # 或分别启动
-npm run dev:frontend  # 前端：http://localhost:5173
+npm run dev:frontend  # 前端：http://localhost:5174
 npm run dev:backend   # 后端：http://localhost:3000
 ```
 
 5. **访问系统**
-- 前端：http://localhost:5173
+- 前端：http://localhost:5174
 - 后端 API 文档：http://localhost:3000/api
 - 默认管理员账号：`admin` / `123456`
 

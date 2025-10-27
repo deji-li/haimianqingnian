@@ -66,11 +66,11 @@ cd frontend
 npm run dev
 ```
 
-前端服务将在 `http://localhost:5173` 启动
+前端服务将在 `http://localhost:5174` 启动
 
 ### 6. 登录系统
 
-打开浏览器访问：`http://localhost:5173`
+打开浏览器访问：`http://localhost:5174`
 
 **默认测试账号**：
 - 超级管理员：`admin` / `123456`
@@ -125,7 +125,7 @@ docker logs education-crm-mysql
 
 ### 4. 端口被占用
 
-**问题**：3000 或 5173 端口已被占用
+**问题**：3000 或 5174 端口已被占用
 
 **解决方案**：
 ```bash
@@ -133,10 +133,10 @@ docker logs education-crm-mysql
 APP_PORT=3001
 
 # 修改前端端口：frontend/.env.development
-VITE_APP_PORT=5174
+VITE_APP_PORT=5175
 
 # 或者在 package.json 中修改启动命令
-"dev": "vite --port 5174"
+"dev": "vite --port 5175"
 ```
 
 ## 开发模式快速命令
