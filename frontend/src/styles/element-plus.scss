@@ -1,0 +1,20 @@
+// Element Plus 黄色主题定制
+@forward 'element-plus/theme-chalk/src/common/var.scss' with (
+  $colors: (
+    'primary': (
+      'base': #FFB800,
+    ),
+    'success': (
+      'base': #67C23A,
+    ),
+    'warning': (
+      'base': #FF9800,
+    ),
+    'danger': (
+      'base': #F56C6C,
+    ),
+    'info': (
+      'base': #909399,
+    ),
+  )
+);
