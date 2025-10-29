@@ -3,6 +3,10 @@
 -- 创建数据库、表结构和初始管理员账户
 -- =====================================================
 
+-- 设置正确的字符集
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- 1. 创建数据库
 CREATE DATABASE IF NOT EXISTS education_crm
 CHARACTER SET utf8mb4
@@ -57,7 +61,7 @@ VALUES
 -- bcrypt hash for "123456" with salt rounds 10
 INSERT IGNORE INTO `users` (`id`, `username`, `password`, `real_name`, `phone`, `email`, `role_id`, `status`)
 VALUES
-(1, 'admin', '$2b$10$YourBcryptHashHere', '系统管理员', '13800138000', 'admin@example.com', 1, 1);
+(1, 'admin', '$2b$10$44E7McQ/M/X8BooxGksJge4ip7XcgiMdu5zkZ/nBLN3i8NvPbulPC', '系统管理员', '13800138000', 'admin@example.com', 1, 1);
 
 -- 注意：上面的密码hash需要在应用启动后通过程序生成
 -- 或者直接运行下面的更新语句（使用正确的bcrypt hash）

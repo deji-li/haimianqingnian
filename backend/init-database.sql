@@ -5,6 +5,10 @@
 -- 使用方法：mysql -u root -p < init-database.sql
 -- =====================================================
 
+-- 设置正确的字符集
+SET NAMES utf8mb4;
+SET CHARACTER SET utf8mb4;
+
 -- 创建数据库
 CREATE DATABASE IF NOT EXISTS education_crm
 CHARACTER SET utf8mb4
