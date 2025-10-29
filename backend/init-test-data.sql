@@ -13,7 +13,7 @@ USE education_crm;
 -- =====================================================
 -- 1. 插入部门数据
 -- =====================================================
-INSERT INTO departments (id, department_name, description, status, create_time, update_time) VALUES
+INSERT INTO department (id, department_name, description, status, create_time, update_time) VALUES
 (1, '销售部', '负责客户开发和订单签约', 1, NOW(), NOW()),
 (2, '教学部', '负责课程授课和教学管理', 1, NOW(), NOW()),
 (3, '财务部', '负责财务管理和报表', 1, NOW(), NOW()),
@@ -22,7 +22,7 @@ INSERT INTO departments (id, department_name, description, status, create_time, 
 -- =====================================================
 -- 2. 插入校区数据
 -- =====================================================
-INSERT INTO campuses (id, campus_name, address, phone, contact_person, status, create_time, update_time) VALUES
+INSERT INTO campus (id, campus_name, address, phone, contact_person, status, create_time, update_time) VALUES
 (1, '朝阳校区', '北京市朝阳区建国路88号', '010-88888888', '张校长', 1, NOW(), NOW()),
 (2, '海淀校区', '北京市海淀区中关村大街1号', '010-66666666', '李校长', 1, NOW(), NOW()),
 (3, '西城校区', '北京市西城区金融街35号', '010-77777777', '王校长', 1, NOW(), NOW());
@@ -112,7 +112,7 @@ INSERT INTO commission_calculations (user_id, order_id, scheme_id, order_amount,
 -- =====================================================
 -- 10. 插入数据字典
 -- =====================================================
-INSERT INTO dictionaries (dict_type, dict_code, dict_label, dict_value, sort_order, status, remark, create_time, update_time) VALUES
+INSERT INTO dictionary (dict_type, dict_code, dict_label, dict_value, sort_order, status, remark, create_time, update_time) VALUES
 -- 客户来源
 ('customer_source', 'online', '线上咨询', 'online', 1, 1, '通过官网、APP等线上渠道咨询', NOW(), NOW()),
 ('customer_source', 'offline', '线下地推', 'offline', 2, 1, '线下活动、地推获客', NOW(), NOW()),
