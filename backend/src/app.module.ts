@@ -85,6 +85,10 @@ import { Notification } from './modules/notification/entities/notification.entit
         logging: configService.get('DB_LOGGING') === 'true',
         timezone: '+08:00',
         charset: 'utf8mb4',
+        extra: {
+          connectionLimit: 10,
+          charset: 'utf8mb4_unicode_ci',
+        },
       }),
     }),
 
