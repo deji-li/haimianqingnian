@@ -1,0 +1,241 @@
+// 小红书风格主题配置（黄色主题）
+
+// 🎨 主色调 - 金色黄色
+$xhs-primary: #FFB800;      // 主黄色（活力、阳光）
+$xhs-primary-light: #FFC940;  // 浅黄色
+$xhs-primary-lighter: #FFD666; // 更浅黄色
+$xhs-primary-dark: #E6A100;    // 深黄色
+
+// 🌈 辅助色
+$xhs-secondary: #FAAD14;    // 金黄色
+$xhs-warm: #FFFBE6;         // 淡黄色
+$xhs-gold: #FADB14;         // 金色
+$xhs-amber: #FFA940;        // 琥珀黄
+
+// 📝 中性色
+$xhs-text-primary: #333333;
+$xhs-text-secondary: #666666;
+$xhs-text-tertiary: #999999;
+$xhs-text-placeholder: #CCCCCC;
+
+// 🎯 背景色
+$xhs-bg-base: #FFFFFF;
+$xhs-bg-page: #FFFBF7;     // 温暖的米白色
+$xhs-bg-container: #FFFFFF;
+$xhs-bg-hover: #FFFBE6;    // 淡黄色悬停
+$xhs-bg-card: #FFFFFF;
+
+// ✨ 功能色
+$xhs-success: #52C41A;
+$xhs-warning: #FFB800;     // 使用主黄色作为警告色
+$xhs-error: #FF4D4F;
+$xhs-info: #1890FF;
+
+// 🔲 边框
+$xhs-border-color: #F5F5F5;
+$xhs-border-color-light: #FAFAFA;
+$xhs-border-radius-small: 12px;
+$xhs-border-radius-base: 16px;
+$xhs-border-radius-large: 24px;
+
+// 🌫️ 阴影
+$xhs-shadow-light: 0 2px 12px rgba(255, 184, 0, 0.08);
+$xhs-shadow-base: 0 4px 16px rgba(255, 184, 0, 0.12);
+$xhs-shadow-heavy: 0 8px 24px rgba(255, 184, 0, 0.16);
+$xhs-shadow-card: 0 2px 8px rgba(0, 0, 0, 0.06);
+
+// 📐 间距
+$xhs-spacing-xs: 8px;
+$xhs-spacing-sm: 12px;
+$xhs-spacing-md: 16px;
+$xhs-spacing-lg: 24px;
+$xhs-spacing-xl: 32px;
+$xhs-spacing-xxl: 48px;
+
+// 🔤 字体 - 更活力的字体配置
+$xhs-font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB',
+  'Microsoft YaHei', '微软雅黑', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+// 字号 - 稍微增大提升可读性和视觉冲击力
+$xhs-font-size-xs: 12px;
+$xhs-font-size-sm: 13px;
+$xhs-font-size-base: 15px;        // 从14px提升到15px
+$xhs-font-size-lg: 17px;          // 从16px提升到17px
+$xhs-font-size-xl: 19px;          // 从18px提升到19px
+$xhs-font-size-xxl: 22px;         // 从20px提升到22px
+$xhs-font-size-title: 26px;       // 从24px提升到26px
+$xhs-font-size-display: 34px;     // 从32px提升到34px
+
+// 字重 - 增加视觉冲击力
+$xhs-font-weight-normal: 450;     // 从400提升到450
+$xhs-font-weight-medium: 550;     // 从500提升到550
+$xhs-font-weight-semibold: 650;   // 从600提升到650
+$xhs-font-weight-bold: 750;       // 从700提升到750
+
+// 行高 - 更舒适的阅读体验
+$xhs-line-height-tight: 1.3;
+$xhs-line-height-base: 1.6;
+$xhs-line-height-relaxed: 1.8;
+
+// 字间距 - 增加呼吸感
+$xhs-letter-spacing-tight: -0.02em;
+$xhs-letter-spacing-normal: 0.01em;
+$xhs-letter-spacing-wide: 0.05em;
+
+// 🎨 渐变色
+$xhs-gradient-primary: linear-gradient(135deg, #FFB800 0%, #FFC940 100%);
+$xhs-gradient-warm: linear-gradient(135deg, #FFB800 0%, #FFD666 100%);
+$xhs-gradient-sunset: linear-gradient(135deg, #FAAD14 0%, #FFC940 100%);
+$xhs-gradient-golden: linear-gradient(135deg, #FFB800 0%, #FADB14 100%);
+
+// 🎭 动画
+$xhs-transition-fast: all 0.2s ease;
+$xhs-transition-base: all 0.3s ease;
+$xhs-transition-slow: all 0.4s ease;
+
+// 💫 特殊效果
+@mixin xhs-card {
+  background: $xhs-bg-card;
+  border-radius: $xhs-border-radius-base;
+  box-shadow: $xhs-shadow-card;
+  transition: $xhs-transition-base;
+
+  &:hover {
+    box-shadow: $xhs-shadow-base;
+    transform: translateY(-2px);
+  }
+}
+
+@mixin xhs-button-primary {
+  background: $xhs-gradient-primary;
+  border: none;
+  border-radius: $xhs-border-radius-base;
+  color: white;
+  font-size: $xhs-font-size-base;
+  font-weight: $xhs-font-weight-medium;
+  letter-spacing: $xhs-letter-spacing-normal;
+  transition: $xhs-transition-base;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: $xhs-shadow-base;
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+@mixin xhs-input {
+  border-radius: $xhs-border-radius-small;
+  border: 1px solid $xhs-border-color;
+  transition: $xhs-transition-fast;
+
+  &:focus {
+    border-color: $xhs-primary;
+    box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.1);
+  }
+}
+
+// 导出CSS变量供全局使用
+:root {
+  --xhs-primary: #{$xhs-primary};
+  --xhs-primary-light: #{$xhs-primary-light};
+  --xhs-primary-lighter: #{$xhs-primary-lighter};
+  --xhs-primary-dark: #{$xhs-primary-dark};
+
+  --xhs-secondary: #{$xhs-secondary};
+  --xhs-warm: #{$xhs-warm};
+  --xhs-gold: #{$xhs-gold};
+  --xhs-amber: #{$xhs-amber};
+
+  --xhs-text-primary: #{$xhs-text-primary};
+  --xhs-text-secondary: #{$xhs-text-secondary};
+  --xhs-text-tertiary: #{$xhs-text-tertiary};
+
+  --xhs-bg-base: #{$xhs-bg-base};
+  --xhs-bg-page: #{$xhs-bg-page};
+  --xhs-bg-hover: #{$xhs-bg-hover};
+
+  --xhs-border-radius-small: #{$xhs-border-radius-small};
+  --xhs-border-radius-base: #{$xhs-border-radius-base};
+  --xhs-border-radius-large: #{$xhs-border-radius-large};
+
+  --xhs-shadow-card: #{$xhs-shadow-card};
+  --xhs-shadow-base: #{$xhs-shadow-base};
+
+  --xhs-font-family: #{$xhs-font-family};
+  --xhs-font-size-base: #{$xhs-font-size-base};
+  --xhs-font-weight-normal: #{$xhs-font-weight-normal};
+  --xhs-font-weight-medium: #{$xhs-font-weight-medium};
+  --xhs-line-height-base: #{$xhs-line-height-base};
+  --xhs-letter-spacing-normal: #{$xhs-letter-spacing-normal};
+}
+
+// 🎯 全局字体优化
+body {
+  font-family: $xhs-font-family;
+  font-size: $xhs-font-size-base;
+  font-weight: $xhs-font-weight-normal;
+  line-height: $xhs-line-height-base;
+  letter-spacing: $xhs-letter-spacing-normal;
+  color: $xhs-text-primary;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+// 标题优化
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $xhs-font-weight-semibold;
+  line-height: $xhs-line-height-tight;
+  letter-spacing: $xhs-letter-spacing-normal;
+  color: $xhs-text-primary;
+}
+
+h1 {
+  font-size: $xhs-font-size-display;
+}
+
+h2 {
+  font-size: $xhs-font-size-title;
+}
+
+h3 {
+  font-size: $xhs-font-size-xxl;
+}
+
+h4 {
+  font-size: $xhs-font-size-xl;
+}
+
+h5 {
+  font-size: $xhs-font-size-lg;
+}
+
+h6 {
+  font-size: $xhs-font-size-base;
+}
+
+// 按钮字体优化
+button {
+  font-weight: $xhs-font-weight-medium;
+  letter-spacing: $xhs-letter-spacing-normal;
+}
+
+// 表格字体优化
+table {
+  th {
+    font-weight: $xhs-font-weight-semibold;
+    letter-spacing: $xhs-letter-spacing-normal;
+  }
+
+  td {
+    font-weight: $xhs-font-weight-normal;
+  }
+}
+
+// 标签和徽章字体优化
+.el-tag {
+  font-weight: $xhs-font-weight-medium;
+  letter-spacing: $xhs-letter-spacing-normal;
+}

@@ -24,9 +24,12 @@
             clearable
             style="width: 120px"
           >
-            <el-option label="高" value="高" />
-            <el-option label="中" value="中" />
-            <el-option label="低" value="低" />
+            <el-option
+              v-for="item in customerIntentOptions"
+              :key="item.id"
+              :label="item.dictLabel"
+              :value="item.dictValue"
+            />
           </el-select>
         </el-form-item>
 
@@ -37,11 +40,12 @@
             clearable
             style="width: 140px"
           >
-            <el-option label="抖音" value="抖音" />
-            <el-option label="小红书" value="小红书" />
-            <el-option label="百度" value="百度" />
-            <el-option label="朋友圈" value="朋友圈" />
-            <el-option label="其他" value="其他" />
+            <el-option
+              v-for="item in trafficSourceOptions"
+              :key="item.id"
+              :label="item.dictLabel"
+              :value="item.dictValue"
+            />
           </el-select>
         </el-form-item>
 
@@ -60,20 +64,48 @@
 
     <!-- 操作栏 -->
     <el-card class="action-card" shadow="never">
-      <el-button type="primary" @click="handleAdd">
-        <el-icon><Plus /></el-icon>
-        新增客户
-      </el-button>
+      <div class="action-row">
+        <div class="left-actions">
+          <el-button type="primary" @click="handleAdd" v-permission="'customer:create'">
+            <el-icon><Plus /></el-icon>
+            新增客户
+          </el-button>
+          <el-button @click="handleDownloadTemplate" v-permission="'customer:import'">
+            <el-icon><Download /></el-icon>
+            下载导入模板
+          </el-button>
+          <el-button @click="handleExport" v-permission="'customer:export'">
+            <el-icon><Upload /></el-icon>
+            导出客户
+          </el-button>
+        </div>
+
+        <div class="batch-actions" v-if="selectedCustomers.length > 0">
+          <el-tag type="info" size="large">已选择 {{ selectedCustomers.length }} 项</el-tag>
+          <el-button type="primary" size="small" @click="handleBatchAssign" v-permission="'customer:batch:assign'">
+            批量分配销售
+          </el-button>
+          <el-button type="warning" size="small" @click="handleBatchUpdateIntent" v-permission="'customer:batch:update'">
+            批量修改意向
+          </el-button>
+          <el-button type="danger" size="small" @click="handleBatchDelete" v-permission="'customer:batch:delete'">
+            批量删除
+          </el-button>
+        </div>
+      </div>
     </el-card>
 
     <!-- 数据表格 -->
     <el-card shadow="never">
       <el-table
+        ref="tableRef"
         v-loading="loading"
         :data="customerList"
         stripe
         style="width: 100%"
+        @selection-change="handleSelectionChange"
       >
+        <el-table-column type="selection" width="55" />
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="wechatNickname" label="微信昵称" width="140" />
         <el-table-column prop="wechatId" label="微信号" width="140" />
@@ -117,13 +149,13 @@
 
         <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleView(row)">
+            <el-button link type="primary" size="small" @click="handleView(row)" v-permission="'customer:view'">
               查看
             </el-button>
-            <el-button link type="primary" size="small" @click="handleEdit(row)">
+            <el-button link type="primary" size="small" @click="handleEdit(row)" v-permission="'customer:update'">
               编辑
             </el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)">
+            <el-button link type="danger" size="small" @click="handleDelete(row)" v-permission="'customer:delete'">
               删除
             </el-button>
           </template>
@@ -179,19 +211,34 @@
 
         <el-form-item label="流量来源" prop="trafficSource">
           <el-select v-model="formData.trafficSource" placeholder="请选择流量来源" style="width: 100%">
-            <el-option label="抖音" value="抖音" />
-            <el-option label="小红书" value="小红书" />
-            <el-option label="百度" value="百度" />
-            <el-option label="朋友圈" value="朋友圈" />
-            <el-option label="其他" value="其他" />
+            <el-option
+              v-for="item in trafficSourceOptions"
+              :key="item.id"
+              :label="item.dictLabel"
+              :value="item.dictValue"
+            />
           </el-select>
         </el-form-item>
 
         <el-form-item label="客户意向" prop="customerIntent">
           <el-select v-model="formData.customerIntent" placeholder="请选择客户意向" style="width: 100%">
-            <el-option label="高" value="高" />
-            <el-option label="中" value="中" />
-            <el-option label="低" value="低" />
+            <el-option
+              v-for="item in customerIntentOptions"
+              :key="item.id"
+              :label="item.dictLabel"
+              :value="item.dictValue"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="运营人员" prop="operatorId">
+          <el-select v-model="formData.operatorId" placeholder="请选择运营人员" clearable style="width: 100%">
+            <el-option
+              v-for="user in operatorList"
+              :key="user.id"
+              :label="user.realName || user.username"
+              :value="user.id"
+            />
           </el-select>
         </el-form-item>
 
@@ -223,23 +270,88 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 批量分配销售对话框 -->
+    <el-dialog
+      v-model="batchAssignDialogVisible"
+      title="批量分配销售"
+      width="500px"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="选中数量">
+          <el-tag type="info">{{ selectedCustomers.length }} 个客户</el-tag>
+        </el-form-item>
+        <el-form-item label="分配给">
+          <el-select v-model="batchAssignSalesId" placeholder="请选择销售人员" style="width: 100%">
+            <el-option
+              v-for="user in salesList"
+              :key="user.id"
+              :label="user.realName || user.username"
+              :value="user.id"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="batchAssignDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchAssign">
+          确定分配
+        </el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 批量修改意向对话框 -->
+    <el-dialog
+      v-model="batchIntentDialogVisible"
+      title="批量修改客户意向"
+      width="500px"
+    >
+      <el-form label-width="100px">
+        <el-form-item label="选中数量">
+          <el-tag type="info">{{ selectedCustomers.length }} 个客户</el-tag>
+        </el-form-item>
+        <el-form-item label="客户意向">
+          <el-select v-model="batchIntent" placeholder="请选择客户意向" style="width: 100%">
+            <el-option
+              v-for="item in customerIntentOptions"
+              :key="item.id"
+              :label="item.dictLabel"
+              :value="item.dictValue"
+            />
+          </el-select>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="batchIntentDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="confirmBatchUpdateIntent">
+          确定修改
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { Download, Upload, Plus, Search, Refresh } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { downloadCustomerTemplate } from '@/utils/excel-template'
 import {
   getCustomerList,
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  batchUpdateCustomer,
   type Customer,
   type CustomerQuery,
   type CreateCustomerParams,
 } from '@/api/customer'
+import { getDictionaryByType, type Dictionary } from '@/api/dictionary'
+import { getUserList } from '@/api/user'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -248,6 +360,8 @@ const userStore = useUserStore()
 const loading = ref(false)
 const customerList = ref<Customer[]>([])
 const total = ref(0)
+const selectedCustomers = ref<Customer[]>([])
+const tableRef = ref()
 
 const queryParams = reactive<CustomerQuery>({
   page: 1,
@@ -255,6 +369,7 @@ const queryParams = reactive<CustomerQuery>({
   keyword: '',
   customerIntent: '',
   trafficSource: '',
+  salesId: undefined,
 })
 
 const dialogVisible = ref(false)
@@ -269,6 +384,7 @@ const formData = reactive<CreateCustomerParams>({
   phone: '',
   realName: '',
   trafficSource: '',
+  operatorId: undefined,
   salesId: userStore.userInfo?.id || 0,
   customerIntent: '中',
   nextFollowTime: '',
@@ -277,6 +393,37 @@ const formData = reactive<CreateCustomerParams>({
 
 const formRules: FormRules = {
   wechatId: [{ required: true, message: '请输入微信号', trigger: 'blur' }],
+}
+
+// 字典数据
+const customerIntentOptions = ref<Dictionary[]>([])
+const trafficSourceOptions = ref<Dictionary[]>([])
+
+// 运营人员列表
+const operatorList = ref<any[]>([])
+
+// 加载字典数据
+const loadDictionaries = async () => {
+  try {
+    const [intentRes, sourceRes] = await Promise.all([
+      getDictionaryByType('customer_intent'),
+      getDictionaryByType('traffic_source'),
+    ])
+    customerIntentOptions.value = intentRes
+    trafficSourceOptions.value = sourceRes
+  } catch (error) {
+    console.error('Failed to load dictionaries:', error)
+  }
+}
+
+// 加载运营人员列表
+const loadOperators = async () => {
+  try {
+    const res = await getUserList({ page: 1, pageSize: 100, role: 'operator' })
+    operatorList.value = res.list || []
+  } catch (error) {
+    console.error('Failed to load operators:', error)
+  }
 }
 
 // 获取客户列表
@@ -316,6 +463,26 @@ const handleAdd = () => {
   dialogVisible.value = true
 }
 
+// 下载导入模板
+const handleDownloadTemplate = () => {
+  try {
+    downloadCustomerTemplate()
+    ElMessage.success('模板下载成功')
+  } catch (error) {
+    ElMessage.error('模板下载失败')
+  }
+}
+
+// 导出客户
+const handleExport = async () => {
+  try {
+    ElMessage.info('导出功能开发中...')
+    // TODO: 实现导出功能
+  } catch (error) {
+    ElMessage.error('导出失败')
+  }
+}
+
 // 查看
 const handleView = (row: Customer) => {
   router.push(`/customer/detail/${row.id}`)
@@ -331,6 +498,7 @@ const handleEdit = (row: Customer) => {
     phone: row.phone,
     realName: row.realName,
     trafficSource: row.trafficSource,
+    operatorId: row.operatorId,
     salesId: row.salesId,
     customerIntent: row.customerIntent,
     nextFollowTime: row.nextFollowTime,
@@ -353,6 +521,120 @@ const handleDelete = (row: Customer) => {
       fetchData()
     } catch (error) {
       console.error('Failed to delete customer:', error)
+    }
+  })
+}
+
+// 多选变化
+const handleSelectionChange = (selection: Customer[]) => {
+  selectedCustomers.value = selection
+}
+
+// 批量分配销售
+const batchAssignDialogVisible = ref(false)
+const batchAssignSalesId = ref<number>()
+const salesList = ref<any[]>([])
+
+const handleBatchAssign = () => {
+  if (selectedCustomers.value.length === 0) {
+    ElMessage.warning('请选择要分配的客户')
+    return
+  }
+  batchAssignDialogVisible.value = true
+  loadSalesList()
+}
+
+const loadSalesList = async () => {
+  try {
+    const res = await getUserList({ page: 1, pageSize: 100, role: 'sales' })
+    salesList.value = res.list || []
+  } catch (error) {
+    console.error('Failed to load sales list:', error)
+  }
+}
+
+const confirmBatchAssign = async () => {
+  if (!batchAssignSalesId.value) {
+    ElMessage.warning('请选择销售人员')
+    return
+  }
+
+  try {
+    const ids = selectedCustomers.value.map(c => c.id)
+    const result = await batchUpdateCustomer({
+      ids,
+      salesId: batchAssignSalesId.value
+    })
+    ElMessage.success(result.message || '批量分配成功')
+    batchAssignDialogVisible.value = false
+    tableRef.value?.clearSelection()
+    fetchData()
+  } catch (error) {
+    ElMessage.error('批量分配失败')
+    console.error('Failed to batch assign:', error)
+  }
+}
+
+// 批量修改意向
+const batchIntentDialogVisible = ref(false)
+const batchIntent = ref('')
+
+const handleBatchUpdateIntent = () => {
+  if (selectedCustomers.value.length === 0) {
+    ElMessage.warning('请选择要修改意向的客户')
+    return
+  }
+  batchIntentDialogVisible.value = true
+}
+
+const confirmBatchUpdateIntent = async () => {
+  if (!batchIntent.value) {
+    ElMessage.warning('请选择客户意向')
+    return
+  }
+
+  try {
+    const ids = selectedCustomers.value.map(c => c.id)
+    const result = await batchUpdateCustomer({
+      ids,
+      customerIntent: batchIntent.value
+    })
+    ElMessage.success(result.message || '批量修改意向成功')
+    batchIntentDialogVisible.value = false
+    tableRef.value?.clearSelection()
+    fetchData()
+  } catch (error) {
+    ElMessage.error('批量修改意向失败')
+    console.error('Failed to batch update intent:', error)
+  }
+}
+
+// 批量删除
+const handleBatchDelete = () => {
+  if (selectedCustomers.value.length === 0) {
+    ElMessage.warning('请选择要删除的客户')
+    return
+  }
+
+  ElMessageBox.confirm(
+    `确定要删除选中的 ${selectedCustomers.value.length} 个客户吗？此操作不可恢复！`,
+    '批量删除确认',
+    {
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消',
+      type: 'warning',
+    }
+  ).then(async () => {
+    try {
+      const ids = selectedCustomers.value.map(c => c.id)
+      // 逐个删除（后续可优化为批量删除API）
+      await Promise.all(ids.map(id => deleteCustomer(id)))
+      ElMessage.success(`成功删除 ${ids.length} 个客户`)
+      tableRef.value?.clearSelection()
+      fetchData()
+    } catch (error) {
+      ElMessage.error('批量删除失败')
+      console.error('Failed to batch delete:', error)
     }
   })
 }
@@ -396,6 +678,7 @@ const resetForm = () => {
     phone: '',
     realName: '',
     trafficSource: '',
+    operatorId: undefined,
     salesId: userStore.userInfo?.id || 0,
     customerIntent: '中',
     nextFollowTime: '',
@@ -410,28 +693,200 @@ const formatDate = (date: string) => {
 }
 
 onMounted(() => {
+  // 检查 URL 查询参数
+  const route = router.currentRoute.value
+  if (route.query.salesId) {
+    queryParams.salesId = Number(route.query.salesId)
+    // 如果有销售名称，可以显示提示
+    if (route.query.salesName) {
+      ElMessage.info(`已筛选销售：${route.query.salesName}`)
+    }
+  }
+
+  loadDictionaries()
+  loadOperators()
   fetchData()
 })
 </script>
 
 <style scoped lang="scss">
+@import '@/styles/xiaohongshu-theme.scss';
+
 .customer-list-container {
+  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, rgba(255, 184, 0, 0.03) 0%, rgba(255, 201, 64, 0.02) 100%);
+
   .search-card {
-    margin-bottom: 16px;
+    @include xhs-card;
+    margin-bottom: 20px;
+    border: none;
+    background: white;
+
+    :deep(.el-card__body) {
+      padding: 24px;
+    }
+
+    :deep(.el-form-item__label) {
+      color: var(--xhs-text-primary);
+      font-weight: 500;
+    }
+
+    :deep(.el-button--primary) {
+      @include xhs-button-primary;
+    }
+
+    :deep(.el-input__wrapper) {
+      border-radius: 12px;
+      transition: all 0.3s ease;
+
+      &:hover {
+        box-shadow: 0 2px 8px rgba(255, 184, 0, 0.1);
+      }
+
+      &.is-focus {
+        box-shadow: 0 0 0 3px rgba(255, 184, 0, 0.1);
+      }
+    }
   }
 
   .action-card {
-    margin-bottom: 16px;
+    @include xhs-card;
+    margin-bottom: 20px;
+    border: none;
+    background: white;
+
+    :deep(.el-card__body) {
+      padding: 20px 24px;
+    }
+
+    .action-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+
+      .left-actions {
+        display: flex;
+        gap: 12px;
+
+        :deep(.el-button--primary) {
+          background: linear-gradient(135deg, #FFB800 0%, #FFC940 100%);
+          border: none;
+          color: white;
+          border-radius: 12px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
+          }
+
+          &:active {
+            transform: translateY(0);
+          }
+        }
+
+        :deep(.el-button) {
+          border-radius: 12px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            border-color: var(--xhs-primary);
+            color: var(--xhs-primary);
+          }
+        }
+      }
+
+      .batch-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, rgba(255, 184, 0, 0.08) 0%, rgba(255, 201, 64, 0.05) 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(255, 184, 0, 0.2);
+
+        :deep(.el-tag) {
+          background: white;
+          border-color: var(--xhs-primary);
+          color: var(--xhs-primary);
+          font-weight: 500;
+        }
+
+        :deep(.el-button) {
+          border-radius: 8px;
+        }
+      }
+    }
+  }
+
+  :deep(.el-card) {
+    @include xhs-card;
+    border: none;
+
+    .el-card__body {
+      padding: 24px;
+    }
+
+    .el-table {
+      border-radius: 12px;
+      overflow: hidden;
+
+      th {
+        background: linear-gradient(135deg, rgba(255, 184, 0, 0.05) 0%, rgba(255, 201, 64, 0.03) 100%);
+        color: var(--xhs-text-primary);
+        font-weight: 600;
+      }
+
+      tr {
+        transition: all 0.2s ease;
+
+        &:hover {
+          background: linear-gradient(90deg, rgba(255, 184, 0, 0.03) 0%, transparent 100%);
+        }
+      }
+
+      .el-button.is-link {
+        color: var(--xhs-primary);
+        font-weight: 500;
+
+        &:hover {
+          color: var(--xhs-primary-dark);
+        }
+      }
+    }
   }
 
   .pagination-container {
     display: flex;
     justify-content: flex-end;
     margin-top: 20px;
+    padding: 16px 0;
+
+    :deep(.el-pagination) {
+      .btn-prev,
+      .btn-next,
+      .el-pager li {
+        border-radius: 8px;
+        transition: all 0.3s ease;
+
+        &:hover {
+          background: linear-gradient(135deg, rgba(255, 184, 0, 0.1) 0%, rgba(255, 201, 64, 0.08) 100%);
+          color: var(--xhs-primary);
+        }
+
+        &.is-active {
+          background: linear-gradient(135deg, #FFB800 0%, #FFC940 100%);
+          color: white;
+          font-weight: 600;
+        }
+      }
+    }
   }
 
   .text-secondary {
-    color: #909399;
+    color: var(--xhs-text-secondary);
     font-size: 12px;
   }
 }

@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsEnum,
   IsInt,
+  ValidateIf,
 } from 'class-validator';
 
 export class CreateCustomerDto {
@@ -31,7 +32,6 @@ export class CreateCustomerDto {
   @ApiPropertyOptional({
     description: '流量来源',
     example: '抖音',
-    enum: ['抖音', '小红书', '百度', '朋友圈', '其他'],
   })
   @IsOptional()
   @IsString()
@@ -55,10 +55,9 @@ export class CreateCustomerDto {
   @ApiPropertyOptional({
     description: '客户意向度',
     example: '高',
-    enum: ['高', '中', '低'],
   })
   @IsOptional()
-  @IsEnum(['高', '中', '低'])
+  @IsString()
   customerIntent?: string;
 
   @ApiPropertyOptional({

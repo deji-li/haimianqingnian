@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('roles', 'role', 'user.role_id = role.id')
+      .leftJoin('user.role', 'role')
       .where('user.id = :id', { id: payload.sub })
       .select([
         'user.id',
@@ -35,8 +35,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         'user.departmentId',
         'user.campusId',
         'user.status',
-        'role.code as roleCode',
-        'role.name as roleName',
+        'role.code',
+        'role.name',
       ])
       .getRawOne();
 
@@ -53,8 +53,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       username: user.user_username,
       realName: user.user_realName,
       roleId: user.user_roleId,
-      roleCode: user.roleCode,
-      roleName: user.roleName,
+      roleCode: user.role_code,
+      roleName: user.role_name,
       departmentId: user.user_departmentId,
       campusId: user.user_campusId,
     };

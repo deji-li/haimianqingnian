@@ -1,44 +1,99 @@
 version: '3.8'
 
 services:
+  # MySQL数据库服务
   mysql:
     image: mysql:8.0
-    container_name: education-crm-mysql
+    container_name: crm-mysql
     restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      TZ: Asia/Shanghai
     ports:
       - "3306:3306"
-    environment:
-      MYSQL_ROOT_PASSWORD: root123456
-      MYSQL_DATABASE: education_crm
-      MYSQL_USER: crm_user
-      MYSQL_PASSWORD: crm_pass123
-      TZ: Asia/Shanghai
     volumes:
-      - ./docker/mysql/data:/var/lib/mysql
-      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
-      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
-    command: --default-authentication-plugin=mysql_native_password
+      # 持久化数据
+      - mysql_data:/var/lib/mysql
+      # 初始化SQL脚本
+      - ./backend/init-database.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./backend/init-admin.sql:/docker-entrypoint-initdb.d/02-admin.sql
+      - ./backend/init-permissions.sql:/docker-entrypoint-initdb.d/03-permissions.sql
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-time-zone=+08:00
+      - --default-authentication-plugin=mysql_native_password
     networks:
       - crm-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  redis:
-    image: redis:7-alpine
-    container_name: education-crm-redis
+  # 后端API服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: crm-backend
+    restart: always
+    environment:
+      NODE_ENV: production
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_SYNCHRONIZE: "false"
+      DB_LOGGING: "false"
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+    ports:
+      - "3000:3000"
+    volumes:
+      # 持久化上传文件
+      - upload_data:/app/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - crm-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # 前端Nginx服务
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: crm-frontend
     restart: always
     ports:
-      - "6379:6379"
-    environment:
-      TZ: Asia/Shanghai
-    volumes:
-      - ./docker/redis/data:/data
-    command: redis-server --appendonly yes --requirepass redis123456
+      - "80:80"
+    depends_on:
+      - backend
     networks:
       - crm-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
+# 网络配置
 networks:
   crm-network:
     driver: bridge
 
+# 数据卷配置
 volumes:
-  mysql-data:
-  redis-data:
+  mysql_data:
+    driver: local
+  upload_data:
+    driver: local

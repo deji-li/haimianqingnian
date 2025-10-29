@@ -45,6 +45,15 @@ export class Customer {
   })
   customerIntent: string;
 
+  @Column({
+    name: 'lifecycle_stage',
+    type: 'varchar',
+    length: 50,
+    default: '线索',
+    nullable: true,
+  })
+  lifecycleStage: string;
+
   @Column({ name: 'next_follow_time', type: 'datetime', nullable: true })
   nextFollowTime: Date;
 

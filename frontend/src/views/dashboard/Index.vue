@@ -1,6 +1,6 @@
 <template>
   <div class="dashboard-container">
-    <el-card class="welcome-card">
+    <el-card class="welcome-card" v-loading="loading">
       <h2>欢迎使用教育培训CRM管理系统</h2>
       <p>当前登录用户：{{ userStore.userInfo?.realName }} ({{ userStore.userInfo?.roleName }})</p>
       <el-divider />
@@ -29,58 +29,736 @@
       </div>
     </el-card>
 
-    <el-row :gutter="20" style="margin-top: 20px;">
+    <!-- 本月数据（含环比） -->
+    <el-row :gutter="16" style="margin-top: 20px;">
       <el-col :span="8">
-        <el-card class="stat-card">
+        <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <el-icon class="stat-icon" color="#FFB800"><TrendCharts /></el-icon>
             <div class="stat-info">
-              <p class="stat-label">今日订单</p>
-              <p class="stat-value">0</p>
+              <p class="stat-label">本月新增客户</p>
+              <p class="stat-value">{{ comparison.customers.thisMonth }}</p>
+              <div class="stat-compare" v-if="comparison.customers.growth !== 0">
+                <el-icon v-if="comparison.customers.growth > 0" color="#67c23a"><Top /></el-icon>
+                <el-icon v-else color="#f56c6c"><Bottom /></el-icon>
+                <span :class="comparison.customers.growth > 0 ? 'increase' : 'decrease'">
+                  {{ Math.abs(comparison.customers.growth) }}%
+                </span>
+                <span class="compare-text">较上月</span>
+              </div>
             </div>
+            <el-icon class="stat-icon" color="#409EFF"><UserFilled /></el-icon>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="stat-card">
+        <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <el-icon class="stat-icon" color="#67C23A"><Wallet /></el-icon>
             <div class="stat-info">
-              <p class="stat-label">本月业绩</p>
-              <p class="stat-value">¥0</p>
+              <p class="stat-label">本月新增订单</p>
+              <p class="stat-value">{{ comparison.orders.thisMonth }}</p>
+              <div class="stat-compare" v-if="comparison.orders.growth !== 0">
+                <el-icon v-if="comparison.orders.growth > 0" color="#67c23a"><Top /></el-icon>
+                <el-icon v-else color="#f56c6c"><Bottom /></el-icon>
+                <span :class="comparison.orders.growth > 0 ? 'increase' : 'decrease'">
+                  {{ Math.abs(comparison.orders.growth) }}%
+                </span>
+                <span class="compare-text">较上月</span>
+              </div>
             </div>
+            <el-icon class="stat-icon" color="#FFB800"><Document /></el-icon>
           </div>
         </el-card>
       </el-col>
       <el-col :span="8">
-        <el-card class="stat-card">
+        <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
-            <el-icon class="stat-icon" color="#409EFF"><User /></el-icon>
             <div class="stat-info">
-              <p class="stat-label">客户总数</p>
-              <p class="stat-value">0</p>
+              <p class="stat-label">本月销售额</p>
+              <p class="stat-value amount">¥{{ comparison.revenue.thisMonth.toFixed(2) }}</p>
+              <div class="stat-compare" v-if="comparison.revenue.growth !== 0">
+                <el-icon v-if="comparison.revenue.growth > 0" color="#67c23a"><Top /></el-icon>
+                <el-icon v-else color="#f56c6c"><Bottom /></el-icon>
+                <span :class="comparison.revenue.growth > 0 ? 'increase' : 'decrease'">
+                  {{ Math.abs(comparison.revenue.growth) }}%
+                </span>
+                <span class="compare-text">较上月</span>
+              </div>
             </div>
+            <el-icon class="stat-icon" color="#67C23A"><Money /></el-icon>
           </div>
         </el-card>
       </el-col>
     </el-row>
 
-    <el-card class="tips-card" style="margin-top: 20px;">
-      <h3>系统说明</h3>
-      <ul>
-        <li>✅ 项目骨架已搭建完成</li>
-        <li>✅ 用户认证功能已实现</li>
-        <li>✅ 黄色主题已定制</li>
-        <li>📝 后续将逐步开发CRM、订单、财务等功能模块</li>
-      </ul>
+    <!-- 今日数据 -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :span="8">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">今日新增客户</p>
+              <p class="stat-value">{{ overview.today.newCustomers }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#909399"><UserFilled /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">今日新增订单</p>
+              <p class="stat-value">{{ overview.today.newOrders }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#909399"><Document /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="8">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">今日销售额</p>
+              <p class="stat-value amount">¥{{ overview.today.revenue.toFixed(2) }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#909399"><Money /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 总体数据 -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :span="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">客户总数</p>
+              <p class="stat-value">{{ overview.customer.total }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#409EFF"><User /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">订单总数</p>
+              <p class="stat-value">{{ overview.order.total }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#FFB800"><Files /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">总销售额</p>
+              <p class="stat-value amount">¥{{ overview.revenue.total.toFixed(2) }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#67C23A"><Wallet /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="6">
+        <el-card class="stat-card" shadow="hover">
+          <div class="stat-content">
+            <div class="stat-info">
+              <p class="stat-label">本月销售额</p>
+              <p class="stat-value amount">¥{{ overview.revenue.thisMonth.toFixed(2) }}</p>
+            </div>
+            <el-icon class="stat-icon" color="#E6A23C"><TrendCharts /></el-icon>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 图表 -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">近7天销售额趋势</span>
+            </div>
+          </template>
+          <div ref="trendChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">客户意向分布</span>
+            </div>
+          </template>
+          <div ref="intentChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 订单状态 -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">订单状态分布</span>
+            </div>
+          </template>
+          <div ref="statusChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">新老学员占比</span>
+            </div>
+          </template>
+          <div ref="studentChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 团队业绩排行 -->
+    <el-card shadow="never" style="margin-top: 16px;">
+      <template #header>
+        <div class="card-header">
+          <span class="title">团队业绩排行（本月）</span>
+          <el-button link type="primary" @click="goToTeamStats">
+            查看详情
+            <el-icon><ArrowRight /></el-icon>
+          </el-button>
+        </div>
+      </template>
+
+      <el-table :data="teamRanking" stripe v-if="teamRanking.length > 0">
+        <el-table-column label="排名" width="80">
+          <template #default="{ $index }">
+            <el-tag v-if="$index === 0" type="danger" size="large">🥇</el-tag>
+            <el-tag v-else-if="$index === 1" type="warning" size="large">🥈</el-tag>
+            <el-tag v-else-if="$index === 2" type="success" size="large">🥉</el-tag>
+            <span v-else style="font-weight: 600; font-size: 16px;">{{ $index + 1 }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="salesName" label="销售" width="120" />
+        <el-table-column prop="departmentName" label="部门" width="120" />
+        <el-table-column prop="campusName" label="校区" width="120" />
+        <el-table-column prop="orderCount" label="订单数" width="100" align="right">
+          <template #default="{ row }">
+            <span style="font-weight: 600; color: #409EFF;">{{ row.orderCount }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="revenue" label="销售额" width="150" align="right">
+          <template #default="{ row }">
+            <span style="font-weight: 600; color: #67C23A;">¥{{ row.revenue.toLocaleString() }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="customerCount" label="新增客户" width="100" align="right" />
+      </el-table>
+
+      <el-empty v-else description="暂无数据" />
     </el-card>
+
+    <!-- 校区业绩对比 -->
+    <el-row :gutter="16" style="margin-top: 16px;">
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">校区业绩对比（本月）</span>
+            </div>
+          </template>
+          <div ref="campusChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+      <el-col :span="12">
+        <el-card shadow="never">
+          <template #header>
+            <div class="card-header">
+              <span class="title">课程销售分析（本月）</span>
+            </div>
+          </template>
+          <div ref="courseChartRef" style="width: 100%; height: 300px"></div>
+        </el-card>
+      </el-col>
+    </el-row>
   </div>
 </template>
 
 <script setup lang="ts">
+import { ref, reactive, onMounted, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import * as echarts from 'echarts'
+import { getDashboardOverview, getWeeklyTrend, getComparisonData, type DashboardOverview, type WeeklyTrend, type ComparisonData } from '@/api/dashboard'
+import { Top, Bottom } from '@element-plus/icons-vue'
+import { getPendingFollowUps, type Customer } from '@/api/customer'
 
+const router = useRouter()
 const userStore = useUserStore()
+const loading = ref(false)
+
+// 团队业绩排行数据
+interface TeamRanking {
+  salesId: number
+  salesName: string
+  departmentName: string
+  campusName: string
+  orderCount: number
+  revenue: number
+  customerCount: number
+}
+const teamRanking = ref<TeamRanking[]>([])
+
+// 校区业绩数据
+interface CampusPerformance {
+  campusName: string
+  revenue: number
+  orderCount: number
+}
+const campusPerformance = ref<CampusPerformance[]>([])
+
+// 课程销售数据
+interface CoursePerformance {
+  courseName: string
+  revenue: number
+  count: number
+}
+const coursePerformance = ref<CoursePerformance[]>([])
+
+const trendChartRef = ref<HTMLElement>()
+const intentChartRef = ref<HTMLElement>()
+const statusChartRef = ref<HTMLElement>()
+const studentChartRef = ref<HTMLElement>()
+const campusChartRef = ref<HTMLElement>()
+const courseChartRef = ref<HTMLElement>()
+
+const overview = reactive<DashboardOverview>({
+  customer: {
+    total: 0,
+    byIntent: [],
+  },
+  order: {
+    total: 0,
+    newStudent: 0,
+    oldStudent: 0,
+    byStatus: [],
+  },
+  revenue: {
+    total: 0,
+    thisMonth: 0,
+  },
+  today: {
+    newCustomers: 0,
+    newOrders: 0,
+    revenue: 0,
+  },
+})
+
+const weeklyTrend = ref<WeeklyTrend[]>([])
+
+const comparison = reactive<ComparisonData>({
+  customers: {
+    thisMonth: 0,
+    lastMonth: 0,
+    growth: 0,
+  },
+  orders: {
+    thisMonth: 0,
+    lastMonth: 0,
+    growth: 0,
+  },
+  revenue: {
+    thisMonth: 0,
+    lastMonth: 0,
+    growth: 0,
+  },
+})
+
+// 获取数据
+const fetchData = async () => {
+  loading.value = true
+  try {
+    const [overviewData, trendData, comparisonData] = await Promise.all([
+      getDashboardOverview(),
+      getWeeklyTrend(),
+      getComparisonData(),
+    ])
+
+    Object.assign(overview, overviewData)
+    weeklyTrend.value = trendData
+    Object.assign(comparison, comparisonData)
+
+    // TODO: 从后端API获取团队业绩、校区业绩、课程销售数据
+    // 暂时使用模拟数据
+    fetchTeamRanking()
+    fetchCampusPerformance()
+    fetchCoursePerformance()
+
+    await nextTick()
+    renderTrendChart()
+    renderIntentChart()
+    renderStatusChart()
+    renderStudentChart()
+    renderCampusChart()
+    renderCourseChart()
+  } catch (error) {
+    console.error('Failed to fetch dashboard data:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取团队业绩排行（模拟数据）
+const fetchTeamRanking = async () => {
+  // TODO: 调用实际API
+  // const data = await getTeamRanking()
+  // teamRanking.value = data
+
+  // 模拟数据
+  teamRanking.value = [
+    { salesId: 1, salesName: '张三', departmentName: '销售一部', campusName: '总部校区', orderCount: 45, revenue: 328000, customerCount: 38 },
+    { salesId: 2, salesName: '李四', departmentName: '销售一部', campusName: '分部校区', orderCount: 38, revenue: 295000, customerCount: 32 },
+    { salesId: 3, salesName: '王五', departmentName: '销售二部', campusName: '总部校区', orderCount: 35, revenue: 268000, customerCount: 29 },
+    { salesId: 4, salesName: '赵六', departmentName: '销售二部', campusName: '分部校区', orderCount: 28, revenue: 215000, customerCount: 25 },
+    { salesId: 5, salesName: '钱七', departmentName: '销售一部', campusName: '总部校区', orderCount: 25, revenue: 198000, customerCount: 21 },
+  ]
+}
+
+// 获取校区业绩数据（模拟数据）
+const fetchCampusPerformance = async () => {
+  // TODO: 调用实际API
+  campusPerformance.value = [
+    { campusName: '总部校区', revenue: 856000, orderCount: 128 },
+    { campusName: '分部校区', revenue: 642000, orderCount: 95 },
+    { campusName: '东区校区', revenue: 478000, orderCount: 72 },
+    { campusName: '西区校区', revenue: 325000, orderCount: 51 },
+  ]
+}
+
+// 获取课程销售数据（模拟数据）
+const fetchCoursePerformance = async () => {
+  // TODO: 调用实际API
+  coursePerformance.value = [
+    { courseName: 'Python编程', revenue: 458000, count: 68 },
+    { courseName: 'Java开发', revenue: 392000, count: 52 },
+    { courseName: '前端开发', revenue: 328000, count: 45 },
+    { courseName: '数据分析', revenue: 265000, count: 38 },
+    { courseName: 'UI设计', revenue: 198000, count: 29 },
+  ]
+}
+
+// 格式化日期时间
+const formatDateTime = (dateStr: string) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}`
+}
+
+// 渲染销售额趋势图
+const renderTrendChart = () => {
+  if (!trendChartRef.value) return
+
+  const chart = echarts.init(trendChartRef.value)
+  const dates = weeklyTrend.value.map((item) => item.date)
+  const revenues = weeklyTrend.value.map((item) => item.revenue)
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+    },
+    yAxis: {
+      type: 'value',
+      name: '销售额（元）',
+    },
+    series: [
+      {
+        data: revenues,
+        type: 'line',
+        smooth: true,
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'rgba(255, 184, 0, 0.3)' },
+            { offset: 1, color: 'rgba(255, 184, 0, 0.05)' },
+          ]),
+        },
+        itemStyle: {
+          color: '#FFB800',
+        },
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染客户意向图
+const renderIntentChart = () => {
+  if (!intentChartRef.value) return
+
+  const chart = echarts.init(intentChartRef.value)
+  const data = overview.customer.byIntent.map((item) => ({
+    value: item.count,
+    name: item.intent,
+  }))
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: '70%',
+        data,
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+        color: ['#67C23A', '#FFB800', '#909399'],
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染订单状态图
+const renderStatusChart = () => {
+  if (!statusChartRef.value) return
+
+  const chart = echarts.init(statusChartRef.value)
+  const data = overview.order.byStatus.map((item) => ({
+    value: item.count,
+    name: item.status,
+  }))
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: ['40%', '70%'],
+        data,
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+        color: ['#FFB800', '#409EFF', '#67C23A', '#F56C6C'],
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染新老学员图
+const renderStudentChart = () => {
+  if (!studentChartRef.value) return
+
+  const chart = echarts.init(studentChartRef.value)
+  const data = [
+    { value: overview.order.newStudent, name: '新学员' },
+    { value: overview.order.oldStudent, name: '老学员' },
+  ]
+
+  const option = {
+    tooltip: {
+      trigger: 'item',
+    },
+    legend: {
+      orient: 'vertical',
+      right: 10,
+      top: 'center',
+    },
+    series: [
+      {
+        type: 'pie',
+        radius: '70%',
+        data,
+        emphasis: {
+          itemStyle: {
+            shadowBlur: 10,
+            shadowOffsetX: 0,
+            shadowColor: 'rgba(0, 0, 0, 0.5)',
+          },
+        },
+        color: ['#67C23A', '#909399'],
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染校区业绩对比图
+const renderCampusChart = () => {
+  if (!campusChartRef.value) return
+
+  const chart = echarts.init(campusChartRef.value)
+  const campusNames = campusPerformance.value.map((item) => item.campusName)
+  const revenues = campusPerformance.value.map((item) => item.revenue)
+  const orderCounts = campusPerformance.value.map((item) => item.orderCount)
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow',
+      },
+    },
+    legend: {
+      data: ['销售额', '订单数'],
+      top: 0,
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'category',
+      data: campusNames,
+    },
+    yAxis: [
+      {
+        type: 'value',
+        name: '销售额（元）',
+        position: 'left',
+      },
+      {
+        type: 'value',
+        name: '订单数',
+        position: 'right',
+      },
+    ],
+    series: [
+      {
+        name: '销售额',
+        type: 'bar',
+        data: revenues,
+        itemStyle: {
+          color: '#67C23A',
+        },
+      },
+      {
+        name: '订单数',
+        type: 'line',
+        yAxisIndex: 1,
+        data: orderCounts,
+        itemStyle: {
+          color: '#409EFF',
+        },
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染课程销售分析图
+const renderCourseChart = () => {
+  if (!courseChartRef.value) return
+
+  const chart = echarts.init(courseChartRef.value)
+  const courseNames = coursePerformance.value.map((item) => item.courseName)
+  const revenues = coursePerformance.value.map((item) => item.revenue)
+
+  const option = {
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'shadow',
+      },
+      formatter: (params: any) => {
+        const item = params[0]
+        const course = coursePerformance.value[item.dataIndex]
+        return `${item.name}<br/>销售额: ¥${item.value.toLocaleString()}<br/>销量: ${course.count} 份`
+      },
+    },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '3%',
+      containLabel: true,
+    },
+    xAxis: {
+      type: 'category',
+      data: courseNames,
+      axisLabel: {
+        interval: 0,
+        rotate: 30,
+      },
+    },
+    yAxis: {
+      type: 'value',
+      name: '销售额（元）',
+    },
+    series: [
+      {
+        name: '销售额',
+        type: 'bar',
+        data: revenues,
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: '#FFB800' },
+            { offset: 1, color: '#FFC940' },
+          ]),
+        },
+        barWidth: '60%',
+      },
+    ],
+  }
+
+  chart.setOption(option)
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 跳转到团队统计
+const goToTeamStats = () => {
+  router.push({ name: 'TeamStats' })
+}
+
+onMounted(() => {
+  fetchData()
+})
 </script>
 
 <style scoped lang="scss">
@@ -131,10 +809,12 @@ const userStore = useUserStore()
     .stat-content {
       display: flex;
       align-items: center;
-      gap: 16px;
+      justify-content: space-between;
+      padding: 8px 0;
 
       .stat-icon {
         font-size: 48px;
+        opacity: 0.3;
       }
 
       .stat-info {
@@ -148,27 +828,54 @@ const userStore = useUserStore()
           font-size: 24px;
           font-weight: 600;
           color: #303133;
+
+          &.amount {
+            color: #67C23A;
+          }
+        }
+
+        .stat-compare {
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          margin-top: 8px;
+          font-size: 14px;
+
+          .increase {
+            color: #67c23a;
+            font-weight: 500;
+          }
+
+          .decrease {
+            color: #f56c6c;
+            font-weight: 500;
+          }
+
+          .compare-text {
+            color: #909399;
+            font-size: 12px;
+            margin-left: 4px;
+          }
         }
       }
     }
   }
 
-  .tips-card {
-    h3 {
-      font-size: 18px;
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .title {
+      font-size: 16px;
+      font-weight: 500;
       color: #303133;
-      margin-bottom: 15px;
     }
+  }
 
-    ul {
-      padding-left: 20px;
-
-      li {
-        font-size: 14px;
-        color: #606266;
-        line-height: 2;
-      }
-    }
+  .overdue {
+    color: #F56C6C;
+    font-weight: 500;
   }
 }
 </style>

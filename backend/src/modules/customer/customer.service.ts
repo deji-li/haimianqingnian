@@ -4,11 +4,12 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
+import { Repository, Like, Between } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import { CustomerFollowRecord } from './entities/customer-follow-record.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
+import { BatchUpdateCustomerDto } from './dto/batch-update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateFollowRecordDto } from './dto/create-follow-record.dto';
 
@@ -49,17 +50,10 @@ export class CustomerService {
 
     const queryBuilder = this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoinAndSelect('users', 'sales', 'customer.sales_id = sales.id')
-      .leftJoinAndSelect(
-        'users',
-        'operator',
-        'customer.operator_id = operator.id',
-      )
-      .select([
-        'customer.*',
-        'sales.real_name as salesName',
-        'operator.real_name as operatorName',
-      ]);
+      .leftJoin('users', 'sales', 'customer.sales_id = sales.id')
+      .leftJoin('users', 'operator', 'customer.operator_id = operator.id')
+      .addSelect('sales.real_name', 'salesName')
+      .addSelect('operator.real_name', 'operatorName');
 
     // 数据权限过滤
     if (dataScope.salesId) {
@@ -141,19 +135,12 @@ export class CustomerService {
   async findOne(id: number) {
     const result = await this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoinAndSelect('users', 'sales', 'customer.sales_id = sales.id')
-      .leftJoinAndSelect(
-        'users',
-        'operator',
-        'customer.operator_id = operator.id',
-      )
+      .leftJoin('users', 'sales', 'customer.sales_id = sales.id')
+      .leftJoin('users', 'operator', 'customer.operator_id = operator.id')
       .where('customer.id = :id', { id })
-      .select([
-        'customer.*',
-        'sales.real_name as salesName',
-        'sales.phone as salesPhone',
-        'operator.real_name as operatorName',
-      ])
+      .addSelect('sales.real_name', 'salesName')
+      .addSelect('sales.phone', 'salesPhone')
+      .addSelect('operator.real_name', 'operatorName')
       .getRawOne();
 
     if (!result) {
@@ -213,6 +200,45 @@ export class CustomerService {
     return await this.customerRepository.save(customer);
   }
 
+  // 批量更新客户
+  async batchUpdate(batchUpdateDto: BatchUpdateCustomerDto) {
+    const { ids, salesId, customerIntent, operatorId } = batchUpdateDto;
+
+    if (ids.length === 0) {
+      throw new NotFoundException('未选择任何客户');
+    }
+
+    // 构建更新对象
+    const updateData: any = {};
+    if (salesId !== undefined) {
+      updateData.salesId = salesId;
+    }
+    if (customerIntent !== undefined) {
+      updateData.customerIntent = customerIntent;
+    }
+    if (operatorId !== undefined) {
+      updateData.operatorId = operatorId;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      throw new NotFoundException('未指定任何更新字段');
+    }
+
+    // 批量更新
+    await this.customerRepository
+      .createQueryBuilder()
+      .update(Customer)
+      .set(updateData)
+      .whereInIds(ids)
+      .execute();
+
+    return {
+      success: true,
+      message: `成功更新 ${ids.length} 个客户`,
+      count: ids.length,
+    };
+  }
+
   // 删除客户
   async remove(id: number) {
     const customer = await this.customerRepository.findOne({ where: { id } });
@@ -266,12 +292,9 @@ export class CustomerService {
   async getFollowRecords(customerId: number) {
     const records = await this.followRecordRepository
       .createQueryBuilder('record')
-      .leftJoinAndSelect('users', 'operator', 'record.operator_id = operator.id')
+      .leftJoin('users', 'operator', 'record.operator_id = operator.id')
       .where('record.customer_id = :customerId', { customerId })
-      .select([
-        'record.*',
-        'operator.real_name as operatorName',
-      ])
+      .addSelect('operator.real_name', 'operatorName')
       .orderBy('record.follow_time', 'DESC')
       .getRawMany();
 
@@ -291,22 +314,181 @@ export class CustomerService {
   async searchCustomers(keyword: string) {
     const customers = await this.customerRepository
       .createQueryBuilder('customer')
-      .leftJoinAndSelect('users', 'sales', 'customer.sales_id = sales.id')
+      .leftJoin('users', 'sales', 'customer.sales_id = sales.id')
       .where(
         'customer.wechat_id LIKE :keyword OR customer.wechat_nickname LIKE :keyword OR customer.phone LIKE :keyword',
         { keyword: `%${keyword}%` },
       )
-      .select([
-        'customer.id',
-        'customer.wechat_nickname as wechatNickname',
-        'customer.wechat_id as wechatId',
-        'customer.phone',
-        'customer.real_name as realName',
-        'sales.real_name as salesName',
-      ])
+      .select('customer.id', 'id')
+      .addSelect('customer.wechat_nickname', 'wechatNickname')
+      .addSelect('customer.wechat_id', 'wechatId')
+      .addSelect('customer.phone', 'phone')
+      .addSelect('customer.real_name', 'realName')
+      .addSelect('sales.real_name', 'salesName')
       .limit(10)
       .getRawMany();
 
     return customers;
+  }
+
+  // 获取待回访客户列表
+  async getPendingFollowUps(dataScope: any = {}) {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // 今天结束时间
+
+    const qb = this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoin('users', 'sales', 'sales.id = customer.sales_id')
+      .leftJoin('users', 'operator', 'operator.id = customer.operator_id')
+      .leftJoinAndSelect(
+        'customer_follow_records',
+        'lastFollow',
+        'lastFollow.id = (SELECT id FROM customer_follow_records WHERE customer_id = customer.id ORDER BY follow_time DESC LIMIT 1)',
+      )
+      .where('customer.next_follow_time IS NOT NULL')
+      .andWhere('customer.next_follow_time <= :today', { today })
+      .select([
+        'customer.id',
+        'customer.wechat_nickname',
+        'customer.wechat_id',
+        'customer.phone',
+        'customer.real_name',
+        'customer.customer_intent',
+        'customer.lifecycle_stage',
+        'customer.next_follow_time',
+        'customer.sales_id',
+      ])
+      .addSelect('sales.real_name', 'salesName')
+      .addSelect('operator.real_name', 'operatorName')
+      .addSelect('lastFollow.follow_time', 'lastFollowTime')
+      .orderBy('customer.next_follow_time', 'ASC');
+
+    // 应用数据权限
+    if (dataScope?.salesId) {
+      qb.andWhere('customer.sales_id = :salesId', {
+        salesId: dataScope.salesId,
+      });
+    }
+    if (dataScope?.campusId) {
+      qb.andWhere('customer.campus_id = :campusId', {
+        campusId: dataScope.campusId,
+      });
+    }
+
+    const results = await qb.getRawMany();
+
+    console.log('[getPendingFollowUps] 查询结果数量:', results.length);
+    if (results.length > 0) {
+      console.log('[getPendingFollowUps] 原始字段列表:', Object.keys(results[0]).join(', '));
+      console.log('[getPendingFollowUps] 第一条原始数据:', JSON.stringify(results[0]));
+    }
+
+    const mapped = results.map((item) => ({
+      id: item.customer_id,
+      wechatNickname: item.wechat_nickname,
+      wechatId: item.wechat_id,
+      phone: item.customer_phone,  // phone字段带customer前缀
+      realName: item.real_name,
+      customerIntent: item.customer_intent,
+      lifecycleStage: item.lifecycle_stage,
+      nextFollowTime: item.next_follow_time,
+      lastFollowTime: item.lastFollowTime,
+      salesId: item.sales_id,
+      salesName: item.salesName,
+      operatorName: item.operatorName,
+    }));
+
+    if (mapped.length > 0) {
+      console.log('[getPendingFollowUps] 映射后第一条:', mapped[0]);
+    }
+
+    return mapped;
+  }
+
+  // 获取跟进统计
+  async getFollowStatistics(dataScope: any = {}) {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // 基础查询条件
+    const baseWhere: any = {};
+    if (dataScope?.salesId) {
+      baseWhere.salesId = dataScope.salesId;
+    }
+    if (dataScope?.campusId) {
+      baseWhere.campusId = dataScope.campusId;
+    }
+
+    // 今日跟进数（从跟进记录表统计）
+    const todayFollowCount = await this.followRecordRepository.count({
+      where: {
+        followTime: Between(
+          today,
+          new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        ),
+        ...(dataScope?.salesId && { operatorId: dataScope.salesId }),
+      },
+    });
+
+    // 本周跟进数
+    const weekFollowCount = await this.followRecordRepository.count({
+      where: {
+        followTime: Between(
+          weekStart,
+          new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        ),
+        ...(dataScope?.salesId && { operatorId: dataScope.salesId }),
+      },
+    });
+
+    // 本月跟进数
+    const monthFollowCount = await this.followRecordRepository.count({
+      where: {
+        followTime: Between(
+          monthStart,
+          new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        ),
+        ...(dataScope?.salesId && { operatorId: dataScope.salesId }),
+      },
+    });
+
+    // 待跟进客户数（今天需要跟进）
+    const pendingCount = await this.customerRepository.count({
+      where: {
+        ...baseWhere,
+        nextFollowTime: Between(
+          today,
+          new Date(today.getTime() + 24 * 60 * 60 * 1000),
+        ),
+      },
+    });
+
+    // 逾期未跟进数（应该在今天之前跟进但还没跟进的）
+    const overdueCount = await this.customerRepository.count({
+      where: {
+        ...baseWhere,
+        nextFollowTime: Between(
+          new Date('2020-01-01'),
+          today,
+        ),
+      },
+    });
+
+    // 总客户数
+    const totalCustomers = await this.customerRepository.count({
+      where: baseWhere,
+    });
+
+    return {
+      todayFollow: todayFollowCount,
+      weekFollow: weekFollowCount,
+      monthFollow: monthFollowCount,
+      pendingFollow: pendingCount,
+      overdueFollow: overdueCount,
+      totalCustomers,
+    };
   }
 }

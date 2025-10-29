@@ -111,6 +111,22 @@ export function deleteCustomer(id: number) {
   })
 }
 
+// 批量更新客户
+export interface BatchUpdateCustomerParams {
+  ids: number[]
+  salesId?: number
+  customerIntent?: string
+  operatorId?: number
+}
+
+export function batchUpdateCustomer(data: BatchUpdateCustomerParams) {
+  return request<{ success: boolean; message: string; count: number }>({
+    url: '/customer/batch/update',
+    method: 'put',
+    data,
+  })
+}
+
 // 快速搜索客户
 export function searchCustomers(keyword: string) {
   return request<Customer[]>({
@@ -134,5 +150,30 @@ export function createFollowRecord(data: CreateFollowRecordParams) {
     url: '/customer/follow-record',
     method: 'post',
     data,
+  })
+}
+
+// 获取待回访客户列表
+export function getPendingFollowUps() {
+  return request<Customer[]>({
+    url: '/customer/pending-followups/list',
+    method: 'get',
+  })
+}
+
+// 获取跟进统计
+export interface FollowStatistics {
+  todayFollow: number
+  weekFollow: number
+  monthFollow: number
+  pendingFollow: number
+  overdueFollow: number
+  totalCustomers: number
+}
+
+export function getFollowStatistics() {
+  return request<FollowStatistics>({
+    url: '/customer/follow/statistics',
+    method: 'get',
   })
 }

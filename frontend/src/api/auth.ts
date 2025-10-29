@@ -15,6 +15,7 @@ export interface LoginResult {
     roleName: string
     departmentId?: number
     campusId?: number
+    permissions: string[]
   }
 }
 
@@ -29,6 +30,7 @@ export interface UserInfo {
   departmentName?: string
   campusName?: string
   avatar?: string
+  permissions: string[]
 }
 
 // 用户登录

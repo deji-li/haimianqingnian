@@ -4,12 +4,26 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { EmptyStringToUndefinedPipe } from './common/pipes/empty-string-to-undefined.pipe';
+import { DataSource } from 'typeorm';
+import { seedDatabase } from './database/seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // 初始化数据库种子数据
+  try {
+    const dataSource = app.get(DataSource);
+    await seedDatabase(dataSource);
+  } catch (error) {
+    console.error('Failed to seed database:', error);
+  }
+
   // 全局前缀
   app.setGlobalPrefix(process.env.APP_PREFIX || 'api');
+
+  // 全局管道：空字符串转undefined
+  app.useGlobalPipes(new EmptyStringToUndefinedPipe());
 
   // 全局验证管道
   app.useGlobalPipes(

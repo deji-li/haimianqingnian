@@ -2,16 +2,21 @@
   <el-container class="layout-container">
     <el-aside width="200px" class="layout-aside">
       <div class="logo">
-        <h2>教育CRM</h2>
+        <h2>海绵青年专用</h2>
       </div>
       <el-menu
         :default-active="activeMenu"
         class="aside-menu"
-        router
+        @select="handleMenuSelect"
       >
+        <el-menu-item index="/workspace">
+          <el-icon><Monitor /></el-icon>
+          <span>工作台</span>
+        </el-menu-item>
+
         <el-menu-item index="/dashboard">
           <el-icon><DataLine /></el-icon>
-          <span>仪表盘</span>
+          <span>数据看板</span>
         </el-menu-item>
 
         <el-sub-menu index="/customer">
@@ -20,6 +25,7 @@
             <span>客户管理</span>
           </template>
           <el-menu-item index="/customer/list">客户列表</el-menu-item>
+          <el-menu-item index="/customer/lifecycle-board">生命周期看板</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/order">
@@ -30,6 +36,61 @@
           <el-menu-item index="/order/list">订单列表</el-menu-item>
           <el-menu-item index="/order/dashboard">订单看板</el-menu-item>
         </el-sub-menu>
+
+        <el-sub-menu index="/analytics">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon>
+            <span>数据分析</span>
+          </template>
+          <el-menu-item index="/analytics/funnel">销售漏斗</el-menu-item>
+          <el-menu-item index="/analytics/advanced">高级分析</el-menu-item>
+        </el-sub-menu>
+
+        <el-menu-item index="/team-leaderboard">
+          <el-icon><Trophy /></el-icon>
+          <span>团队排行榜</span>
+        </el-menu-item>
+
+        <el-menu-item index="/finance">
+          <el-icon><Wallet /></el-icon>
+          <span>财务统计</span>
+        </el-menu-item>
+
+        <el-menu-item index="/commission">
+          <el-icon><Money /></el-icon>
+          <span>提成管理</span>
+        </el-menu-item>
+
+        <el-menu-item index="/target-management">
+          <el-icon><Flag /></el-icon>
+          <span>销售目标管理</span>
+        </el-menu-item>
+
+        <el-sub-menu index="/okr">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon>
+            <span>OKR管理</span>
+          </template>
+          <el-menu-item index="/okr/list">OKR列表</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="/system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/system/user">用户管理</el-menu-item>
+          <el-menu-item index="/system/department">部门管理</el-menu-item>
+          <el-menu-item index="/system/campus">校区管理</el-menu-item>
+          <el-menu-item index="/system/dictionary">字典管理</el-menu-item>
+          <el-menu-item index="/system/role">角色权限</el-menu-item>
+          <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
+        </el-sub-menu>
+
+        <el-menu-item index="/datascreen">
+          <el-icon><DataAnalysis /></el-icon>
+          <span>数据大屏</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
 
@@ -39,6 +100,47 @@
           <span class="breadcrumb">{{ pageTitle }}</span>
         </div>
         <div class="header-right">
+          <!-- 最近访问 -->
+          <el-dropdown @command="handleRecentVisit" trigger="click">
+            <el-button :icon="Clock" circle title="最近访问" />
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item disabled style="font-weight: 600; color: #303133;">最近访问</el-dropdown-item>
+                <el-dropdown-item divided disabled v-if="recentStore.recentCustomers.length === 0 && recentStore.recentOrders.length === 0">
+                  暂无访问记录
+                </el-dropdown-item>
+                <template v-if="recentStore.recentCustomers.length > 0">
+                  <el-dropdown-item disabled style="font-size: 12px; color: #909399;">客户</el-dropdown-item>
+                  <el-dropdown-item
+                    v-for="item in recentStore.recentCustomers"
+                    :key="`customer-${item.id}`"
+                    :command="`customer-${item.id}`"
+                  >
+                    <el-icon style="margin-right: 8px;"><User /></el-icon>
+                    {{ item.title }}
+                  </el-dropdown-item>
+                </template>
+                <template v-if="recentStore.recentOrders.length > 0">
+                  <el-dropdown-item divided disabled style="font-size: 12px; color: #909399;">订单</el-dropdown-item>
+                  <el-dropdown-item
+                    v-for="item in recentStore.recentOrders"
+                    :key="`order-${item.id}`"
+                    :command="`order-${item.id}`"
+                  >
+                    <el-icon style="margin-right: 8px;"><Document /></el-icon>
+                    {{ item.title }}
+                  </el-dropdown-item>
+                </template>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+
+          <!-- 消息通知 -->
+          <el-badge :value="unreadCount" :hidden="unreadCount === 0" class="notification-badge">
+            <el-button :icon="Bell" circle @click="goToNotification" />
+          </el-badge>
+
+          <!-- 用户下拉菜单 -->
           <el-dropdown @command="handleCommand">
             <div class="user-info">
               <el-icon><User /></el-icon>
@@ -46,6 +148,7 @@
             </div>
             <template #dropdown>
               <el-dropdown-menu>
+                <el-dropdown-item command="profile">个人中心</el-dropdown-item>
                 <el-dropdown-item command="logout">退出登录</el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -61,17 +164,67 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
+import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock } from '@element-plus/icons-vue'
+import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
+const recentStore = useRecentStore()
 
 const activeMenu = computed(() => route.path)
 const pageTitle = computed(() => route.meta.title as string || '首页')
+
+// 未读消息数量
+const unreadCount = ref(0)
+
+// 获取未读消息数量
+const fetchUnreadCount = async () => {
+  try {
+    unreadCount.value = await getUnreadCount()
+  } catch (error) {
+    console.error('获取未读消息数量失败:', error)
+  }
+}
+
+// 跳转到消息中心
+const goToNotification = () => {
+  router.push('/notification')
+}
+
+// 处理菜单选择
+const handleMenuSelect = (index: string) => {
+  console.log('菜单选择:', index)
+  router.push(index)
+}
+
+// 定时刷新未读数量（每30秒）
+let timer: number | null = null
+onMounted(() => {
+  fetchUnreadCount()
+  timer = window.setInterval(fetchUnreadCount, 30000)
+})
+
+onUnmounted(() => {
+  if (timer) {
+    clearInterval(timer)
+  }
+})
+
+// 处理最近访问点击
+const handleRecentVisit = (command: string) => {
+  const [type, id] = command.split('-')
+  if (type === 'customer') {
+    router.push(`/customer/detail/${id}`)
+  } else if (type === 'order') {
+    router.push('/order/list')  // 订单暂时跳转到列表页
+  }
+}
 
 const handleCommand = (command: string) => {
   if (command === 'logout') {
@@ -82,6 +235,8 @@ const handleCommand = (command: string) => {
     }).then(() => {
       userStore.logout()
     })
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
 </script>
@@ -133,6 +288,14 @@ const handleCommand = (command: string) => {
   }
 
   .header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+
+    .notification-badge {
+      cursor: pointer;
+    }
+
     .user-info {
       display: flex;
       align-items: center;

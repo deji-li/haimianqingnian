@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  OneToMany,
   JoinColumn,
 } from 'typeorm';
 import { Exclude } from 'class-transformer';
+import { Role } from '../../system/entities/role.entity';
+import { UserCampus } from './user-campus.entity';
 
 @Entity('users')
 export class User {
@@ -33,6 +36,13 @@ export class User {
   @Column({ name: 'role_id' })
   roleId: number;
 
+  @ManyToOne(() => Role)
+  @JoinColumn({ name: 'role_id' })
+  role: Role;
+
+  @Column({ name: 'superior_id', nullable: true })
+  superiorId: number;
+
   @Column({ name: 'department_id', nullable: true })
   departmentId: number;
 
@@ -54,7 +64,12 @@ export class User {
   @UpdateDateColumn({ name: 'update_time' })
   updateTime: Date;
 
+  // 多对多关系：用户可以绑定多个校区
+  @OneToMany(() => UserCampus, (userCampus) => userCampus.user)
+  campuses: UserCampus[];
+
   // 关联的角色代码（从 roles 表查询后设置）
   roleCode?: string;
   roleName?: string;
+  campusIds?: number[];
 }
