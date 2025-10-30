@@ -11,7 +11,11 @@ USE education_crm;
 -- 1. 修改 operation_accounts 表
 -- =====================================================
 -- 删除 city 字段（改为通过 campus 关联获取）
-ALTER TABLE operation_accounts DROP COLUMN IF EXISTS city;
+-- 先删除引用city的索引
+ALTER TABLE operation_accounts DROP INDEX IF EXISTS `idx_platform_city`;
+
+-- 删除 city 字段
+ALTER TABLE operation_accounts DROP COLUMN city;
 
 -- 设置 campus_id 为必填
 ALTER TABLE operation_accounts
@@ -20,9 +24,23 @@ MODIFY COLUMN campus_id int NOT NULL COMMENT '关联校区ID';
 -- =====================================================
 -- 2. 修改 operation_commission_records 表
 -- =====================================================
--- 添加 order_tag 字段记录订单标签
-ALTER TABLE operation_commission_records
-ADD COLUMN IF NOT EXISTS order_tag varchar(50) DEFAULT NULL COMMENT '订单标签' AFTER order_id;
+-- 添加 order_tag 字段记录订单标签（如果不存在）
+SET @column_exists = (
+  SELECT COUNT(*)
+  FROM information_schema.columns
+  WHERE table_schema = 'education_crm'
+  AND table_name = 'operation_commission_records'
+  AND column_name = 'order_tag'
+);
+
+SET @sql = IF(@column_exists = 0,
+  'ALTER TABLE operation_commission_records ADD COLUMN order_tag varchar(50) DEFAULT NULL COMMENT ''订单标签'' AFTER order_id',
+  'SELECT ''Column order_tag already exists'' AS message'
+);
+
+PREPARE stmt FROM @sql;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- =====================================================
 -- 3. 初始化订单标签提成配置（字典表）

@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `operation_accounts` (
   `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
   PRIMARY KEY (`id`),
   KEY `idx_operator` (`operator_id`),
-  KEY `idx_platform_city` (`platform_type`, `city`),
+  KEY `idx_platform_type` (`platform_type`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='运营账号表';
 
