@@ -71,6 +71,32 @@ export class DictionaryService {
     return await this.dictionaryRepository.save(dictionary);
   }
 
+  /**
+   * 获取订单标签对应的运营提成金额
+   * @param orderTag 订单标签名称
+   * @returns 提成金额（元），如果没有配置则返回0
+   */
+  async getOperationCommissionAmount(orderTag: string): Promise<number> {
+    if (!orderTag) {
+      return 0;
+    }
+
+    const config = await this.dictionaryRepository.findOne({
+      where: {
+        dictType: 'operation_commission',
+        dictName: orderTag,
+        status: 1,
+      },
+    });
+
+    if (!config || !config.dictValue) {
+      return 0;
+    }
+
+    const amount = parseFloat(config.dictValue);
+    return isNaN(amount) ? 0 : amount;
+  }
+
   // 初始化默认字典数据
   async initDefaultData() {
     const defaultData = [

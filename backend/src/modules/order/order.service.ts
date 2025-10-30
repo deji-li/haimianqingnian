@@ -8,6 +8,8 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { QueryOrderDto } from './dto/query-order.dto';
 import { CommissionService } from '../commission/commission.service';
+import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
+import { DictionaryService } from '../system/dictionary.service';
 
 @Injectable()
 export class OrderService {
@@ -18,7 +20,10 @@ export class OrderService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(OperationCommissionRecord)
+    private operationCommissionRepository: Repository<OperationCommissionRecord>,
     private commissionService: CommissionService,
+    private dictionaryService: DictionaryService,
   ) {}
 
   /**
@@ -72,7 +77,7 @@ export class OrderService {
 
     const savedOrder = await this.orderRepository.save(order);
 
-    // 4. 自动计算提成
+    // 4. 自动计算销售提成
     if (savedOrder.salesId && savedOrder.paymentAmount > 0) {
       try {
         const sales = await this.userRepository.findOne({
@@ -85,6 +90,49 @@ export class OrderService {
       } catch (error) {
         // 提成计算失败不影响订单创建
         console.error('Failed to calculate commission:', error);
+      }
+    }
+
+    // 5. 自动创建运营提成记录
+    // 必须同时满足3个条件：新学员订单 + 有运营人员 + 有订单标签且配置了提成
+    if (customerId && savedOrder.paymentAmount > 0 && savedOrder.isNewStudent === 1) {
+      try {
+        const customer = await this.customerRepository.findOne({
+          where: { id: customerId },
+        });
+
+        // 检查客户是否有引流运营人员 且 订单有标签
+        if (customer?.operatorId && savedOrder.orderTag) {
+          // 从字典配置获取该订单标签的提成金额
+          const commissionAmount = await this.dictionaryService.getOperationCommissionAmount(
+            savedOrder.orderTag,
+          );
+
+          // 只有配置了提成金额才创建记录
+          if (commissionAmount > 0) {
+            const existingCommission = await this.operationCommissionRepository.findOne({
+              where: { orderId: savedOrder.id },
+            });
+
+            // 避免重复创建
+            if (!existingCommission) {
+              const operationCommission = this.operationCommissionRepository.create({
+                operatorId: customer.operatorId,
+                customerId: customer.id,
+                orderId: savedOrder.id,
+                orderTag: savedOrder.orderTag, // 记录订单标签
+                orderAmount: savedOrder.paymentAmount,
+                commissionAmount: commissionAmount, // 从配置读取
+                status: '待发放',
+              });
+
+              await this.operationCommissionRepository.save(operationCommission);
+            }
+          }
+        }
+      } catch (error) {
+        // 运营提成创建失败不影响订单创建
+        console.error('Failed to create operation commission:', error);
       }
     }
 

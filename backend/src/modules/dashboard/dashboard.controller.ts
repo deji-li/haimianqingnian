@@ -17,7 +17,16 @@ export class DashboardController {
   @RequirePermissions('dashboard:view')
   @ApiOperation({ summary: '获取管理看板概览' })
   getOverview(@Request() req) {
-    return this.dashboardService.getOverview(req.dataScope);
+    // 判断用户角色，运营人员显示运营看板，其他显示销售看板
+    const userRoleCode = req.user?.roleCode || '';
+
+    if (userRoleCode === 'operator' || userRoleCode === 'operator_manager') {
+      // 运营人员看板
+      return this.dashboardService.getOperatorDashboard(req.user.userId);
+    } else {
+      // 销售人员看板（默认）
+      return this.dashboardService.getOverview(req.dataScope);
+    }
   }
 
   @Get('weekly-trend')

@@ -17,6 +17,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { TargetModule } from './modules/target/target.module';
 import { TaskModule } from './modules/task/task.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { OperationModule } from './modules/operation/operation.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -39,6 +40,9 @@ import { KeyResult } from './modules/okr/entities/key-result.entity';
 import { OperationLog } from './modules/log/entities/operation-log.entity';
 import { File } from './modules/upload/entities/file.entity';
 import { Notification } from './modules/notification/entities/notification.entity';
+import { OperationAccount } from './modules/operation/entities/operation-account.entity';
+import { OperationDailyRecord } from './modules/operation/entities/operation-daily-record.entity';
+import { OperationCommissionRecord } from './modules/operation/entities/operation-commission-record.entity';
 
 @Module({
   imports: [
@@ -80,6 +84,9 @@ import { Notification } from './modules/notification/entities/notification.entit
           File,
           Notification,
           SalesTarget,
+          OperationAccount,
+          OperationDailyRecord,
+          OperationCommissionRecord,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -111,6 +118,7 @@ import { Notification } from './modules/notification/entities/notification.entit
     TargetModule,
     TaskModule,
     AnalyticsModule,
+    OperationModule,
   ],
 })
 export class AppModule {}

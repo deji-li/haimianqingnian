@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Customer } from '../customer/entities/customer.entity';
 import { Order } from '../order/entities/order.entity';
 import { CustomerFollowRecord } from '../customer/entities/customer-follow-record.entity';
+import { OperationDailyRecord } from '../operation/entities/operation-daily-record.entity';
+import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
 
 @Injectable()
 export class DashboardService {
@@ -14,6 +16,10 @@ export class DashboardService {
     private orderRepository: Repository<Order>,
     @InjectRepository(CustomerFollowRecord)
     private followRecordRepository: Repository<CustomerFollowRecord>,
+    @InjectRepository(OperationDailyRecord)
+    private operationDailyRecordRepository: Repository<OperationDailyRecord>,
+    @InjectRepository(OperationCommissionRecord)
+    private operationCommissionRepository: Repository<OperationCommissionRecord>,
   ) {}
 
   /**
@@ -315,5 +321,56 @@ export class DashboardService {
       revenue: parseFloat(item.revenue),
       count: parseInt(item.count),
     }));
+  }
+
+  /**
+   * 获取运营人员看板数据
+   */
+  async getOperatorDashboard(operatorId: number) {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+
+    // 1. 本月日报填写天数
+    const dailyReportDays = await this.operationDailyRecordRepository
+      .createQueryBuilder('record')
+      .where('record.operator_id = :operatorId', { operatorId })
+      .andWhere('record.report_date >= :startOfMonth', { startOfMonth })
+      .andWhere('record.report_date <= :endOfMonth', { endOfMonth })
+      .getCount();
+
+    // 2. 本月更新内容总数
+    const updateCountResult = await this.operationDailyRecordRepository
+      .createQueryBuilder('record')
+      .select('SUM(record.update_count)', 'total')
+      .where('record.operator_id = :operatorId', { operatorId })
+      .andWhere('record.report_date >= :startOfMonth', { startOfMonth })
+      .andWhere('record.report_date <= :endOfMonth', { endOfMonth })
+      .getRawOne();
+
+    // 3. 本月引流客户数
+    const newCustomers = await this.customerRepository
+      .createQueryBuilder('customer')
+      .where('customer.operator_id = :operatorId', { operatorId })
+      .andWhere('customer.create_time >= :startOfMonth', { startOfMonth })
+      .andWhere('customer.create_time <= :endOfMonth', { endOfMonth })
+      .getCount();
+
+    // 4. 本月提成金额（待发放+已发放）
+    const commissionResult = await this.operationCommissionRepository
+      .createQueryBuilder('commission')
+      .select('SUM(commission.commission_amount)', 'total')
+      .where('commission.operator_id = :operatorId', { operatorId })
+      .andWhere('commission.create_time >= :startOfMonth', { startOfMonth })
+      .andWhere('commission.create_time <= :endOfMonth', { endOfMonth })
+      .andWhere('commission.status IN (:...statuses)', { statuses: ['待发放', '已发放'] })
+      .getRawOne();
+
+    return {
+      dailyReportDays,
+      totalUpdateCount: parseInt(updateCountResult?.total || '0'),
+      newCustomers,
+      totalCommission: parseFloat(commissionResult?.total || '0'),
+    };
   }
 }

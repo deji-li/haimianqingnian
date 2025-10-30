@@ -28,7 +28,25 @@ export class Customer {
   @Column({ name: 'traffic_source', length: 50, nullable: true })
   trafficSource: string;
 
-  @Column({ name: 'operator_id', nullable: true })
+  @Column({
+    name: 'traffic_platform',
+    type: 'enum',
+    enum: ['小红书', '抖音', '视频号'],
+    nullable: true,
+    comment: '来源平台',
+  })
+  trafficPlatform: string;
+
+  @Column({
+    name: 'traffic_city',
+    type: 'enum',
+    enum: ['广州', '上海', '深圳', '北京'],
+    nullable: true,
+    comment: '来源城市',
+  })
+  trafficCity: string;
+
+  @Column({ name: 'operator_id', nullable: true, comment: '引流运营人员ID' })
   operatorId: number;
 
   @Column({ name: 'sales_id' })

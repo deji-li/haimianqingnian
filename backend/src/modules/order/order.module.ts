@@ -6,10 +6,11 @@ import { Order } from './entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { CommissionModule } from '../commission/commission.module';
+import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Order, Customer, User]),
+    TypeOrmModule.forFeature([Order, Customer, User, OperationCommissionRecord]),
     CommissionModule,
   ],
   providers: [OrderService],
