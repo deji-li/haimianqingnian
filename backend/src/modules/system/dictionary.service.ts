@@ -84,7 +84,7 @@ export class DictionaryService {
     const config = await this.dictionaryRepository.findOne({
       where: {
         dictType: 'operation_commission',
-        dictName: orderTag,
+        dictLabel: orderTag,
         status: 1,
       },
     });

@@ -63,15 +63,15 @@ DEALLOCATE PREPARE stmt;
 -- =====================================================
 -- 使用字典表管理订单标签与运营提成金额的映射关系
 -- dict_type: 'operation_commission'
--- dict_name: 订单标签名称
+-- dict_label: 订单标签名称
 -- dict_value: 对应的运营提成金额（元）
-INSERT INTO dictionary (dict_type, dict_name, dict_value, description, sort, status)
+INSERT INTO dictionary (dict_type, dict_label, dict_value, remark, sort, status)
 VALUES
 ('operation_commission', '正常订单', '8', '正常订单的运营提成金额（元）', 1, 1),
 ('operation_commission', '活动订单', '5', '活动订单的运营提成金额（元）', 2, 1)
 ON DUPLICATE KEY UPDATE
   dict_value=VALUES(dict_value),
-  description=VALUES(description);
+  remark=VALUES(remark);
 
 -- =====================================================
 -- 4. 添加系统配置说明
@@ -79,7 +79,7 @@ ON DUPLICATE KEY UPDATE
 SELECT '
 运营提成配置说明：
 1. 在系统字典管理中，dict_type 为 operation_commission 的记录为订单标签提成配置
-2. dict_name 为订单标签名称（需与订单表中的 order_tag 一致）
+2. dict_label 为订单标签名称（需与订单表中的 order_tag 一致）
 3. dict_value 为该标签对应的运营提成金额（单位：元）
 4. 可在后台字典管理中动态添加/修改订单标签的提成金额
 
