@@ -21,12 +21,12 @@ import {
   CommissionRecordQueryDto,
   UpdateCommissionStatusDto,
 } from './dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PermissionsGuard } from '../auth/permissions.guard';
-import { RequirePermissions } from '../auth/permissions.decorator';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
+import { RequirePermissions } from '../../common/decorators/permission.decorator';
 
 @Controller('operation')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class OperationController {
   constructor(private readonly operationService: OperationService) {}
 

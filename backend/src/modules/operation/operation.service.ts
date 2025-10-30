@@ -232,7 +232,6 @@ export class OperationService {
       accountName: record.account?.accountName,
       operatorName: record.operator?.realName || record.operator?.username,
       platformType: record.account?.platformType,
-      city: record.account?.city,
     }));
 
     return {
@@ -258,7 +257,6 @@ export class OperationService {
       accountName: record.account?.accountName,
       operatorName: record.operator?.realName || record.operator?.username,
       platformType: record.account?.platformType,
-      city: record.account?.city,
     };
   }
 
