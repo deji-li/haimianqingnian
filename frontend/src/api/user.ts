@@ -110,6 +110,20 @@ export const changePassword = (oldPassword: string, newPassword: string) => {
   })
 }
 
+// 更新个人信息（当前用户）
+export const updateProfile = (data: {
+  realName?: string
+  phone?: string
+  email?: string
+  avatar?: string
+}) => {
+  return request({
+    url: '/auth/profile',
+    method: 'put',
+    data,
+  })
+}
+
 // 启用/禁用用户
 export const toggleUserStatus = (id: number) => {
   return request({

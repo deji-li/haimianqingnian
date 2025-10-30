@@ -168,4 +168,34 @@ export class AuthService {
       permissions,
     };
   }
+
+  /**
+   * 更新当前用户的个人信息
+   */
+  async updateProfile(
+    userId: number,
+    updateData: { realName?: string; phone?: string; email?: string; avatar?: string }
+  ) {
+    // 检查用户是否存在
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new UnauthorizedException('用户不存在');
+    }
+
+    // 只允许更新指定的字段
+    const allowedFields: (keyof typeof updateData)[] = ['realName', 'phone', 'email', 'avatar'];
+    const updatePayload: any = {};
+
+    allowedFields.forEach(field => {
+      if (updateData[field] !== undefined) {
+        updatePayload[field] = updateData[field];
+      }
+    });
+
+    // 执行更新
+    await this.userRepository.update(userId, updatePayload);
+
+    // 返回更新后的用户信息
+    return this.getUserInfo(userId);
+  }
 }

@@ -199,7 +199,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
 import { Camera, DocumentCopy, Money, UserFilled } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
-import { updateUser, changePassword } from '@/api/user'
+import { updateProfile, changePassword } from '@/api/user'
 import { uploadFile } from '@/api/upload'
 import dayjs from 'dayjs'
 
@@ -320,11 +320,9 @@ const initFormData = () => {
 
 // 更新个人资料
 const handleUpdateProfile = async () => {
-  if (!userInfo.value?.id) return
-
   loading.value = true
   try {
-    await updateUser(userInfo.value.id, {
+    await updateProfile({
       realName: formData.realName,
       phone: formData.phone,
       email: formData.email,
@@ -400,15 +398,13 @@ const handleAvatarChange = async (e: Event) => {
     const result = await uploadFile(file, 'avatar')
 
     // 更新用户头像
-    if (userInfo.value?.id) {
-      await updateUser(userInfo.value.id, {
-        avatar: result.url,
-      })
+    await updateProfile({
+      avatar: result.url,
+    })
 
-      ElMessage.success('头像更新成功')
-      // 刷新用户信息
-      await userStore.getUserInfo()
-    }
+    ElMessage.success('头像更新成功')
+    // 刷新用户信息
+    await userStore.getUserInfo()
   } catch (error: any) {
     ElMessage.error(error.message || '头像上传失败')
   } finally {
