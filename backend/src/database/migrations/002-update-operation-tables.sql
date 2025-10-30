@@ -11,11 +11,27 @@ USE education_crm;
 -- 1. 修改 operation_accounts 表
 -- =====================================================
 -- 删除 city 字段（改为通过 campus 关联获取）
--- 先删除引用city的索引
-ALTER TABLE operation_accounts DROP INDEX IF EXISTS `idx_platform_city`;
+-- 先检查并删除引用city的索引
+SET @index_exists = (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = 'education_crm' AND table_name = 'operation_accounts' AND index_name = 'idx_platform_city'
+);
+SET @sql = IF(@index_exists > 0,
+  'ALTER TABLE operation_accounts DROP INDEX idx_platform_city',
+  'SELECT ''Index idx_platform_city does not exist'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
--- 删除 city 字段
-ALTER TABLE operation_accounts DROP COLUMN city;
+-- 检查并删除 city 字段
+SET @column_exists = (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = 'education_crm' AND table_name = 'operation_accounts' AND column_name = 'city'
+);
+SET @sql = IF(@column_exists > 0,
+  'ALTER TABLE operation_accounts DROP COLUMN city',
+  'SELECT ''Column city does not exist'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- 设置 campus_id 为必填
 ALTER TABLE operation_accounts

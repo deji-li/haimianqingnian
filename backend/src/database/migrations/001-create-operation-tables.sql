@@ -86,11 +86,49 @@ CREATE TABLE IF NOT EXISTS `operation_commission_records` (
 -- =====================================================
 -- 4. 修改customers表，增加运营引流字段
 -- =====================================================
-ALTER TABLE `customers`
-ADD COLUMN `operator_id` int DEFAULT NULL COMMENT '引流运营人员ID' AFTER `sales_id`,
-ADD COLUMN `traffic_platform` enum('小红书','抖音','视频号') DEFAULT NULL COMMENT '来源平台' AFTER `traffic_source`,
-ADD COLUMN `traffic_city` enum('广州','上海','深圳','北京') DEFAULT NULL COMMENT '来源城市' AFTER `traffic_platform`,
-ADD KEY `idx_operator` (`operator_id`);
+-- 检查并添加 operator_id 字段
+SET @column_exists = (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = 'education_crm' AND table_name = 'customers' AND column_name = 'operator_id'
+);
+SET @sql = IF(@column_exists = 0,
+  'ALTER TABLE customers ADD COLUMN operator_id int DEFAULT NULL COMMENT ''引流运营人员ID'' AFTER sales_id',
+  'SELECT ''Column operator_id already exists'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 检查并添加 traffic_platform 字段
+SET @column_exists = (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = 'education_crm' AND table_name = 'customers' AND column_name = 'traffic_platform'
+);
+SET @sql = IF(@column_exists = 0,
+  'ALTER TABLE customers ADD COLUMN traffic_platform enum(''小红书'',''抖音'',''视频号'') DEFAULT NULL COMMENT ''来源平台'' AFTER traffic_source',
+  'SELECT ''Column traffic_platform already exists'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 检查并添加 traffic_city 字段
+SET @column_exists = (
+  SELECT COUNT(*) FROM information_schema.columns
+  WHERE table_schema = 'education_crm' AND table_name = 'customers' AND column_name = 'traffic_city'
+);
+SET @sql = IF(@column_exists = 0,
+  'ALTER TABLE customers ADD COLUMN traffic_city enum(''广州'',''上海'',''深圳'',''北京'') DEFAULT NULL COMMENT ''来源城市'' AFTER traffic_platform',
+  'SELECT ''Column traffic_city already exists'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
+
+-- 检查并添加索引
+SET @index_exists = (
+  SELECT COUNT(*) FROM information_schema.statistics
+  WHERE table_schema = 'education_crm' AND table_name = 'customers' AND index_name = 'idx_operator'
+);
+SET @sql = IF(@index_exists = 0,
+  'ALTER TABLE customers ADD KEY idx_operator (operator_id)',
+  'SELECT ''Index idx_operator already exists'' AS message'
+);
+PREPARE stmt FROM @sql; EXECUTE stmt; DEALLOCATE PREPARE stmt;
 
 -- =====================================================
 -- 5. 在permissions表增加运营相关权限
