@@ -134,3 +134,47 @@ export const getConversionAnalysis = (
     params: { dimension },
   })
 }
+
+// 个人统计数据接口
+export interface PersonalStatsData {
+  summary: {
+    totalCustomers: number
+    thisMonthCustomers: number
+    totalOrders: number
+    thisMonthOrders: number
+    totalRevenue: number
+    thisMonthRevenue: number
+    avgOrderAmount: number
+    conversionRate: number
+  }
+  stageStats: {
+    线索: number
+    意向客户: number
+    商机: number
+    成交客户: number
+    复购客户: number
+  }
+  conversionTrend: Array<{
+    date: string
+    newCustomers: number
+    converted: number
+    conversionRate: number
+  }>
+  sourceDistribution: Array<{
+    source: string
+    count: number
+    percentage: number
+  }>
+  aiUsage: {
+    analysisCount: number
+    trainingCount: number
+  }
+}
+
+// 获取个人统计数据
+export const getPersonalStats = () => {
+  return request<PersonalStatsData>({
+    url: '/analytics/personal-stats',
+    method: 'get',
+  })
+}

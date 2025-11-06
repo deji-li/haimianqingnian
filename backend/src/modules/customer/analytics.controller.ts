@@ -5,6 +5,7 @@ import {
   UseGuards,
   ParseIntPipe,
   DefaultValuePipe,
+  Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
@@ -87,5 +88,11 @@ export class AnalyticsController {
     @Query('dimension') dimension: 'traffic_source' | 'sales' | 'campus',
   ) {
     return this.analyticsService.getConversionAnalysis(dimension);
+  }
+
+  @Get('personal-stats')
+  @ApiOperation({ summary: '获取销售人员个人统计数据' })
+  getPersonalStats(@Request() req) {
+    return this.analyticsService.getSalesPersonalStats(req.user.userId);
   }
 }

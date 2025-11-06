@@ -18,6 +18,10 @@ import { TargetModule } from './modules/target/target.module';
 import { TaskModule } from './modules/task/task.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { OperationModule } from './modules/operation/operation.module';
+import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
+import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
+import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -43,6 +47,10 @@ import { Notification } from './modules/notification/entities/notification.entit
 import { OperationAccount } from './modules/operation/entities/operation-account.entity';
 import { OperationDailyRecord } from './modules/operation/entities/operation-daily-record.entity';
 import { OperationCommissionRecord } from './modules/operation/entities/operation-commission-record.entity';
+import { AiChatRecord } from './modules/ai-chat/entities/ai-chat-record.entity';
+import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity';
+import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-base.entity';
+import { AiScript, AiRiskAlert, AiTrainingRecord } from './modules/ai-tools/entities/index';
 
 @Module({
   imports: [
@@ -87,6 +95,12 @@ import { OperationCommissionRecord } from './modules/operation/entities/operatio
           OperationAccount,
           OperationDailyRecord,
           OperationCommissionRecord,
+          AiChatRecord,
+          AiCustomerTag,
+          AiKnowledgeBase,
+          AiScript,
+          AiRiskAlert,
+          AiTrainingRecord,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -119,6 +133,10 @@ import { OperationCommissionRecord } from './modules/operation/entities/operatio
     TaskModule,
     AnalyticsModule,
     OperationModule,
+    AiChatModule,
+    AiTagsModule,
+    AiKnowledgeModule,
+    AiToolsModule,
   ],
 })
 export class AppModule {}

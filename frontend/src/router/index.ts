@@ -41,6 +41,15 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
+        path: 'crm-stats',
+        name: 'CRMStats',
+        component: () => import('@/views/crm/PersonalStats.vue'),
+        meta: {
+          title: 'CRM统计',
+          icon: 'DataAnalysis',
+        },
+      },
+      {
         path: 'profile',
         name: 'Profile',
         component: () => import('@/views/profile/Index.vue'),
@@ -151,6 +160,71 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/analytics/AdvancedAnalytics.vue'),
             meta: {
               title: '高级分析',
+            },
+          },
+        ],
+      },
+      {
+        path: 'ai',
+        name: 'AI',
+        redirect: '/ai/chat-analysis',
+        meta: {
+          title: 'AI智能助手',
+          icon: 'MagicStick',
+        },
+        children: [
+          {
+            path: 'chat-analysis',
+            name: 'AIChatAnalysis',
+            component: () => import('@/views/ai/ChatAnalysis.vue'),
+            meta: {
+              title: 'AI聊天记录分析',
+              permissions: ['ai-chat:view'],
+            },
+          },
+          {
+            path: 'knowledge',
+            name: 'AIKnowledge',
+            component: () => import('@/views/ai/Knowledge.vue'),
+            meta: {
+              title: 'AI知识库',
+              permissions: ['ai-knowledge:view'],
+            },
+          },
+          {
+            path: 'tools',
+            name: 'AITools',
+            component: () => import('@/views/ai/ToolCenter.vue'),
+            meta: {
+              title: 'AI工具中心',
+              permissions: ['ai-tools:view'],
+            },
+          },
+          {
+            path: 'marketing',
+            name: 'AIMarketing',
+            component: () => import('@/views/ai/MarketingAssistant.vue'),
+            meta: {
+              title: 'AI营销助手',
+              permissions: ['ai-marketing:use'],
+            },
+          },
+          {
+            path: 'analytics',
+            name: 'AIAnalytics',
+            component: () => import('@/views/ai/AIAnalytics.vue'),
+            meta: {
+              title: 'AI人效分析',
+              permissions: ['ai-analytics:view'],
+            },
+          },
+          {
+            path: 'reports',
+            name: 'AIReports',
+            component: () => import('@/views/ai/AIReports.vue'),
+            meta: {
+              title: 'AI诊断报告',
+              permissions: ['ai:report:view'],
             },
           },
         ],

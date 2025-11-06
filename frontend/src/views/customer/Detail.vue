@@ -97,6 +97,135 @@
       </el-descriptions>
     </el-card>
 
+    <!-- AI智能分析 -->
+    <el-card class="ai-card" shadow="never">
+      <template #header>
+        <div class="card-header">
+          <span class="title">
+            <el-icon style="vertical-align: middle; margin-right: 4px"><MagicStick /></el-icon>
+            AI智能分析
+          </span>
+          <el-button type="primary" size="small" @click="goToAiChatAnalysis">
+            上传聊天记录
+          </el-button>
+        </div>
+      </template>
+
+      <el-row :gutter="16">
+        <!-- AI标签 -->
+        <el-col :span="12">
+          <div class="ai-section">
+            <h4 class="section-title">AI客户标签</h4>
+            <div v-if="aiTags.length > 0" class="tags-container">
+              <el-tag
+                v-for="tag in aiTags.slice(0, 10)"
+                :key="tag.id"
+                :type="getTagType(tag.category)"
+                style="margin-right: 8px; margin-bottom: 8px"
+                size="default"
+              >
+                {{ tag.tagName }}
+                <span v-if="tag.confidence" class="confidence">
+                  ({{ Math.round(tag.confidence * 100) }}%)
+                </span>
+              </el-tag>
+              <el-button
+                v-if="aiTags.length > 10"
+                link
+                type="primary"
+                size="small"
+              >
+                查看全部 {{ aiTags.length }} 个标签
+              </el-button>
+            </div>
+            <el-empty v-else description="暂无AI标签" :image-size="60" />
+          </div>
+        </el-col>
+
+        <!-- 最新AI分析 -->
+        <el-col :span="12">
+          <div class="ai-section">
+            <h4 class="section-title">最新聊天分析</h4>
+            <div v-if="latestAiAnalysis" class="analysis-container">
+              <el-descriptions :column="1" border size="small">
+                <el-descriptions-item label="质量等级">
+                  <el-tag :type="getQualityType(latestAiAnalysis.qualityLevel)" v-if="latestAiAnalysis.qualityLevel">
+                    {{ latestAiAnalysis.qualityLevel }}级
+                  </el-tag>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="风险等级">
+                  <el-tag :type="getRiskType(latestAiAnalysis.riskLevel)" v-if="latestAiAnalysis.riskLevel">
+                    {{ latestAiAnalysis.riskLevel }}
+                  </el-tag>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="意向评分">
+                  <span v-if="latestAiAnalysis.intentionScore">{{ latestAiAnalysis.intentionScore }}分</span>
+                  <span v-else>-</span>
+                </el-descriptions-item>
+                <el-descriptions-item label="分析时间">
+                  {{ formatDateTime(latestAiAnalysis.createTime) }}
+                </el-descriptions-item>
+              </el-descriptions>
+              <el-button
+                type="primary"
+                link
+                size="small"
+                style="margin-top: 10px"
+                @click="router.push('/ai/chat-analysis')"
+              >
+                查看详细分析
+              </el-button>
+            </div>
+            <el-empty v-else description="暂无分析记录" :image-size="60" />
+          </div>
+        </el-col>
+      </el-row>
+
+      <!-- AI工具快捷操作 -->
+      <el-divider />
+      <div class="ai-actions">
+        <h4 class="section-title">AI工具</h4>
+        <el-space wrap>
+          <el-button
+            type="primary"
+            @click="handleGenerateScript('开场白')"
+            :loading="generatingScript"
+            size="default"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+            生成开场白
+          </el-button>
+          <el-button
+            type="success"
+            @click="handleGenerateScript('价值主张')"
+            :loading="generatingScript"
+            size="default"
+          >
+            <el-icon><Star /></el-icon>
+            生成价值主张
+          </el-button>
+          <el-button
+            type="warning"
+            @click="handleGenerateScript('异议处理')"
+            :loading="generatingScript"
+            size="default"
+          >
+            <el-icon><QuestionFilled /></el-icon>
+            异议处理话术
+          </el-button>
+          <el-button
+            @click="router.push('/ai/knowledge')"
+            size="default"
+          >
+            <el-icon><Reading /></el-icon>
+            查询知识库
+          </el-button>
+        </el-space>
+      </div>
+    </el-card>
+
     <!-- 跟进记录 -->
     <el-card class="follow-card" shadow="never">
       <template #header>
@@ -387,7 +516,19 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import {
+  ArrowLeft,
+  EditPen,
+  Plus,
+  Edit,
+  Clock,
+  MagicStick,
+  ChatDotRound,
+  Star,
+  QuestionFilled,
+  Reading,
+} from '@element-plus/icons-vue'
 import { useRecentStore } from '@/store/recent'
 import {
   getCustomerDetail,
@@ -403,6 +544,11 @@ import {
   createLifecycle,
   type LifecycleHistory,
 } from '@/api/lifecycle'
+import {
+  getCustomerTags,
+  getChatRecordList,
+  generateScript,
+} from '@/api/ai'
 import { useUserStore } from '@/store/user'
 import dayjs from 'dayjs'
 
@@ -416,6 +562,9 @@ const customerInfo = ref<Customer | null>(null)
 const followRecords = ref<FollowRecord[]>([])
 const customerOrders = ref<Order[]>([])
 const lifecycleHistory = ref<LifecycleHistory[]>([])
+const aiTags = ref<any[]>([])
+const latestAiAnalysis = ref<any>(null)
+const generatingScript = ref(false)
 
 const editDialogVisible = ref(false)
 const submitLoading = ref(false)
@@ -519,6 +668,67 @@ const fetchLifecycleHistory = async () => {
   } catch (error) {
     console.error('Failed to fetch lifecycle history:', error)
   }
+}
+
+// 获取AI客户标签
+const fetchAiTags = async () => {
+  const customerId = Number(route.params.id)
+  if (!customerId) return
+
+  try {
+    const res = await getCustomerTags(customerId)
+    aiTags.value = res.data || []
+  } catch (error) {
+    console.error('Failed to fetch AI tags:', error)
+  }
+}
+
+// 获取最新AI聊天分析
+const fetchLatestAiAnalysis = async () => {
+  const customerId = Number(route.params.id)
+  if (!customerId) return
+
+  try {
+    const res = await getChatRecordList({
+      customerId,
+      page: 1,
+      limit: 1,
+    })
+    if (res.data.list && res.data.list.length > 0) {
+      latestAiAnalysis.value = res.data.list[0]
+    }
+  } catch (error) {
+    console.error('Failed to fetch latest AI analysis:', error)
+  }
+}
+
+// 生成AI话术
+const handleGenerateScript = async (scriptType: string) => {
+  const customerId = Number(route.params.id)
+  if (!customerId) return
+
+  generatingScript.value = true
+  try {
+    const res = await generateScript(customerId, scriptType)
+    ElMessage.success('话术生成成功')
+    // 在对话框中展示生成的话术
+    ElMessageBox.alert(res.data.scriptContent, `${scriptType}话术`, {
+      confirmButtonText: '复制',
+      callback: () => {
+        navigator.clipboard.writeText(res.data.scriptContent)
+        ElMessage.success('已复制到剪贴板')
+      },
+    })
+  } catch (error: any) {
+    ElMessage.error(error.message || '生成失败')
+  } finally {
+    generatingScript.value = false
+  }
+}
+
+// 跳转到AI聊天分析页面
+const goToAiChatAnalysis = () => {
+  router.push('/ai/chat-analysis')
 }
 
 // 返回
@@ -693,11 +903,37 @@ const getLifecycleTimelineType = (stage: string) => {
   return stageMap[stage] || 'primary'
 }
 
+// 获取标签类型
+const getTagType = (category: string) => {
+  const categoryMap: Record<string, any> = {
+    '基础信息': '',
+    '需求痛点': 'warning',
+    '质量评估': 'success',
+    '风险标签': 'danger',
+    '情绪态度': 'info',
+  }
+  return categoryMap[category] || ''
+}
+
+// 获取质量等级类型
+const getQualityType = (level: string) => {
+  const types: Record<string, any> = { A: 'success', B: 'primary', C: 'warning', D: 'danger' }
+  return types[level] || 'info'
+}
+
+// 获取风险等级类型
+const getRiskType = (level: string) => {
+  const types: Record<string, any> = { 无风险: 'success', 低: 'info', 中: 'warning', 高: 'danger' }
+  return types[level] || 'info'
+}
+
 onMounted(() => {
   fetchCustomerInfo()
   fetchFollowRecords()
   fetchCustomerOrders()
   fetchLifecycleHistory()
+  fetchAiTags()
+  fetchLatestAiAnalysis()
 })
 </script>
 
@@ -791,6 +1027,41 @@ onMounted(() => {
 
   .add-follow-btn {
     font-weight: 500;
+  }
+
+  .ai-card {
+    margin-bottom: 16px;
+
+    .ai-section {
+      .section-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #303133;
+        margin: 0 0 12px 0;
+      }
+
+      .tags-container {
+        min-height: 80px;
+      }
+
+      .confidence {
+        font-size: 12px;
+        opacity: 0.7;
+      }
+
+      .analysis-container {
+        min-height: 80px;
+      }
+    }
+
+    .ai-actions {
+      .section-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #303133;
+        margin: 0 0 12px 0;
+      }
+    }
   }
 }
 </style>

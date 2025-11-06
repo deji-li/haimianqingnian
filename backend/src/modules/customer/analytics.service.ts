@@ -529,4 +529,148 @@ export class AnalyticsService {
           : 0,
     }));
   }
+
+  /**
+   * 获取销售人员个人统计数据
+   */
+  async getSalesPersonalStats(userId: number) {
+    // 客户统计
+    const customerStats = await this.customerRepository
+      .createQueryBuilder('customer')
+      .select('customer.lifecycle_stage', 'stage')
+      .addSelect('COUNT(*)', 'count')
+      .where('customer.sales_id = :userId', { userId })
+      .groupBy('customer.lifecycle_stage')
+      .getRawMany();
+
+    // 总客户数
+    const totalCustomers = customerStats.reduce(
+      (sum, item) => sum + Number(item.count),
+      0,
+    );
+
+    // 按阶段分组
+    const stageStats = {
+      线索: 0,
+      意向客户: 0,
+      商机: 0,
+      成交客户: 0,
+      复购客户: 0,
+    };
+
+    customerStats.forEach((item) => {
+      if (item.stage in stageStats) {
+        stageStats[item.stage] = Number(item.count);
+      }
+    });
+
+    // 订单统计
+    const orderStats = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoin('customers', 'customer', 'order.customer_id = customer.id')
+      .where('customer.sales_id = :userId', { userId })
+      .andWhere('order.order_status != :status', { status: '已退款' })
+      .select('COUNT(DISTINCT order.id)', 'totalOrders')
+      .addSelect('SUM(order.payment_amount)', 'totalRevenue')
+      .addSelect('AVG(order.payment_amount)', 'avgOrderAmount')
+      .getRawOne();
+
+    // 本月新增客户
+    const thisMonthCustomers = await this.customerRepository
+      .createQueryBuilder('customer')
+      .where('customer.sales_id = :userId', { userId })
+      .andWhere(
+        'DATE_FORMAT(customer.create_time, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")',
+      )
+      .getCount();
+
+    // 本月订单
+    const thisMonthOrders = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoin('customers', 'customer', 'order.customer_id = customer.id')
+      .where('customer.sales_id = :userId', { userId })
+      .andWhere('order.order_status != :status', { status: '已退款' })
+      .andWhere(
+        'DATE_FORMAT(order.payment_time, "%Y-%m") = DATE_FORMAT(NOW(), "%Y-%m")',
+      )
+      .select('COUNT(order.id)', 'count')
+      .addSelect('SUM(order.payment_amount)', 'revenue')
+      .getRawOne();
+
+    // 近30天转化趋势
+    const conversionTrend = await this.customerRepository
+      .createQueryBuilder('customer')
+      .where('customer.sales_id = :userId', { userId })
+      .andWhere('customer.create_time >= DATE_SUB(NOW(), INTERVAL 30 DAY)')
+      .select(
+        'DATE_FORMAT(customer.create_time, "%Y-%m-%d")',
+        'date',
+      )
+      .addSelect('COUNT(*)', 'count')
+      .addSelect(
+        'SUM(CASE WHEN customer.lifecycle_stage IN ("成交客户", "复购客户") THEN 1 ELSE 0 END)',
+        'converted',
+      )
+      .groupBy('date')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    // 客户来源分布
+    const sourceDistribution = await this.customerRepository
+      .createQueryBuilder('customer')
+      .where('customer.sales_id = :userId', { userId })
+      .select('customer.traffic_source', 'source')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('customer.traffic_source')
+      .getRawMany();
+
+    // AI使用统计
+    const aiUsageStats = await this.orderRepository.query(
+      `
+      SELECT
+        COUNT(DISTINCT ac.id) as analysisCount,
+        COUNT(DISTINCT at.id) as trainingCount
+      FROM customers c
+      LEFT JOIN ai_chat_records ac ON c.id = ac.customer_id
+      LEFT JOIN ai_training_records at ON at.user_id = ?
+      WHERE c.sales_id = ?
+    `,
+      [userId, userId],
+    );
+
+    return {
+      summary: {
+        totalCustomers,
+        thisMonthCustomers,
+        totalOrders: Number(orderStats?.totalOrders || 0),
+        thisMonthOrders: Number(thisMonthOrders?.count || 0),
+        totalRevenue: Number(orderStats?.totalRevenue || 0),
+        thisMonthRevenue: Number(thisMonthOrders?.revenue || 0),
+        avgOrderAmount: Number(orderStats?.avgOrderAmount || 0),
+        conversionRate:
+          totalCustomers > 0
+            ? ((stageStats.成交客户 + stageStats.复购客户) / totalCustomers) * 100
+            : 0,
+      },
+      stageStats,
+      conversionTrend: conversionTrend.map((item) => ({
+        date: item.date,
+        newCustomers: Number(item.count),
+        converted: Number(item.converted),
+        conversionRate:
+          Number(item.count) > 0
+            ? (Number(item.converted) / Number(item.count)) * 100
+            : 0,
+      })),
+      sourceDistribution: sourceDistribution.map((item) => ({
+        source: item.source || '未知',
+        count: Number(item.count),
+        percentage: totalCustomers > 0 ? (Number(item.count) / totalCustomers) * 100 : 0,
+      })),
+      aiUsage: {
+        analysisCount: Number(aiUsageStats[0]?.analysisCount || 0),
+        trainingCount: Number(aiUsageStats[0]?.trainingCount || 0),
+      },
+    };
+  }
 }
