@@ -30,19 +30,7 @@ echo Done
 echo.
 
 echo [3/4] Creating commit...
-git commit -m "feat: Add AI Marketing, Analytics, Reports and CRM Stats
-
-New Features:
-- AI Marketing Assistant: 6 scenario content generation
-- AI Efficiency Analytics: Team AI usage dashboard
-- AI Diagnostic Reports: Auto-generate weekly/monthly reports
-- CRM Statistics: Personal performance dashboard
-
-Technical Updates:
-- Add DeepSeek AI service integration
-- Add 7 AI-related database tables
-- Add AI module routes and APIs
-- Add AI permissions configuration"
+git commit -m "feat: Add AI Marketing Assistant, Analytics Dashboard, Diagnostic Reports and CRM Statistics module"
 
 if errorlevel 1 (
     echo.
