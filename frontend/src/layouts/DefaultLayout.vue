@@ -87,6 +87,19 @@
           <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="/ai">
+          <template #title>
+            <el-icon><MagicStick /></el-icon>
+            <span>AI智能助手</span>
+          </template>
+          <el-menu-item index="/ai/chat-analysis">AI聊天分析</el-menu-item>
+          <el-menu-item index="/ai/knowledge">AI知识库</el-menu-item>
+          <el-menu-item index="/ai/tools">AI工具中心</el-menu-item>
+          <el-menu-item index="/ai/marketing">AI营销助手</el-menu-item>
+          <el-menu-item index="/ai/analytics">AI人效分析</el-menu-item>
+          <el-menu-item index="/ai/reports">AI诊断报告</el-menu-item>
+        </el-sub-menu>
+
         <el-menu-item index="/datascreen">
           <el-icon><DataAnalysis /></el-icon>
           <span>数据大屏</span>
@@ -169,7 +182,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()
