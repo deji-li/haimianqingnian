@@ -50,7 +50,7 @@ import { OperationCommissionRecord } from './modules/operation/entities/operatio
 import { AiChatRecord } from './modules/ai-chat/entities/ai-chat-record.entity';
 import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity';
 import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-base.entity';
-import { AiScript, AiRiskAlert, AiTrainingRecord } from './modules/ai-tools/entities/index';
+import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 
 @Module({
   imports: [
@@ -101,6 +101,7 @@ import { AiScript, AiRiskAlert, AiTrainingRecord } from './modules/ai-tools/enti
           AiScript,
           AiRiskAlert,
           AiTrainingRecord,
+          AiReport,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
