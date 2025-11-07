@@ -12,6 +12,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AiToolsService } from './ai-tools.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RequirePermissions } from '../../common/decorators/permission.decorator';
+import { QueryReportListDto, QuerySleepingCustomersDto, QueryAnalyticsDto } from './dto/ai-tools.dto';
 
 @ApiTags('AI工具（话术+风险+培训）')
 @ApiBearerAuth()
@@ -74,8 +75,8 @@ export class AiToolsController {
   @Get('recovery/sleeping-customers')
   @ApiOperation({ summary: '识别沉睡客户' })
   @RequirePermissions('ai:recovery:view')
-  async identifySleepingCustomers(@Query('days') days?: number) {
-    return this.aiToolsService.identifySleepingCustomers(days || 30);
+  async identifySleepingCustomers(@Query() query: QuerySleepingCustomersDto) {
+    return this.aiToolsService.identifySleepingCustomers(query.days || 30);
   }
 
   // ==================== AI培训陪练 ====================
@@ -128,17 +129,12 @@ export class AiToolsController {
   @Get('analytics/efficiency')
   @ApiOperation({ summary: '获取AI人效分析数据' })
   @RequirePermissions('ai:analytics:view')
-  async getEfficiencyAnalytics(
-    @Query('startDate') startDate?: string,
-    @Query('endDate') endDate?: string,
-    @Query('userId') userId?: number,
-    @Query('departmentId') departmentId?: number,
-  ) {
+  async getEfficiencyAnalytics(@Query() query: QueryAnalyticsDto) {
     return this.aiToolsService.getAiEfficiencyAnalytics({
-      startDate,
-      endDate,
-      userId,
-      departmentId,
+      startDate: query.startDate,
+      endDate: query.endDate,
+      userId: query.userId,
+      departmentId: query.departmentId,
     });
   }
 
@@ -153,17 +149,12 @@ export class AiToolsController {
   @Get('report/list')
   @ApiOperation({ summary: '获取报告列表' })
   @RequirePermissions('ai:report:view')
-  async getReportList(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 20,
-    @Query('reportType') reportType?: string,
-    @Query('status') status?: string,
-  ) {
+  async getReportList(@Query() query: QueryReportListDto) {
     return this.aiToolsService.getReportList({
-      page,
-      limit,
-      reportType,
-      status,
+      page: query.page,
+      limit: query.limit,
+      reportType: query.reportType,
+      status: query.status,
     });
   }
 
