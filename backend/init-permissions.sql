@@ -77,6 +77,15 @@ INSERT INTO `permissions` (`code`, `name`, `module`, `description`) VALUES
 ('system:campus', '校区管理', 'system', '管理校区'),
 ('system:dictionary', '字典管理', 'system', '管理数据字典');
 
+-- AI功能权限
+INSERT INTO `permissions` (`code`, `name`, `module`, `description`) VALUES
+('ai-chat:view', 'AI聊天分析', 'ai', '查看和使用AI聊天记录分析'),
+('ai-knowledge:view', 'AI知识库', 'ai', '查看和使用AI知识库'),
+('ai-tools:view', 'AI工具中心', 'ai', '查看和使用AI工具中心'),
+('ai-marketing:use', 'AI营销助手', 'ai', '使用AI营销助手生成营销文案'),
+('ai-analytics:view', 'AI人效分析', 'ai', '查看AI人效分析看板'),
+('ai:report:view', 'AI诊断报告', 'ai', '查看和生成AI诊断报告');
+
 -- 为系统管理员分配所有权限
 INSERT INTO `role_permissions` (`role_id`, `permission_id`)
 SELECT
