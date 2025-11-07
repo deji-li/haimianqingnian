@@ -4,7 +4,10 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Customer } from '../../customer/entities/customer.entity';
 
 // AI话术库
 @Entity('ai_scripts')
@@ -60,6 +63,10 @@ export class AiRiskAlert {
 
   @Column({ name: 'customer_id' })
   customerId: number;
+
+  @ManyToOne(() => Customer)
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
 
   @Column({ name: 'risk_type', length: 50 })
   riskType: string;

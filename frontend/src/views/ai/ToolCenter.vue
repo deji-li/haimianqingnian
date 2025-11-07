@@ -312,7 +312,7 @@ const generateScriptHandler = async () => {
   generating.value = true
   try {
     const res = await generateScript(Number(scriptForm.customerId), scriptForm.scriptType)
-    generatedScript.value = res.data
+    generatedScript.value = res
     ElMessage.success('话术生成成功')
   } catch (error: any) {
     ElMessage.error(error.message || '生成失败')
@@ -324,7 +324,7 @@ const generateScriptHandler = async () => {
 const loadScripts = async () => {
   try {
     const res = await getScriptList(scriptListType.value)
-    scriptList.value = res.data
+    scriptList.value = res
   } catch (error) {
     ElMessage.error('加载话术库失败')
   }
@@ -352,7 +352,7 @@ const markScriptSuccess = async (script: any) => {
 const loadRiskAlerts = async () => {
   try {
     const res = await getPendingRiskAlerts()
-    riskAlerts.value = res.data
+    riskAlerts.value = res
   } catch (error) {
     console.error('加载风险预警失败', error)
   }
@@ -384,8 +384,8 @@ const loadSleepingCustomers = async () => {
   loadingSleep.value = true
   try {
     const res = await getSleepingCustomers(sleepDays.value)
-    sleepingCustomers.value = res.data.customers
-    ElMessage.success(`识别到 ${res.data.total} 个沉睡客户`)
+    sleepingCustomers.value = res.customers
+    ElMessage.success(`识别到 ${res.total} 个沉睡客户`)
   } catch (error) {
     ElMessage.error('识别失败')
   } finally {
@@ -406,7 +406,7 @@ const startTrainingHandler = async () => {
 
   try {
     const res = await startTrainingApi(trainingForm.scenario)
-    trainingSession.value = res.data
+    trainingSession.value = res
     trainingMessages.value = []
     trainingRounds.value = 0
     ElMessage.success('开始训练，AI客户已就位')
@@ -431,9 +431,9 @@ const sendMessage = async () => {
     const res = await trainConversation(trainingSession.value.id, msg)
     trainingMessages.value.push({
       role: 'assistant',
-      message: res.data.aiReply
+      message: res.aiReply
     })
-    trainingRounds.value = res.data.roundCount
+    trainingRounds.value = res.roundCount
 
     nextTick(() => {
       messagesContainer.value?.scrollTo(0, messagesContainer.value.scrollHeight)
@@ -448,8 +448,8 @@ const sendMessage = async () => {
 const stopTraining = async () => {
   try {
     const res = await endTraining(trainingSession.value.id)
-    ElMessage.success(`训练结束！评分：${res.data.aiScore}分`)
-    ElMessage.info(res.data.aiFeedback)
+    ElMessage.success(`训练结束！评分：${res.aiScore}分`)
+    ElMessage.info(res.aiFeedback)
     trainingSession.value = null
     trainingMessages.value = []
     trainingForm.scenario = ''

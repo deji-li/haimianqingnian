@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsInt, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class CreateKnowledgeDto {
   @ApiProperty({ description: '知识分类', example: '课程介绍' })
@@ -62,18 +63,33 @@ export class UpdateKnowledgeDto {
 
 export class QueryKnowledgeDto {
   @ApiProperty({ description: '页码', required: false, default: 1 })
-  page?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
 
   @ApiProperty({ description: '每页数量', required: false, default: 20 })
-  limit?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
 
   @ApiProperty({ description: '知识分类', required: false })
+  @IsOptional()
+  @IsString()
   category?: string;
 
   @ApiProperty({ description: '关键词搜索', required: false })
+  @IsOptional()
+  @IsString()
   keyword?: string;
 
   @ApiProperty({ description: '是否启用', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   isActive?: number;
 }
 

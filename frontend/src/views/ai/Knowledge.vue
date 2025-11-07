@@ -204,8 +204,8 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getKnowledgeList(queryForm)
-    tableData.value = res.data.list
-    total.value = res.data.total
+    tableData.value = res.list
+    total.value = res.total
   } catch (error) {
     ElMessage.error('加载数据失败')
   } finally {
@@ -216,7 +216,7 @@ const loadData = async () => {
 const loadCategories = async () => {
   try {
     const res = await getKnowledgeCategories()
-    categories.value = res.data
+    categories.value = res
   } catch (error) {
     console.error('加载分类失败', error)
   }
@@ -234,8 +234,8 @@ const aiSearch = async () => {
       question: searchQuestion.value,
       limit: 5
     })
-    searchResults.value = res.data.results
-    ElMessage.success(`找到 ${res.data.total} 条相关知识`)
+    searchResults.value = res.results
+    ElMessage.success(`找到 ${res.total} 条相关知识`)
   } catch (error) {
     ElMessage.error('搜索失败')
   } finally {

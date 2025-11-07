@@ -295,7 +295,7 @@ const handleGenerate = async () => {
       style: configForm.style,
       wordCount: configForm.wordCount,
     })
-    generatedContent.value = res.data.content
+    generatedContent.value = res.content
     ElMessage.success('文案生成成功')
   } catch (error: any) {
     ElMessage.error(error.message || '生成失败')

@@ -194,7 +194,7 @@ const loadData = async () => {
     }
 
     const res = await getAiEfficiencyAnalytics(params)
-    const data = res.data
+    const data = res
 
     // 更新数据
     userRankings.value = data.userUsageStats
