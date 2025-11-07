@@ -6,7 +6,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { QueryOrderDto } from './dto/query.dto';
+import { QueryOrderDto } from './dto/query-order.dto';
 import { CommissionService } from '../commission/commission.service';
 import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
 import { DictionaryService } from '../system/dictionary.service';
