@@ -36,13 +36,10 @@ export default defineConfig({
     },
   },
   build: {
-    // 生产环境移除console
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-      },
+    // 生产环境移除console - 使用 esbuild (Vite 内置)
+    minify: 'esbuild',
+    esbuild: {
+      drop: ['console', 'debugger'],
     },
   },
   server: {
