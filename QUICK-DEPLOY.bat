@@ -20,29 +20,42 @@ if not exist ".git" (
     exit /b 1
 )
 
-echo [1/4] Checking Git status...
+echo [1/3] Checking Git status...
 git status
 echo.
 
-echo [2/4] Adding files to Git...
-git add .
-echo Done
-echo.
+echo [2/3] Checking for unpushed commits...
+for /f %%i in ('git rev-list --count origin/master..HEAD 2^>nul') do set UNPUSHED=%%i
+if not defined UNPUSHED set UNPUSHED=0
 
-echo [3/4] Creating commit...
-git commit -m "feat: Add AI Marketing Assistant, Analytics Dashboard, Diagnostic Reports and CRM Statistics module"
+if %UNPUSHED% GTR 0 (
+    echo Found %UNPUSHED% unpushed commit^(s^)
+    echo Will push existing commits...
+) else (
+    echo No unpushed commits found
+    echo Checking for uncommitted changes...
 
-if errorlevel 1 (
-    echo.
-    echo WARNING: No changes to commit or commit failed
-    pause
-    exit /b 1
+    git add .
+    git diff-index --quiet HEAD --
+    if errorlevel 1 (
+        echo Creating new commit...
+        git commit -m "feat: Add AI Marketing Assistant, Analytics Dashboard, Diagnostic Reports and CRM Statistics module"
+        if errorlevel 1 (
+            echo ERROR: Commit failed
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo.
+        echo WARNING: No changes to commit and no unpushed commits
+        echo Nothing to deploy!
+        pause
+        exit /b 1
+    )
 )
 
-echo Done
 echo.
-
-echo [4/4] Pushing to GitHub (will trigger auto deploy)...
+echo [3/3] Pushing to GitHub (will trigger auto deploy)...
 git push origin master
 
 if errorlevel 1 (
