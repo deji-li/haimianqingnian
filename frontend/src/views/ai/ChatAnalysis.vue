@@ -282,8 +282,8 @@ const loadData = async () => {
   loading.value = true
   try {
     const res = await getChatRecordList(queryForm)
-    tableData.value = res.data.list
-    total.value = res.data.total
+    tableData.value = res.list
+    total.value = res.total
   } catch (error) {
     ElMessage.error('加载数据失败')
   } finally {
@@ -294,7 +294,7 @@ const loadData = async () => {
 const loadStatistics = async () => {
   try {
     const res = await getChatStatistics()
-    statistics.value = res.data
+    statistics.value = res
   } catch (error) {
     console.error('加载统计数据失败', error)
   }
@@ -342,7 +342,7 @@ const handleUpload = async () => {
 const viewDetail = async (row: any) => {
   try {
     const res = await getChatRecordDetail(row.id)
-    currentDetail.value = res.data
+    currentDetail.value = res
     showDetailDialog.value = true
   } catch (error) {
     ElMessage.error('加载详情失败')
