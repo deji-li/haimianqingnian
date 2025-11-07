@@ -4,7 +4,11 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Customer } from '../../customer/entities/customer.entity';
+import { User } from '../../user/entities/user.entity';
 
 @Entity('ai_chat_records')
 export class AiChatRecord {
@@ -14,8 +18,16 @@ export class AiChatRecord {
   @Column({ name: 'customer_id' })
   customerId: number;
 
+  @ManyToOne(() => Customer)
+  @JoinColumn({ name: 'customer_id' })
+  customer: Customer;
+
   @Column({ name: 'user_id', comment: '上传销售ID' })
   userId: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'user_id' })
+  user: User;
 
   @Column({ name: 'chat_date', type: 'date' })
   chatDate: Date;
