@@ -1,6 +1,9 @@
 # 多阶段构建 - 构建阶段
 FROM node:18-alpine AS builder
 
+# 使用阿里云镜像源加速（国内服务器）
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 # 安装编译工具（bcrypt 需要）
 RUN apk add --no-cache python3 make g++
 
@@ -21,6 +24,9 @@ RUN npm run build
 
 # 生产阶段
 FROM node:18-alpine
+
+# 使用阿里云镜像源加速（国内服务器）
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
 # 安装编译工具（bcrypt 需要）
 RUN apk add --no-cache python3 make g++
