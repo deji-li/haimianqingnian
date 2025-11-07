@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, IsDateString, IsArray, ArrayMinSize } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsArray, ArrayMinSize, IsOptional, IsInt, Min } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export class UploadChatDto {
   @ApiProperty({ description: '客户微信号（销售手动补充）' })
@@ -21,23 +22,42 @@ export class UploadChatDto {
 
 export class QueryChatRecordsDto {
   @ApiProperty({ description: '页码', required: false, default: 1 })
-  page?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  page?: number = 1;
 
   @ApiProperty({ description: '每页数量', required: false, default: 20 })
-  limit?: number;
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  limit?: number = 20;
 
   @ApiProperty({ description: '客户ID', required: false })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
   customerId?: number;
 
   @ApiProperty({ description: '质量等级', required: false, enum: ['A', 'B', 'C', 'D'] })
+  @IsOptional()
+  @IsString()
   qualityLevel?: string;
 
   @ApiProperty({ description: '风险等级', required: false, enum: ['无风险', '低', '中', '高'] })
+  @IsOptional()
+  @IsString()
   riskLevel?: string;
 
   @ApiProperty({ description: '开始日期', required: false })
+  @IsOptional()
+  @IsString()
   startDate?: string;
 
   @ApiProperty({ description: '结束日期', required: false })
+  @IsOptional()
+  @IsString()
   endDate?: string;
 }
