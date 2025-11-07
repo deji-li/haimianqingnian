@@ -13,18 +13,20 @@ export class DoubaoOcrService {
   private readonly httpClient: AxiosInstance;
   private readonly apiKey: string;
   private readonly apiUrl: string;
-  private readonly model: string;
+  private readonly endpointId: string;
 
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.configService.get<string>('DOUBAO_API_KEY');
     this.apiUrl = this.configService.get<string>('DOUBAO_API_URL');
-    this.model = this.configService.get<string>('DOUBAO_OCR_MODEL', 'doubao-vision-pro');
+    this.endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID');
 
+    // 火山方舟视觉模型需要特殊的 header
     this.httpClient = axios.create({
       timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${this.apiKey}`,
+        'x-ark-beta-vision': 'true',  // 视觉模型必需
       },
     });
   }
@@ -41,9 +43,9 @@ export class DoubaoOcrService {
       // 读取图片并转为base64
       const imageBase64 = await this.imageToBase64(imagePath);
 
-      // 调用豆包视觉模型API
+      // 调用豆包视觉模型API（使用 Endpoint ID）
       const response = await this.httpClient.post(this.apiUrl, {
-        model: this.model,
+        model: this.endpointId,
         messages: [
           {
             role: 'system',
@@ -152,7 +154,7 @@ export class DoubaoOcrService {
     try {
       // 简单测试请求
       const response = await this.httpClient.post(this.apiUrl, {
-        model: this.model,
+        model: this.endpointId,
         messages: [
           { role: 'system', content: '你是一个OCR助手' },
           { role: 'user', content: 'Hello' }

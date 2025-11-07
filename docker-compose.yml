@@ -63,7 +63,7 @@ services:
       # 豆包 OCR 配置
       DOUBAO_API_KEY: ${DOUBAO_API_KEY}
       DOUBAO_API_URL: ${DOUBAO_API_URL}
-      DOUBAO_OCR_MODEL: ${DOUBAO_OCR_MODEL}
+      DOUBAO_ENDPOINT_ID: ${DOUBAO_ENDPOINT_ID}
     ports:
       - "3000:3000"
     volumes:
