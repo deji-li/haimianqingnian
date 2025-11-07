@@ -35,6 +35,16 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    // 生产环境移除console
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
   server: {
     port: 5174,
     proxy: {

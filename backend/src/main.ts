@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
@@ -10,13 +10,14 @@ import { seedDatabase } from './database/seed';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   // 初始化数据库种子数据
   try {
     const dataSource = app.get(DataSource);
     await seedDatabase(dataSource);
   } catch (error) {
-    console.error('Failed to seed database:', error);
+    logger.error('Failed to seed database:', error);
   }
 
   // 全局前缀
@@ -44,8 +45,14 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // 启用 CORS
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',')
+    : ['http://localhost', 'http://localhost:80', 'http://localhost:5173'];
+
   app.enableCors({
-    origin: true,
+    origin: process.env.NODE_ENV === 'production'
+      ? allowedOrigins
+      : true,
     credentials: true,
   });
 
@@ -65,8 +72,10 @@ async function bootstrap() {
 
   const port = process.env.APP_PORT || 3000;
   await app.listen(port);
-  console.log(`\n🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 API Documentation: http://localhost:${port}/api\n`);
+  logger.log(`🚀 Application is running on: http://localhost:${port}`);
+  if (process.env.SWAGGER_ENABLE === 'true') {
+    logger.log(`📚 API Documentation: http://localhost:${port}/api`);
+  }
 }
 
 bootstrap();

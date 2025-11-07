@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -6,13 +6,15 @@ import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { QueryOrderDto } from './dto/query-order.dto';
+import { QueryOrderDto } from './dto/query.dto';
 import { CommissionService } from '../commission/commission.service';
 import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
 import { DictionaryService } from '../system/dictionary.service';
 
 @Injectable()
 export class OrderService {
+  private readonly logger = new Logger(OrderService.name);
+
   constructor(
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
@@ -89,7 +91,7 @@ export class OrderService {
         }
       } catch (error) {
         // 提成计算失败不影响订单创建
-        console.error('Failed to calculate commission:', error);
+        this.logger.error('Failed to calculate commission:', error);
       }
     }
 
@@ -132,7 +134,7 @@ export class OrderService {
         }
       } catch (error) {
         // 运营提成创建失败不影响订单创建
-        console.error('Failed to create operation commission:', error);
+        this.logger.error('Failed to create operation commission:', error);
       }
     }
 

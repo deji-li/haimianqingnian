@@ -19,7 +19,7 @@ services:
       - ./backend/init-database.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./backend/init-admin.sql:/docker-entrypoint-initdb.d/02-admin.sql
       - ./backend/init-permissions.sql:/docker-entrypoint-initdb.d/03-permissions.sql
-      - ./backend/init-test-data.sql:/docker-entrypoint-initdb.d/04-test-data.sql
+      - ./backend/init-test-data-fixed.sql:/docker-entrypoint-initdb.d/04-test-data.sql
       # AI模块数据库迁移
       - ./backend/src/database/migrations/003-create-ai-tables.sql:/docker-entrypoint-initdb.d/05-ai-tables.sql
     command:

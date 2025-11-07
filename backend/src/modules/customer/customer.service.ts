@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between } from 'typeorm';
@@ -15,6 +16,8 @@ import { CreateFollowRecordDto } from './dto/create-follow-record.dto';
 
 @Injectable()
 export class CustomerService {
+  private readonly logger = new Logger(CustomerService.name);
+
   constructor(
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
@@ -377,10 +380,10 @@ export class CustomerService {
 
     const results = await qb.getRawMany();
 
-    console.log('[getPendingFollowUps] 查询结果数量:', results.length);
+    this.logger.debug(`[getPendingFollowUps] 查询结果数量: ${results.length}`);
     if (results.length > 0) {
-      console.log('[getPendingFollowUps] 原始字段列表:', Object.keys(results[0]).join(', '));
-      console.log('[getPendingFollowUps] 第一条原始数据:', JSON.stringify(results[0]));
+      this.logger.debug(`[getPendingFollowUps] 原始字段列表: ${Object.keys(results[0]).join(', ')}`);
+      this.logger.debug(`[getPendingFollowUps] 第一条原始数据: ${JSON.stringify(results[0])}`);
     }
 
     const mapped = results.map((item) => ({
