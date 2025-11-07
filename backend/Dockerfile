@@ -1,6 +1,9 @@
 # 多阶段构建 - 构建阶段
 FROM node:18-alpine AS builder
 
+# 安装编译工具（bcrypt 需要）
+RUN apk add --no-cache python3 make g++
+
 # 设置工作目录
 WORKDIR /app
 
@@ -18,6 +21,9 @@ RUN npm run build
 
 # 生产阶段
 FROM node:18-alpine
+
+# 安装编译工具（bcrypt 需要）
+RUN apk add --no-cache python3 make g++
 
 # 设置工作目录
 WORKDIR /app
