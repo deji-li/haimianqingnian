@@ -71,7 +71,7 @@ echo.
 echo After deployment, you need to configure:
 echo    1. SSH login to server
 echo    2. Edit /var/www/crm/.env
-echo    3. Add DEEPSEEK_API_KEY=your_key
+echo    3. Add DEEPSEEK_API_KEY and DOUBAO_API_KEY
 echo    4. Restart backend: docker-compose restart backend
 echo.
 echo See UPDATE-DEPLOYMENT.md for details

@@ -52,10 +52,17 @@
 3. 编辑环境变量
    vim .env
 
-   添加以下3行（替换为你的实际API密钥）：
+   添加以下配置（替换为你的实际API密钥）：
+
+   # DeepSeek AI配置
    DEEPSEEK_API_KEY=sk-你的API密钥
    DEEPSEEK_API_URL=https://api.deepseek.com/v1/chat/completions
    DEEPSEEK_MODEL=deepseek-chat
+
+   # 豆包OCR配置
+   DOUBAO_API_KEY=你的豆包API密钥
+   DOUBAO_API_URL=https://ark.cn-beijing.volces.com/api/v3
+   DOUBAO_OCR_MODEL=doubao-vision-pro
 
 4. 重启后端服务
    docker-compose restart backend
@@ -66,13 +73,21 @@
    (应该看到3个容器都是Up状态)
 
 ===============================================
-  获取DeepSeek API密钥
+  获取API密钥
 ===============================================
 
+【DeepSeek API密钥】
 1. 访问：https://platform.deepseek.com
 2. 注册/登录账号
 3. 进入 API Keys 页面
 4. 点击"创建新密钥"
+5. 复制密钥到.env文件
+
+【豆包 API密钥】
+1. 访问：https://console.volcengine.com/ark
+2. 注册/登录账号（字节跳动火山引擎）
+3. 创建推理接入点
+4. 获取API Key
 5. 复制密钥到.env文件
 
 ===============================================
