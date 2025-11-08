@@ -170,12 +170,13 @@ export class AiChatService {
   }
 
   /**
-   * 根据AI分析结果更新客户意向等级
+   * 根据AI分析结果更新客户画像和意向等级
    */
   private async updateCustomerIntent(customerId: number, analysisResult: any) {
     try {
-      const { intentionScore, qualityLevel } = analysisResult;
+      const { intentionScore, qualityLevel, customerProfile, estimatedValue } = analysisResult;
 
+      // 1. 计算客户意向等级
       let newIntent = '中';
       if (qualityLevel === 'A' || intentionScore >= 80) {
         newIntent = '高';
@@ -183,13 +184,60 @@ export class AiChatService {
         newIntent = '低';
       }
 
-      await this.customerRepository.update(customerId, {
+      // 2. 准备更新数据
+      const updateData: any = {
         customerIntent: newIntent as any,
-      });
+        qualityLevel,
+        estimatedValue,
+        lastAiAnalysisTime: new Date(),
+      };
 
-      this.logger.log(`客户意向已更新: ${customerId} -> ${newIntent}`);
+      // 3. 同步客户画像信息（如果AI分析出来了）
+      if (customerProfile) {
+        if (customerProfile.studentGrade) {
+          updateData.studentGrade = customerProfile.studentGrade;
+        }
+        if (customerProfile.studentAge) {
+          updateData.studentAge = customerProfile.studentAge;
+        }
+        if (customerProfile.familyEconomicLevel) {
+          updateData.familyEconomicLevel = customerProfile.familyEconomicLevel;
+        }
+        if (customerProfile.decisionMakerRole) {
+          updateData.decisionMakerRole = customerProfile.decisionMakerRole;
+        }
+        if (customerProfile.parentRole) {
+          updateData.parentRole = customerProfile.parentRole;
+        }
+        if (customerProfile.location) {
+          updateData.location = customerProfile.location;
+        }
+      }
+
+      // 4. 保存详细的AI分析信息到JSON字段（需求、痛点、兴趣等）
+      updateData.aiProfile = {
+        needs: analysisResult.customerNeeds || [],
+        painPoints: analysisResult.customerPainPoints || [],
+        interests: analysisResult.customerInterests || [],
+        objections: analysisResult.customerObjections || [],
+        competitors: analysisResult.competitorMentioned || [],
+        mindset: analysisResult.customerMindset,
+        emotionalTone: analysisResult.emotionalTone,
+        trustLevel: analysisResult.trustLevel,
+        dealOpportunity: analysisResult.dealOpportunity,
+        urgency: analysisResult.urgency,
+        estimatedCycle: analysisResult.estimatedCycle,
+      };
+
+      // 5. 更新到数据库
+      await this.customerRepository.update(customerId, updateData);
+
+      this.logger.log(
+        `客户画像已同步: ID=${customerId}, 意向=${newIntent}, 等级=${qualityLevel}, ` +
+        `年级=${updateData.studentGrade || '未知'}, 预估=${estimatedValue || 0}元`,
+      );
     } catch (error) {
-      this.logger.error(`更新客户意向失败: ${error.message}`);
+      this.logger.error(`更新客户画像失败: ${error.message}`);
     }
   }
 

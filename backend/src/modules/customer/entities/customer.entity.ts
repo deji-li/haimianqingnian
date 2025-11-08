@@ -78,6 +78,50 @@ export class Customer {
   @Column({ type: 'text', nullable: true })
   remark: string;
 
+  // ========== AI分析字段 ==========
+  @Column({ name: 'student_grade', length: 50, nullable: true, comment: '学生年级' })
+  studentGrade: string;
+
+  @Column({ name: 'student_age', type: 'int', nullable: true, comment: '学生年龄' })
+  studentAge: number;
+
+  @Column({
+    name: 'family_economic_level',
+    type: 'enum',
+    enum: ['高', '中', '低'],
+    nullable: true,
+    comment: '家庭经济水平',
+  })
+  familyEconomicLevel: string;
+
+  @Column({ name: 'decision_maker_role', length: 100, nullable: true, comment: '决策角色' })
+  decisionMakerRole: string;
+
+  @Column({ name: 'parent_role', length: 50, nullable: true, comment: '家长身份' })
+  parentRole: string;
+
+  @Column({ name: 'location', length: 100, nullable: true, comment: '所在地区' })
+  location: string;
+
+  @Column({ name: 'estimated_value', type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '预估成交金额' })
+  estimatedValue: number;
+
+  @Column({
+    name: 'quality_level',
+    type: 'enum',
+    enum: ['A', 'B', 'C', 'D'],
+    nullable: true,
+    comment: 'AI评估质量等级',
+  })
+  qualityLevel: string;
+
+  @Column({ name: 'ai_profile', type: 'json', nullable: true, comment: 'AI分析的客户画像（需求、痛点、兴趣等）' })
+  aiProfile: any;
+
+  @Column({ name: 'last_ai_analysis_time', type: 'datetime', nullable: true, comment: '最后一次AI分析时间' })
+  lastAiAnalysisTime: Date;
+  // ========== AI分析字段结束 ==========
+
   @CreateDateColumn({ name: 'create_time' })
   createTime: Date;
 
