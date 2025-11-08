@@ -123,24 +123,24 @@ export class AuthService {
   async getUserInfo(userId: number) {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoin('roles', 'role', 'user.role_id = role.id')
-      .leftJoin('department', 'dept', 'user.department_id = dept.id')
-      .leftJoin('campus', 'campus', 'user.campus_id = campus.id')
+      .leftJoin('roles', 'role', 'user.roleId = role.id')
+      .leftJoin('department', 'dept', 'user.departmentId = dept.id')
+      .leftJoin('campus', 'campus', 'user.campusId = campus.id')
       .where('user.id = :id', { id: userId })
       .select([
-        'user.id AS user_id',
-        'user.username AS user_username',
-        'user.real_name AS user_real_name',
-        'user.phone AS user_phone',
-        'user.email AS user_email',
-        'user.role_id AS user_role_id',
-        'user.department_id AS user_department_id',
-        'user.campus_id AS user_campus_id',
-        'user.avatar AS user_avatar',
-        'role.code AS role_code',
-        'role.name AS role_name',
-        'dept.department_name AS dept_name',
-        'campus.campus_name AS campus_name',
+        'user.id',
+        'user.username',
+        'user.realName',
+        'user.phone',
+        'user.email',
+        'user.roleId',
+        'user.departmentId',
+        'user.campusId',
+        'user.avatar',
+        'role.code as roleCode',
+        'role.name as roleName',
+        'dept.departmentName as deptName',
+        'campus.campusName as campusName',
       ])
       .getRawOne();
 
@@ -149,21 +149,21 @@ export class AuthService {
     }
 
     // 获取用户权限
-    const permissions = await this.getUserPermissions(user.user_role_id, user.role_code);
+    const permissions = await this.getUserPermissions(user.user_roleId, user.roleCode);
 
     return {
       id: user.user_id,
       username: user.user_username,
-      realName: user.user_real_name,
+      realName: user.user_realName,
       phone: user.user_phone,
       email: user.user_email,
-      roleId: user.user_role_id,
-      roleCode: user.role_code,
-      roleName: user.role_name,
-      departmentId: user.user_department_id,
-      departmentName: user.dept_name,
-      campusId: user.user_campus_id,
-      campusName: user.campus_name,
+      roleId: user.user_roleId,
+      roleCode: user.roleCode,
+      roleName: user.roleName,
+      departmentId: user.user_departmentId,
+      departmentName: user.deptName,
+      campusId: user.user_campusId,
+      campusName: user.campusName,
       avatar: user.user_avatar,
       permissions,
     };
