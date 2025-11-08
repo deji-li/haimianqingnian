@@ -101,7 +101,7 @@
     <el-dialog v-model="showAddDialog" :title="editingKnowledge ? '编辑知识' : '添加知识'" width="600px">
       <el-form :model="knowledgeForm" :rules="knowledgeRules" ref="knowledgeFormRef" label-width="100px">
         <el-form-item label="分类" prop="category">
-          <el-select v-model="knowledgeForm.category" placeholder="选择分类" allow-create filterable>
+          <el-select v-model="knowledgeForm.category" placeholder="选择现有分类或输入新分类名称" allow-create filterable>
             <el-option
               v-for="cat in categories"
               :key="cat.category"
@@ -109,6 +109,9 @@
               :value="cat.category"
             />
           </el-select>
+          <div style="color: #909399; font-size: 12px; margin-top: 5px;">
+            💡 提示：可以直接输入新分类名称来创建新分类
+          </div>
         </el-form-item>
         <el-form-item label="标题" prop="title">
           <el-input v-model="knowledgeForm.title" placeholder="输入标题" />

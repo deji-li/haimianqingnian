@@ -13,6 +13,7 @@
           start-placeholder="开始日期"
           end-placeholder="结束日期"
           @change="loadData"
+          style="max-width: 320px;"
         />
       </div>
     </el-card>
