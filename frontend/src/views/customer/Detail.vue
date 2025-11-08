@@ -215,7 +215,7 @@
                 link
                 size="small"
                 style="margin-top: 10px"
-                @click="router.push('/ai/chat-analysis')"
+                @click="goToAiChatAnalysis"
               >
                 查看详细分析
               </el-button>
@@ -768,9 +768,10 @@ const handleGenerateScript = async (scriptType: string) => {
   }
 }
 
-// 跳转到AI聊天分析页面
+// 跳转到AI聊天分析页面（带客户ID筛选）
 const goToAiChatAnalysis = () => {
-  router.push('/ai/chat-analysis')
+  const customerId = Number(route.params.id)
+  router.push(`/ai/chat-analysis?customerId=${customerId}`)
 }
 
 // 返回

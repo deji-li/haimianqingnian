@@ -336,10 +336,10 @@ export class AiTagsService {
   }
 
   /**
-   * 查询客户标签
+   * 查询客户标签（去重，只保留每个标签类别+名称的最新记录）
    */
   async findByCustomer(customerId: number) {
-    const tags = await this.aiTagRepository.find({
+    const allTags = await this.aiTagRepository.find({
       where: {
         customerId,
         isActive: 1,
@@ -348,6 +348,17 @@ export class AiTagsService {
         createTime: 'DESC',
       },
     });
+
+    // 去重：对于相同的 tagCategory + tagName 组合，只保留最新的一条
+    const tagMap = new Map<string, AiCustomerTag>();
+    allTags.forEach(tag => {
+      const key = `${tag.tagCategory}:${tag.tagName}`;
+      if (!tagMap.has(key)) {
+        tagMap.set(key, tag);
+      }
+    });
+
+    const tags = Array.from(tagMap.values());
 
     // 按分类分组
     const groupedTags = tags.reduce((acc, tag) => {
