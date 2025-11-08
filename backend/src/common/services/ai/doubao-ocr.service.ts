@@ -127,23 +127,32 @@ export class DoubaoOcrService {
 
   /**
    * 将图片转为base64编码
-   * @param imagePath 图片路径
+   * @param imagePath 图片路径或URL
    * @returns base64字符串
    */
   private async imageToBase64(imagePath: string): Promise<string> {
     try {
       // 如果是URL，先下载
       if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-        const response = await axios.get(imagePath, { responseType: 'arraybuffer' });
+        this.logger.log(`从URL下载图片: ${imagePath}`);
+        const response = await axios.get(imagePath, {
+          responseType: 'arraybuffer',
+          timeout: 10000,
+          maxContentLength: 10 * 1024 * 1024, // 10MB
+        });
         return Buffer.from(response.data, 'binary').toString('base64');
       }
 
       // 本地文件直接读取
-      const imageBuffer = fs.readFileSync(imagePath);
-      return imageBuffer.toString('base64');
+      if (fs.existsSync(imagePath)) {
+        const imageBuffer = fs.readFileSync(imagePath);
+        return imageBuffer.toString('base64');
+      }
+
+      throw new Error(`图片路径不存在: ${imagePath}`);
 
     } catch (error) {
-      this.logger.error(`图片转base64失败: ${error.message}`);
+      this.logger.error(`图片转base64失败: ${imagePath}, 错误: ${error.message}`);
       throw new Error(`图片读取失败: ${error.message}`);
     }
   }

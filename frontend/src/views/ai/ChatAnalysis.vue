@@ -315,9 +315,32 @@ const handleUpload = async () => {
 
     uploading.value = true
     try {
-      // 这里简化处理，实际需要先上传图片获取URL
-      const imageUrls = uploadForm.images.map((file: any) => file.url || file.name)
+      // 1. 先上传图片到服务器
+      const imageUrls: string[] = []
+      for (const fileObj of uploadForm.images) {
+        const formData = new FormData()
+        formData.append('file', fileObj.raw)
+        formData.append('category', 'ai_chat')
 
+        const uploadRes = await fetch('/api/upload', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          },
+          body: formData
+        })
+
+        if (!uploadRes.ok) {
+          throw new Error('图片上传失败')
+        }
+
+        const uploadData = await uploadRes.json()
+        // 使用完整的服务器URL
+        const fullUrl = window.location.origin + uploadData.data.url
+        imageUrls.push(fullUrl)
+      }
+
+      // 2. 调用AI分析接口
       await uploadChatRecord({
         wechatId: uploadForm.wechatId,
         chatDate: uploadForm.chatDate,
