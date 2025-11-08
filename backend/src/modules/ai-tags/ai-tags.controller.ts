@@ -26,7 +26,7 @@ export class AiTagsController {
   @ApiOperation({ summary: '手动添加标签' })
   @RequirePermissions('ai:tag:edit')
   async create(@Body() createTagDto: CreateTagDto, @Request() req) {
-    return this.aiTagsService.create(createTagDto, req.user.userId);
+    return this.aiTagsService.create(createTagDto, req.user.id);
   }
 
   @Get('customer/:customerId')

@@ -22,7 +22,7 @@ export class DashboardController {
 
     if (userRoleCode === 'operator' || userRoleCode === 'operator_manager') {
       // 运营人员看板
-      return this.dashboardService.getOperatorDashboard(req.user.userId);
+      return this.dashboardService.getOperatorDashboard(req.user.id);
     } else {
       // 销售人员看板（默认）
       return this.dashboardService.getOverview(req.dataScope);

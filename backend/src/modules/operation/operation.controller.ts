@@ -46,7 +46,7 @@ export class OperationController {
       !req.user.permissions.includes('operation:analytics:all') &&
       !req.user.permissions.includes('admin:all')
     ) {
-      query.operatorId = req.user.userId;
+      query.operatorId = req.user.id;
     }
     return await this.operationService.findAllAccounts(query);
   }
@@ -79,7 +79,7 @@ export class OperationController {
       !req.user.permissions.includes('operation:analytics:all') &&
       !req.user.permissions.includes('admin:all')
     ) {
-      dto.operatorId = req.user.userId;
+      dto.operatorId = req.user.id;
     }
     return await this.operationService.createDailyReport(dto);
   }
@@ -92,7 +92,7 @@ export class OperationController {
       !req.user.permissions.includes('operation:analytics:all') &&
       !req.user.permissions.includes('admin:all')
     ) {
-      query.operatorId = req.user.userId;
+      query.operatorId = req.user.id;
     }
     return await this.operationService.findAllDailyReports(query);
   }
@@ -125,7 +125,7 @@ export class OperationController {
       !req.user.permissions.includes('operation:analytics:all') &&
       !req.user.permissions.includes('admin:all')
     ) {
-      query.operatorId = req.user.userId;
+      query.operatorId = req.user.id;
     }
     return await this.operationService.findAllCommissions(query);
   }
@@ -138,7 +138,7 @@ export class OperationController {
     @Request() req,
   ) {
     // 记录审核人
-    dto.approverId = req.user.userId;
+    dto.approverId = req.user.id;
     return await this.operationService.updateCommissionStatus(id, dto);
   }
 
@@ -156,9 +156,9 @@ export class OperationController {
     if (
       !req.user.permissions.includes('operation:analytics:all') &&
       !req.user.permissions.includes('admin:all') &&
-      req.user.userId !== operatorId
+      req.user.id !== operatorId
     ) {
-      operatorId = req.user.userId;
+      operatorId = req.user.id;
     }
     return await this.operationService.getOperatorStats(operatorId, startDate, endDate);
   }

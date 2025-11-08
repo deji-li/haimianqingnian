@@ -27,7 +27,7 @@ export class AiChatController {
   @ApiResponse({ status: 201, description: '上传成功，AI分析中' })
   @RequirePermissions('ai:chat:upload')
   async upload(@Body() uploadDto: UploadChatDto, @Request() req) {
-    return this.aiChatService.uploadAndAnalyze(uploadDto, req.user.userId);
+    return this.aiChatService.uploadAndAnalyze(uploadDto, req.user.id);
   }
 
   @Get('list')
@@ -36,8 +36,8 @@ export class AiChatController {
   async findAll(@Query() query: QueryChatRecordsDto, @Request() req) {
     return this.aiChatService.findAll(
       query,
-      req.user.userId,
-      req.user.role,
+      req.user.id,
+      req.user.roleCode,
     );
   }
 
@@ -46,8 +46,8 @@ export class AiChatController {
   @RequirePermissions('ai:chat:view')
   async getStatistics(@Request() req) {
     return this.aiChatService.getStatistics(
-      req.user.userId,
-      req.user.role,
+      req.user.id,
+      req.user.roleCode,
     );
   }
 

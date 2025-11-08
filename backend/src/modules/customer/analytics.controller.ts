@@ -93,6 +93,6 @@ export class AnalyticsController {
   @Get('personal-stats')
   @ApiOperation({ summary: '获取销售人员个人统计数据' })
   getPersonalStats(@Request() req) {
-    return this.analyticsService.getSalesPersonalStats(req.user.userId);
+    return this.analyticsService.getSalesPersonalStats(req.user.id);
   }
 }

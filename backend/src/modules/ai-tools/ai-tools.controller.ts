@@ -55,8 +55,8 @@ export class AiToolsController {
   @RequirePermissions('ai:risk:view')
   async getPendingRiskAlerts(@Request() req) {
     return this.aiToolsService.getPendingRiskAlerts(
-      req.user.userId,
-      req.user.role,
+      req.user.id,
+      req.user.roleCode,
     );
   }
 
@@ -68,7 +68,7 @@ export class AiToolsController {
     @Body('handleResult') handleResult: string,
     @Request() req,
   ) {
-    return this.aiToolsService.handleRiskAlert(id, req.user.userId, handleResult);
+    return this.aiToolsService.handleRiskAlert(id, req.user.id, handleResult);
   }
 
   // ==================== 客户复苏 ====================
@@ -87,7 +87,7 @@ export class AiToolsController {
     @Body('scenario') scenario: string,
     @Request() req,
   ) {
-    return this.aiToolsService.startTrainingSession(req.user.userId, scenario);
+    return this.aiToolsService.startTrainingSession(req.user.id, scenario);
   }
 
   @Post('training/:id/chat')
@@ -122,7 +122,7 @@ export class AiToolsController {
     @Request() req,
     @Query('contentType') contentType?: string,
   ) {
-    return this.aiToolsService.getMarketingContentHistory(req.user.userId, contentType);
+    return this.aiToolsService.getMarketingContentHistory(req.user.id, contentType);
   }
 
   // ==================== AI人效分析 ====================

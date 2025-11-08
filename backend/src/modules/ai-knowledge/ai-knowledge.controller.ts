@@ -32,14 +32,14 @@ export class AiKnowledgeController {
   @ApiOperation({ summary: '创建知识库条目' })
   @RequirePermissions('ai:knowledge:create')
   async create(@Body() createDto: CreateKnowledgeDto, @Request() req) {
-    return this.aiKnowledgeService.create(createDto, req.user.userId);
+    return this.aiKnowledgeService.create(createDto, req.user.id);
   }
 
   @Post('batch-import')
   @ApiOperation({ summary: '批量导入知识库' })
   @RequirePermissions('ai:knowledge:create')
   async batchImport(@Body() knowledgeList: CreateKnowledgeDto[], @Request() req) {
-    return this.aiKnowledgeService.batchImport(knowledgeList, req.user.userId);
+    return this.aiKnowledgeService.batchImport(knowledgeList, req.user.id);
   }
 
   @Post('search')
