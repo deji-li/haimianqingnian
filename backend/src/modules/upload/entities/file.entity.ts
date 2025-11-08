@@ -27,7 +27,7 @@ export class File {
 
   @Column({
     type: 'enum',
-    enum: ['avatar', 'customer_attachment', 'order_contract', 'other'],
+    enum: ['avatar', 'customer_attachment', 'order_contract', 'ai_chat', 'other'],
     comment: '文件用途',
   })
   category: string;

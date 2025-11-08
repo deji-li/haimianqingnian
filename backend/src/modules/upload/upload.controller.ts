@@ -37,6 +37,7 @@ const ALLOWED_TYPES = {
   avatar: ['image/jpeg', 'image/png', 'image/gif'],
   customer_attachment: ['image/*', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   order_contract: ['application/pdf', 'image/*'],
+  ai_chat: ['image/*'],
   other: ['*'],
 };
 
