@@ -736,7 +736,7 @@ const fetchLatestAiAnalysis = async () => {
       page: 1,
       limit: 1,
     })
-    if (res.data.list && res.data.list.length > 0) {
+    if (res.data?.list && res.data.list.length > 0) {
       latestAiAnalysis.value = res.data.list[0]
     }
   } catch (error) {
