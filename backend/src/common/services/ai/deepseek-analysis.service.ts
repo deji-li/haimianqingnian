@@ -77,6 +77,11 @@ export class DeepseekAnalysisService {
     this.apiUrl = this.configService.get<string>('DEEPSEEK_API_URL');
     this.model = this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-chat');
 
+    // 检查配置
+    if (!this.apiKey || this.apiKey.includes('your_')) {
+      this.logger.warn('DeepSeek API密钥未配置，AI分析功能将不可用');
+    }
+
     this.httpClient = axios.create({
       timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
       headers: {

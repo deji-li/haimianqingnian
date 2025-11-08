@@ -20,6 +20,14 @@ export class DoubaoOcrService {
     this.apiUrl = this.configService.get<string>('DOUBAO_API_URL');
     this.endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID');
 
+    // 检查配置
+    if (!this.apiKey || this.apiKey.includes('your_')) {
+      this.logger.warn('豆包API密钥未配置，OCR功能将不可用');
+    }
+    if (!this.endpointId || this.endpointId.includes('your_')) {
+      this.logger.warn('豆包端点ID未配置，OCR功能将不可用');
+    }
+
     // 火山方舟视觉模型需要特殊的 header
     this.httpClient = axios.create({
       timeout: this.configService.get<number>('AI_TIMEOUT', 30000),

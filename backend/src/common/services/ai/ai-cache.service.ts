@@ -71,6 +71,11 @@ export class AiCacheService {
    */
   async getOcrCache(imagePath: string): Promise<string | null> {
     try {
+      if (!this.redisClient || !this.redisClient.isOpen) {
+        this.logger.warn('Redis未连接，跳过缓存');
+        return null;
+      }
+
       const key = this.generateCacheKey('ocr', imagePath);
       const cached = await this.redisClient.get(key);
 
@@ -93,6 +98,11 @@ export class AiCacheService {
    */
   async setOcrCache(imagePath: string, ocrText: string, ttl?: number): Promise<void> {
     try {
+      if (!this.redisClient || !this.redisClient.isOpen) {
+        this.logger.warn('Redis未连接，跳过缓存');
+        return;
+      }
+
       const key = this.generateCacheKey('ocr', imagePath);
       await this.redisClient.setEx(key, ttl || this.cacheTTL, ocrText);
       this.logger.log(`OCR缓存已保存: ${imagePath}`);
@@ -107,6 +117,11 @@ export class AiCacheService {
    */
   async getAnalysisCache(chatText: string): Promise<any | null> {
     try {
+      if (!this.redisClient || !this.redisClient.isOpen) {
+        this.logger.warn('Redis未连接，跳过缓存');
+        return null;
+      }
+
       const key = this.generateCacheKey('analysis', chatText);
       const cached = await this.redisClient.get(key);
 
@@ -130,6 +145,11 @@ export class AiCacheService {
    */
   async setAnalysisCache(chatText: string, analysisResult: any, ttl?: number): Promise<void> {
     try {
+      if (!this.redisClient || !this.redisClient.isOpen) {
+        this.logger.warn('Redis未连接，跳过缓存');
+        return;
+      }
+
       const key = this.generateCacheKey('analysis', chatText);
       await this.redisClient.setEx(
         key,
