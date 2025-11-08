@@ -162,7 +162,7 @@
               <el-tag
                 v-for="tag in aiTags.slice(0, 10)"
                 :key="tag.id"
-                :type="getTagType(tag.category)"
+                :type="getTagType(tag.tagCategory)"
                 style="margin-right: 8px; margin-bottom: 8px"
                 size="default"
               >
