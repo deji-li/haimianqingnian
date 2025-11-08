@@ -14,11 +14,13 @@ export class DoubaoOcrService {
   private readonly apiKey: string;
   private readonly apiUrl: string;
   private readonly endpointId: string;
+  private readonly imageDownloadTimeout: number;
 
   constructor(private readonly configService: ConfigService) {
     this.apiKey = this.configService.get<string>('DOUBAO_API_KEY');
     this.apiUrl = this.configService.get<string>('DOUBAO_API_URL');
     this.endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID');
+    this.imageDownloadTimeout = this.configService.get<number>('IMAGE_DOWNLOAD_TIMEOUT', 30000);
 
     // 检查配置
     if (!this.apiKey || this.apiKey.includes('your_')) {
@@ -137,7 +139,7 @@ export class DoubaoOcrService {
         this.logger.log(`从URL下载图片: ${imagePath}`);
         const response = await axios.get(imagePath, {
           responseType: 'arraybuffer',
-          timeout: 10000,
+          timeout: this.imageDownloadTimeout,
           maxContentLength: 10 * 1024 * 1024, // 10MB
         });
         return Buffer.from(response.data, 'binary').toString('base64');
