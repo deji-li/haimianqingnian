@@ -719,7 +719,7 @@ const fetchAiTags = async () => {
 
   try {
     const res = await getCustomerTags(customerId)
-    aiTags.value = res.data?.tags || []
+    aiTags.value = res?.tags || []
   } catch (error) {
     console.error('Failed to fetch AI tags:', error)
   }
@@ -736,8 +736,8 @@ const fetchLatestAiAnalysis = async () => {
       page: 1,
       limit: 1,
     })
-    if (res.data?.list && res.data.list.length > 0) {
-      latestAiAnalysis.value = res.data.list[0]
+    if (res?.list && res.list.length > 0) {
+      latestAiAnalysis.value = res.list[0]
     }
   } catch (error) {
     console.error('Failed to fetch latest AI analysis:', error)
