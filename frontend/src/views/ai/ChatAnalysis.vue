@@ -226,6 +226,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Plus } from '@element-plus/icons-vue'
 import {
+  uploadFile,
   uploadChatRecord,
   getChatRecordList,
   getChatRecordDetail,
@@ -318,25 +319,9 @@ const handleUpload = async () => {
       // 1. 先上传图片到服务器
       const imageUrls: string[] = []
       for (const fileObj of uploadForm.images) {
-        const formData = new FormData()
-        formData.append('file', fileObj.raw)
-        formData.append('category', 'ai_chat')
-
-        const uploadRes = await fetch('/api/upload', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          },
-          body: formData
-        })
-
-        if (!uploadRes.ok) {
-          throw new Error('图片上传失败')
-        }
-
-        const uploadData = await uploadRes.json()
+        const uploadRes = await uploadFile(fileObj.raw, 'ai_chat')
         // 使用完整的服务器URL
-        const fullUrl = window.location.origin + uploadData.data.url
+        const fullUrl = window.location.origin + uploadRes.url
         imageUrls.push(fullUrl)
       }
 

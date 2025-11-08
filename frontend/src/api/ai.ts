@@ -1,5 +1,21 @@
 import request from '@/utils/request'
 
+// ==================== 文件上传 ====================
+export function uploadFile(file: File, category: string = 'ai_chat') {
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('category', category)
+
+  return request({
+    url: '/upload',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}
+
 // ==================== AI聊天记录分析 ====================
 export function uploadChatRecord(data: any) {
   return request({
