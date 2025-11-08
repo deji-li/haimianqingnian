@@ -84,6 +84,48 @@
         </el-descriptions-item>
         <el-descriptions-item label="跟进次数">{{ customerInfo.followRecordCount || 0 }} 次</el-descriptions-item>
 
+        <!-- AI分析字段 -->
+        <el-descriptions-item label="学生年级" v-if="customerInfo.studentGrade">
+          <el-tag type="primary">{{ customerInfo.studentGrade }}</el-tag>
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="学生年龄" v-if="customerInfo.studentAge">
+          {{ customerInfo.studentAge }}岁
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="家庭经济" v-if="customerInfo.familyEconomicLevel">
+          <el-tag :type="customerInfo.familyEconomicLevel === '高' ? 'success' : customerInfo.familyEconomicLevel === '中' ? 'warning' : 'info'">
+            {{ customerInfo.familyEconomicLevel }}
+          </el-tag>
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="质量等级" v-if="customerInfo.qualityLevel">
+          <el-tag :type="getQualityType(customerInfo.qualityLevel)">{{ customerInfo.qualityLevel }}级</el-tag>
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI评估"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="预估价值" v-if="customerInfo.estimatedValue">
+          ¥{{ customerInfo.estimatedValue }}
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI评估"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="决策角色" v-if="customerInfo.decisionMakerRole">
+          {{ customerInfo.decisionMakerRole }}
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+
+        <el-descriptions-item label="所在地区" v-if="customerInfo.location">
+          {{ customerInfo.location }}
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="家长身份" v-if="customerInfo.parentRole">
+          {{ customerInfo.parentRole }}
+          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+        </el-descriptions-item>
+        <el-descriptions-item label="AI分析时间" v-if="customerInfo.lastAiAnalysisTime">
+          {{ formatDateTime(customerInfo.lastAiAnalysisTime) }}
+        </el-descriptions-item>
+        <!-- AI分析字段结束 -->
+
         <el-descriptions-item label="创建时间" :span="2">
           {{ formatDateTime(customerInfo.createTime) }}
         </el-descriptions-item>
