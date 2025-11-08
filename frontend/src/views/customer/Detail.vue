@@ -719,7 +719,7 @@ const fetchAiTags = async () => {
 
   try {
     const res = await getCustomerTags(customerId)
-    aiTags.value = res.data || []
+    aiTags.value = res.data?.tags || []
   } catch (error) {
     console.error('Failed to fetch AI tags:', error)
   }
