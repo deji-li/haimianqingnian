@@ -74,21 +74,21 @@ export class AuthService {
     const token = this.jwtService.sign(payload);
 
     // 获取用户权限
-    const permissions = await this.getUserPermissions(user.user_roleId, user.roleCode);
+    const permissions = await this.getUserPermissions(user.user_role_id, user.roleCode);
 
     return {
       access_token: token,
       user: {
         id: user.user_id,
         username: user.user_username,
-        realName: user.user_realName,
+        realName: user.user_real_name,
         phone: user.user_phone,
         email: user.user_email,
-        roleId: user.user_roleId,
+        roleId: user.user_role_id,
         roleCode: user.roleCode,
         roleName: user.roleName,
-        departmentId: user.user_departmentId,
-        campusId: user.user_campusId,
+        departmentId: user.user_department_id,
+        campusId: user.user_campus_id,
         avatar: user.user_avatar,
         permissions,
       },
@@ -149,20 +149,20 @@ export class AuthService {
     }
 
     // 获取用户权限
-    const permissions = await this.getUserPermissions(user.user_roleId, user.roleCode);
+    const permissions = await this.getUserPermissions(user.user_role_id, user.roleCode);
 
     return {
       id: user.user_id,
       username: user.user_username,
-      realName: user.user_realName,
+      realName: user.user_real_name,
       phone: user.user_phone,
       email: user.user_email,
-      roleId: user.user_roleId,
+      roleId: user.user_role_id,
       roleCode: user.roleCode,
       roleName: user.roleName,
-      departmentId: user.user_departmentId,
+      departmentId: user.user_department_id,
       departmentName: user.deptName,
-      campusId: user.user_campusId,
+      campusId: user.user_campus_id,
       campusName: user.campusName,
       avatar: user.user_avatar,
       permissions,

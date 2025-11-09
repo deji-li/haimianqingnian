@@ -176,6 +176,7 @@
                 link
                 type="primary"
                 size="small"
+                @click="showAllTagsDialog = true"
               >
                 查看全部 {{ aiTags.length }} 个标签
               </el-button>
@@ -552,6 +553,31 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 查看全部AI标签对话框 -->
+    <el-dialog
+      v-model="showAllTagsDialog"
+      title="全部AI客户标签"
+      width="600px"
+    >
+      <div class="all-tags-container">
+        <el-tag
+          v-for="tag in aiTags"
+          :key="tag.id"
+          :type="getTagType(tag.tagCategory)"
+          style="margin-right: 8px; margin-bottom: 8px"
+          size="default"
+        >
+          {{ tag.tagName }}
+          <span v-if="tag.confidence" class="confidence">
+            ({{ Math.round(tag.confidence * 100) }}%)
+          </span>
+        </el-tag>
+      </div>
+      <template #footer>
+        <el-button @click="showAllTagsDialog = false">关闭</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -641,6 +667,7 @@ const followFormRules: FormRules = {
 const stageDialogVisible = ref(false)
 const stageSubmitLoading = ref(false)
 const stageFormRef = ref<FormInstance>()
+const showAllTagsDialog = ref(false)
 
 const stageFormData = reactive({
   stage: '',
