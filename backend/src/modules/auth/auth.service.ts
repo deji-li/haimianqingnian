@@ -26,18 +26,18 @@ export class AuthService {
     // 查询用户（包含角色信息）
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoinAndSelect('roles', 'role', 'user.role_id = role.id')
+      .leftJoin('roles', 'role', 'user.role_id = role.id')
       .where('user.username = :username', { username })
       .select([
         'user.id',
         'user.username',
         'user.password',
-        'user.realName',
+        'user.real_name',
         'user.phone',
         'user.email',
-        'user.roleId',
-        'user.departmentId',
-        'user.campusId',
+        'user.role_id',
+        'user.department_id',
+        'user.campus_id',
         'user.avatar',
         'user.status',
         'role.code as roleCode',
@@ -123,24 +123,24 @@ export class AuthService {
   async getUserInfo(userId: number) {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoin('roles', 'role', 'user.roleId = role.id')
-      .leftJoin('department', 'dept', 'user.departmentId = dept.id')
-      .leftJoin('campus', 'campus', 'user.campusId = campus.id')
+      .leftJoin('roles', 'role', 'user.role_id = role.id')
+      .leftJoin('department', 'dept', 'user.department_id = dept.id')
+      .leftJoin('campus', 'campus', 'user.campus_id = campus.id')
       .where('user.id = :id', { id: userId })
       .select([
         'user.id',
         'user.username',
-        'user.realName',
+        'user.real_name',
         'user.phone',
         'user.email',
-        'user.roleId',
-        'user.departmentId',
-        'user.campusId',
+        'user.role_id',
+        'user.department_id',
+        'user.campus_id',
         'user.avatar',
         'role.code as roleCode',
         'role.name as roleName',
-        'dept.departmentName as deptName',
-        'campus.campusName as campusName',
+        'dept.department_name as deptName',
+        'campus.campus_name as campusName',
       ])
       .getRawOne();
 
