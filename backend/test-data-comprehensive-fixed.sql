@@ -160,65 +160,65 @@ INSERT INTO commission_schemes (id, name, type, rules, conditions, priority, sta
 -- =====================================================
 -- 8. AI聊天分析记录
 -- =====================================================
-INSERT INTO ai_chat_records (customer_id, wechat_id, chat_date, images, ocr_text,
-    ai_analysis_result, quality_level, risk_level, intention_score, estimated_value, analysis_status) VALUES
-(1, 'wx_zhangsan', '2025-01-08',
+INSERT INTO ai_chat_records (customer_id, user_id, wechat_id, chat_date, images, ocr_text,
+    ai_analysis_result, quality_level, risk_level, intention_score, estimated_value, ocr_status, analysis_status) VALUES
+(1, 4, 'wx_zhangsan', '2025-01-08',
     '["http://example.com/chat1.jpg"]',
     '家长：孩子数学成绩一直不理想\n顾问：我们有专业的数学老师\n家长：费用大概多少\n顾问：根据课时不同，8000-15000不等',
     '{"communicationSummary": "家长咨询数学辅导，关注费用和师资", "customerProfile": {"parentRole": "妈妈", "studentGrade": "六年级", "familyEconomicLevel": "中等", "decisionMakerRole": "主要决策者"}, "customerNeeds": ["数学成绩提升", "专业师资", "合理价格"], "intentionLevel": "中等", "riskFactors": ["价格敏感"], "nextSteps": ["发送师资介绍", "提供试听课程", "制定个性化方案"]}',
-    'A', '低', 75, 12000.00, '已完成'),
-(3, 'wx_wangwu', '2025-01-01',
+    'A', '低', 75, 12000.00, '已完成', '已完成'),
+(3, 4, 'wx_wangwu', '2025-01-01',
     '["http://example.com/chat2.jpg"]',
     '家长：试听课孩子很喜欢\n顾问：我们的外教很专业\n家长：什么时候能开始正式上课\n顾问：随时可以开班',
     '{"communicationSummary": "试听效果好，家长意向强烈", "customerProfile": {"parentRole": "爸爸", "studentGrade": "四年级", "familyEconomicLevel": "良好", "decisionMakerRole": "主要决策者"}, "customerNeeds": ["优质外教", "尽快开班", "效果保障"], "intentionLevel": "高", "riskFactors": [], "nextSteps": ["尽快安排签约", "确定开班时间", "安排课表"]}',
-    'A', '无风险', 90, 15000.00, '已完成'),
-(4, 'wx_zhaoliu', '2024-12-27',
+    'A', '无风险', 90, 15000.00, '已完成', '已完成'),
+(4, 5, 'wx_zhaoliu', '2024-12-27',
     '["http://example.com/chat3.jpg"]',
     '家长：高考还有半年，很焦虑\n顾问：我们有高考冲刺班\n家长：能保证提高多少分\n顾问：往年平均提高50-80分',
     '{"communicationSummary": "高三家长，高考焦虑，需要冲刺辅导", "customerProfile": {"parentRole": "妈妈", "studentGrade": "高三", "familyEconomicLevel": "良好", "decisionMakerRole": "主要决策者"}, "customerNeeds": ["快速提分", "高考冲刺", "效果保障"], "intentionLevel": "高", "riskFactors": ["效果预期高"], "nextSteps": ["展示成功案例", "安排测评", "定制冲刺方案"]}',
-    'A', '中', 85, 25000.00, '已完成'),
-(10, 'wx_weishisan', '2025-01-04',
+    'A', '中', 85, 25000.00, '已完成', '已完成'),
+(10, 5, 'wx_weishisan', '2025-01-04',
     '["http://example.com/chat4.jpg"]',
     '家长：朋友推荐过来的\n顾问：欢迎！您孩子几年级\n家长：初三，理科有点弱\n顾问：我们有理科培优班',
     '{"communicationSummary": "朋友推荐，初三学生，理科需要提升", "customerProfile": {"parentRole": "妈妈", "studentGrade": "初三", "familyEconomicLevel": "中上", "decisionMakerRole": "主要决策者"}, "customerNeeds": ["理科成绩提升", "中考备考", "口碑好的机构"], "intentionLevel": "中高", "riskFactors": [], "nextSteps": ["安排试听", "介绍师资", "提供优惠方案"]}',
-    'A', '低', 80, 18000.00, '已完成');
+    'A', '低', 80, 18000.00, '已完成', '已完成');
 
 -- =====================================================
 -- 9. AI客户标签
 -- =====================================================
-INSERT INTO ai_customer_tags (customer_id, tag_name, tag_category, confidence, source) VALUES
-(1, '价格敏感', 'risk', 0.85, 'ai_analysis'),
-(1, '关注师资', 'need', 0.90, 'ai_analysis'),
-(1, '数学辅导需求', 'need', 0.95, 'ai_analysis'),
-(1, '中等收入家庭', 'profile', 0.80, 'ai_analysis'),
-(3, '高意向客户', 'quality', 0.95, 'ai_analysis'),
-(3, '试听效果好', 'behavior', 0.90, 'ai_analysis'),
-(3, '英语培训需求', 'need', 0.95, 'ai_analysis'),
-(3, '决策快', 'behavior', 0.85, 'ai_analysis'),
-(3, '经济条件好', 'profile', 0.88, 'ai_analysis'),
-(4, '高考冲刺需求', 'need', 0.98, 'ai_analysis'),
-(4, '焦虑型家长', 'profile', 0.92, 'ai_analysis'),
-(4, '效果导向', 'behavior', 0.90, 'ai_analysis'),
-(4, '预算充足', 'profile', 0.85, 'ai_analysis'),
-(4, '高意向', 'quality', 0.95, 'ai_analysis'),
-(10, '朋友推荐', 'source', 0.95, 'ai_analysis'),
-(10, '理科培优需求', 'need', 0.90, 'ai_analysis'),
-(10, '中考备考', 'need', 0.92, 'ai_analysis'),
-(10, '信任度高', 'behavior', 0.88, 'ai_analysis'),
-(10, '经济条件中上', 'profile', 0.82, 'ai_analysis');
+INSERT INTO ai_customer_tags (customer_id, tag_category, tag_name, confidence, source) VALUES
+(1, 'risk', '价格敏感', 0.85, 'AI自动'),
+(1, 'need', '关注师资', 0.90, 'AI自动'),
+(1, 'need', '数学辅导需求', 0.95, 'AI自动'),
+(1, 'profile', '中等收入家庭', 0.80, 'AI自动'),
+(3, 'quality', '高意向客户', 0.95, 'AI自动'),
+(3, 'behavior', '试听效果好', 0.90, 'AI自动'),
+(3, 'need', '英语培训需求', 0.95, 'AI自动'),
+(3, 'behavior', '决策快', 0.85, 'AI自动'),
+(3, 'profile', '经济条件好', 0.88, 'AI自动'),
+(4, 'need', '高考冲刺需求', 0.98, 'AI自动'),
+(4, 'profile', '焦虑型家长', 0.92, 'AI自动'),
+(4, 'behavior', '效果导向', 0.90, 'AI自动'),
+(4, 'profile', '预算充足', 0.85, 'AI自动'),
+(4, 'quality', '高意向', 0.95, 'AI自动'),
+(10, 'source', '朋友推荐', 0.95, 'AI自动'),
+(10, 'need', '理科培优需求', 0.90, 'AI自动'),
+(10, 'need', '中考备考', 0.92, 'AI自动'),
+(10, 'behavior', '信任度高', 0.88, 'AI自动'),
+(10, 'profile', '经济条件中上', 0.82, 'AI自动');
 
 -- =====================================================
 -- 10. 通知消息
 -- =====================================================
-INSERT INTO notification (user_id, type, title, content, link, is_read) VALUES
-(4, 'task', '客户跟进提醒', '客户"张三"需要在今天跟进，请及时联系', '/customer/detail/1', 0),
-(4, 'order', '新订单通知', '客户"吴九"的订单已支付成功', '/order/list', 1),
-(5, 'task', '客户跟进提醒', '客户"赵六"明天需要跟进', '/customer/detail/4', 0),
-(5, 'order', '订单支付提醒', '客户"郑十"的订单已支付', '/order/list', 1),
-(2, 'system', '系统通知', '本月销售目标完成率75%，请继续努力', '/dashboard', 0),
-(3, 'system', '团队通知', '销售一组本月业绩排名第一，继续加油！', '/team-leaderboard', 1),
-(6, 'task', '客户跟进提醒', '客户"孙七"报价已发送3天，请跟进', '/customer/detail/5', 0),
-(7, 'task', '客户跟进提醒', '客户"周八"正在谈判中，请尽快推进', '/customer/detail/6', 0);
+INSERT INTO notification (user_id, type, title, content, is_read) VALUES
+(4, 'follow_reminder', '客户跟进提醒', '客户"张三"需要在今天跟进，请及时联系', 0),
+(4, 'order_update', '新订单通知', '客户"吴九"的订单已支付成功', 1),
+(5, 'follow_reminder', '客户跟进提醒', '客户"赵六"明天需要跟进', 0),
+(5, 'order_update', '订单支付提醒', '客户"郑十"的订单已支付', 1),
+(2, 'system', '系统通知', '本月销售目标完成率75%，请继续努力', 0),
+(3, 'system', '团队通知', '销售一组本月业绩排名第一，继续加油！', 1),
+(6, 'follow_reminder', '客户跟进提醒', '客户"孙七"报价已发送3天，请跟进', 0),
+(7, 'follow_reminder', '客户跟进提醒', '客户"周八"正在谈判中，请尽快推进', 0);
 
 -- =====================================================
 -- 完成
