@@ -21,19 +21,19 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- =====================================================
 -- 1. 部门和校区数据
 -- =====================================================
-INSERT INTO department (id, department_name, parent_id, leader_id, sort, status, create_time, update_time) VALUES
-(1, '销售部', NULL, 1, 1, 1, NOW(), NOW()),
-(2, '市场部', NULL, 1, 2, 1, NOW(), NOW()),
-(3, '教学部', NULL, 1, 3, 1, NOW(), NOW()),
-(4, '客服部', NULL, 1, 4, 1, NOW(), NOW()),
-(5, '销售一组', 1, 2, 1, 1, NOW(), NOW()),
-(6, '销售二组', 1, 3, 2, 1, NOW(), NOW());
+INSERT INTO department (id, department_name, parent_id, manager_id, description, sort, status, create_time, update_time) VALUES
+(1, '销售部', NULL, 1, '负责市场销售和客户开发', 1, 1, NOW(), NOW()),
+(2, '市场部', NULL, 1, '负责市场推广和品牌建设', 2, 1, NOW(), NOW()),
+(3, '教学部', NULL, 1, '负责教学管理和师资培训', 3, 1, NOW(), NOW()),
+(4, '客服部', NULL, 1, '负责客户服务和售后支持', 4, 1, NOW(), NOW()),
+(5, '销售一组', 1, 2, '销售部第一组', 1, 1, NOW(), NOW()),
+(6, '销售二组', 1, 3, '销售部第二组', 2, 1, NOW(), NOW());
 
-INSERT INTO campus (id, campus_name, address, phone, principal_id, status, create_time, update_time) VALUES
-(1, '海淀校区', '北京市海淀区中关村大街1号', '010-12345678', 1, 1, NOW(), NOW()),
-(2, '朝阳校区', '北京市朝阳区建国路88号', '010-23456789', 1, 1, NOW(), NOW()),
-(3, '西城校区', '北京市西城区金融街19号', '010-34567890', 1, 1, NOW(), NOW()),
-(4, '东城校区', '北京市东城区王府井大街1号', '010-45678901', 1, 1, NOW(), NOW());
+INSERT INTO campus (id, campus_name, campus_code, address, contact_person, contact_phone, manager_id, description, sort, status, create_time, update_time) VALUES
+(1, '海淀校区', 'HD001', '北京市海淀区中关村大街1号', '张校长', '010-12345678', 1, '海淀区旗舰校区', 1, 1, NOW(), NOW()),
+(2, '朝阳校区', 'CY001', '北京市朝阳区建国路88号', '李校长', '010-23456789', 1, '朝阳区分校', 2, 1, NOW(), NOW()),
+(3, '西城校区', 'XC001', '北京市西城区金融街19号', '王校长', '010-34567890', 1, '西城区分校', 3, 1, NOW(), NOW()),
+(4, '东城校区', 'DC001', '北京市东城区王府井大街1号', '赵校长', '010-45678901', 1, '东城区分校', 4, 1, NOW(), NOW());
 
 -- =====================================================
 -- 2. 用户数据（各种角色）
