@@ -1,20 +1,24 @@
 # 多阶段构建 - 构建阶段
 FROM node:18-alpine AS builder
 
+# 安装 pnpm
+RUN npm install -g pnpm
+
 # 设置工作目录
 WORKDIR /app
 
-# 复制package文件
-COPY package*.json ./
+# 复制整个 monorepo（需要访问 shared 包）
+COPY pnpm-workspace.yaml ./
+COPY pnpm-lock.yaml ./
+COPY package.json ./
+COPY shared ./shared
+COPY frontend ./frontend
 
-# 安装依赖
-RUN npm install
+# 安装所有依赖
+RUN pnpm install --frozen-lockfile
 
-# 复制源代码
-COPY . .
-
-# 构建应用
-RUN npm run build
+# 构建前端应用
+RUN pnpm --filter frontend build
 
 # 生产阶段 - 使用Nginx服务静态文件
 FROM nginx:alpine
@@ -23,7 +27,7 @@ FROM nginx:alpine
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 从构建阶段复制构建产物
-COPY --from=builder /app/dist /usr/share/nginx/html
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # 暴露端口
 EXPOSE 80
