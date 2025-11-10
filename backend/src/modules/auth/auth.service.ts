@@ -148,10 +148,15 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在');
     }
 
+    console.log('=== DEBUG getUserInfo ===');
+    console.log('Raw user data from DB:', JSON.stringify(user, null, 2));
+    console.log('user.user_real_name:', user.user_real_name);
+    console.log('========================');
+
     // 获取用户权限
     const permissions = await this.getUserPermissions(user.user_role_id, user.roleCode);
 
-    return {
+    const result = {
       id: user.user_id,
       username: user.user_username,
       realName: user.user_real_name,
@@ -167,6 +172,12 @@ export class AuthService {
       avatar: user.user_avatar,
       permissions,
     };
+
+    console.log('=== DEBUG getUserInfo Result ===');
+    console.log('Returning result:', JSON.stringify(result, null, 2));
+    console.log('================================');
+
+    return result;
   }
 
   /**
