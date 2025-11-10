@@ -37,6 +37,20 @@
       </el-col>
     </el-row>
 
+    <!-- 客户筛选提示 -->
+    <el-alert
+      v-if="queryForm.customerId"
+      title="正在筛选特定客户的聊天记录"
+      type="info"
+      closable
+      @close="() => { queryForm.customerId = undefined; loadData() }"
+      style="margin-bottom: 16px"
+    >
+      <template #default>
+        当前仅显示客户ID为 {{ queryForm.customerId }} 的聊天记录。点击关闭按钮查看所有记录。
+      </template>
+    </el-alert>
+
     <!-- 筛选 -->
     <el-card>
       <el-form :inline="true" :model="queryForm" @submit.prevent="loadData">
@@ -223,6 +237,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Upload, Plus } from '@element-plus/icons-vue'
 import {
@@ -233,6 +248,8 @@ import {
   getChatStatistics,
   deleteChatRecord
 } from '@/api/ai'
+
+const route = useRoute()
 
 const loading = ref(false)
 const uploading = ref(false)
@@ -254,7 +271,8 @@ const queryForm = reactive({
   page: 1,
   limit: 20,
   qualityLevel: '',
-  riskLevel: ''
+  riskLevel: '',
+  customerId: undefined as number | undefined
 })
 
 const uploadForm = reactive({
@@ -305,6 +323,8 @@ const resetQuery = () => {
   queryForm.page = 1
   queryForm.qualityLevel = ''
   queryForm.riskLevel = ''
+  // 保留customerId，因为它是从URL参数来的
+  // queryForm.customerId 不重置
   loadData()
 }
 
@@ -371,6 +391,13 @@ const handleDelete = (row: any) => {
 }
 
 onMounted(() => {
+  // 检查URL参数中的customerId
+  const customerIdParam = route.query.customerId
+  if (customerIdParam) {
+    queryForm.customerId = Number(customerIdParam)
+    ElMessage.info('已自动筛选该客户的聊天记录')
+  }
+
   loadData()
   loadStatistics()
 })
