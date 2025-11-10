@@ -84,6 +84,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
 import { getTodayFollowList } from '@/api/follow'
+import { getHomeStats } from '@/api/stats'
 import { formatDate } from '@shared/utils'
 
 const userStore = useUserStore()
@@ -97,6 +98,7 @@ const userInfo = computed(() => userStore.userInfo)
 const todayFollowCount = ref(0)
 const pendingFollowCount = ref(0)
 const monthOrderCount = ref(0)
+const loading = ref(false)
 
 // 待跟进列表
 const pendingFollowList = ref<any[]>([])
@@ -118,19 +120,39 @@ function navigateTo(url: string) {
  * 加载数据
  */
 async function loadData() {
+  if (loading.value) return
+
   try {
-    // 加载待跟进列表
-    const result = await getTodayFollowList()
-    if (Array.isArray(result)) {
-      pendingFollowList.value = result.slice(0, 5) // 只显示前5条
-      pendingFollowCount.value = result.length
+    loading.value = true
+
+    // 并行加载统计数据和待跟进列表
+    const [statsResult, followResult] = await Promise.allSettled([
+      getHomeStats(),
+      getTodayFollowList()
+    ])
+
+    // 处理统计数据
+    if (statsResult.status === 'fulfilled' && statsResult.value) {
+      todayFollowCount.value = statsResult.value.todayFollowCount || 0
+      pendingFollowCount.value = statsResult.value.pendingFollowCount || 0
+      monthOrderCount.value = statsResult.value.monthOrderCount || 0
     }
 
-    // TODO: 加载其他统计数据
-    todayFollowCount.value = 0
-    monthOrderCount.value = 0
+    // 处理待跟进列表
+    if (followResult.status === 'fulfilled' && Array.isArray(followResult.value)) {
+      pendingFollowList.value = followResult.value.slice(0, 5) // 只显示前5条
+      if (!statsResult.value?.pendingFollowCount) {
+        pendingFollowCount.value = followResult.value.length
+      }
+    }
   } catch (error) {
     console.error('加载数据失败:', error)
+    uni.showToast({
+      title: '数据加载失败',
+      icon: 'none'
+    })
+  } finally {
+    loading.value = false
   }
 }
 

@@ -61,6 +61,11 @@
         <text>没有更多了</text>
       </view>
     </scroll-view>
+
+    <!-- 添加按钮 -->
+    <view class="add-btn" @click="navigateToAdd">
+      <text>+</text>
+    </view>
   </view>
 </template>
 
@@ -152,6 +157,15 @@ function loadMore() {
 function navigateToDetail(id: number) {
   uni.navigateTo({
     url: `/pages/order/detail?id=${id}`
+  })
+}
+
+/**
+ * 导航到添加页面
+ */
+function navigateToAdd() {
+  uni.navigateTo({
+    url: '/pages/order/add'
   })
 }
 
@@ -283,6 +297,26 @@ onMounted(() => {
     padding: 60rpx 0;
     color: #999;
     font-size: 28rpx;
+  }
+}
+
+.add-btn {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 120rpx;
+  height: 120rpx;
+  border-radius: 60rpx;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10rpx 30rpx rgba(102, 126, 234, 0.5);
+
+  text {
+    font-size: 80rpx;
+    color: #fff;
+    line-height: 1;
   }
 }
 </style>

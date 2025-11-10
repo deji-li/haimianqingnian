@@ -84,6 +84,7 @@
 
     <!-- 底部操作栏 -->
     <view class="bottom-actions">
+      <button class="action-btn" @click="handleEdit">编辑</button>
       <button class="action-btn" @click="handleCall">拨打电话</button>
       <button class="action-btn primary" @click="showAddFollowDialog">添加跟进</button>
     </view>
@@ -225,6 +226,15 @@ async function handleAddFollow() {
   } catch (error) {
     console.error('添加跟进记录失败:', error)
   }
+}
+
+/**
+ * 编辑客户
+ */
+function handleEdit() {
+  uni.navigateTo({
+    url: `/pages/customer/edit?id=${customerId}`
+  })
 }
 
 /**

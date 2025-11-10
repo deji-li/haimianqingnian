@@ -38,6 +38,12 @@
       }
     },
     {
+      "path": "pages/customer/edit",
+      "style": {
+        "navigationBarTitleText": "编辑客户"
+      }
+    },
+    {
       "path": "pages/order/list",
       "style": {
         "navigationBarTitleText": "订单列表"
@@ -47,6 +53,12 @@
       "path": "pages/order/detail",
       "style": {
         "navigationBarTitleText": "订单详情"
+      }
+    },
+    {
+      "path": "pages/order/add",
+      "style": {
+        "navigationBarTitleText": "创建订单"
       }
     },
     {
