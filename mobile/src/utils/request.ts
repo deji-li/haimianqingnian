@@ -15,9 +15,8 @@ interface RequestOptions {
 }
 
 // API基础URL
-const BASE_URL = import.meta.env.DEV
-  ? 'http://localhost:3000/api'
-  : 'https://your-production-api.com/api'
+// API基础URL
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 /**
  * 请求拦截器
