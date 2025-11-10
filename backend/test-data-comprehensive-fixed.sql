@@ -146,14 +146,16 @@ INSERT INTO commission_schemes (id, name, type, rules, conditions, priority, sta
 -- =====================================================
 -- 7. 提成计算记录
 -- =====================================================
-INSERT INTO commission_calculations (order_id, scheme_id, scheme_name, order_amount, commission_amount,
-    calculation_rule, sales_id, status, settle_time, remark) VALUES
-(1, 2, '续费单提成-标准方案', 16000.00, 480.00, '{"percentage": 3}', 4, 'paid', DATE_SUB(NOW(), INTERVAL 10 DAY), '已结算提成'),
-(5, 2, '续费单提成-标准方案', 4700.00, 141.00, '{"percentage": 3}', 4, 'paid', DATE_SUB(NOW(), INTERVAL 5 DAY), '已结算提成'),
-(2, 4, '高考冲刺班-固定提成', 28000.00, 2000.00, '{"amount": 2000}', 5, 'pending', NULL, '等待财务结算'),
-(3, 4, '高考冲刺班-固定提成', 32000.00, 2000.00, '{"amount": 2000}', 4, 'pending', NULL, '等待财务结算'),
-(4, 1, '新签单提成-标准方案', 13000.00, 650.00, '{"percentage": 5}', 5, 'pending', NULL, '等待财务结算'),
-(6, 2, '续费单提成-标准方案', 11200.00, 336.00, '{"percentage": 3}', 5, 'pending', NULL, '等待财务结算');
+-- 注意：先手动计算提成，或者通过API触发计算
+-- 这里注释掉，因为实际应该由系统自动计算
+-- INSERT INTO commission_calculations (order_id, scheme_id, scheme_name, order_amount, commission_amount,
+--     calculation_rule, sales_id, status, settle_time, remark) VALUES
+-- (1, 2, '续费单提成-标准方案', 16000.00, 480.00, '{"percentage": 3}', 4, 'paid', DATE_SUB(NOW(), INTERVAL 10 DAY), '已结算提成'),
+-- (5, 2, '续费单提成-标准方案', 4700.00, 141.00, '{"percentage": 3}', 4, 'paid', DATE_SUB(NOW(), INTERVAL 5 DAY), '已结算提成'),
+-- (2, 4, '高考冲刺班-固定提成', 28000.00, 2000.00, '{"amount": 2000}', 5, 'pending', NULL, '等待财务结算'),
+-- (3, 4, '高考冲刺班-固定提成', 32000.00, 2000.00, '{"amount": 2000}', 4, 'pending', NULL, '等待财务结算'),
+-- (4, 1, '新签单提成-标准方案', 13000.00, 650.00, '{"percentage": 5}', 5, 'pending', NULL, '等待财务结算'),
+-- (6, 2, '续费单提成-标准方案', 11200.00, 336.00, '{"percentage": 3}', 5, 'pending', NULL, '等待财务结算');
 
 -- =====================================================
 -- 8. AI聊天分析记录
