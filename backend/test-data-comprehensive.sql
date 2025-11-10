@@ -7,10 +7,10 @@ SET FOREIGN_KEY_CHECKS = 0;
 DELETE FROM commission_calculations WHERE id > 0;
 DELETE FROM ai_chat_records WHERE id > 0;
 DELETE FROM ai_customer_tags WHERE id > 0;
-DELETE FROM follow_records WHERE id > 0;
+DELETE FROM customer_follow_records WHERE id > 0;
 DELETE FROM orders WHERE id > 0;
 DELETE FROM customers WHERE id > 0;
-DELETE FROM notifications WHERE id > 0;
+DELETE FROM notification WHERE id > 0;
 DELETE FROM user_campus WHERE id > 0;
 DELETE FROM users WHERE id > 1; -- 保留admin
 DELETE FROM commission_schemes WHERE id > 0;
@@ -137,7 +137,7 @@ INSERT INTO customers (id, name, phone, wechat_id, wechat_nickname, gender, age,
 -- =====================================================
 -- 4. 跟进记录
 -- =====================================================
-INSERT INTO follow_records (customer_id, user_id, follow_type, content, next_follow_time, create_time, update_time) VALUES
+INSERT INTO customer_follow_records (customer_id, user_id, follow_type, content, next_follow_time, create_time, update_time) VALUES
 -- 客户1的跟进
 (1, 4, 'phone', '电话沟通，家长表示对数学培训很感兴趣，约定明天上门详谈', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 2 DAY), NOW()),
 (1, 4, 'wechat', '微信发送了课程介绍资料', DATE_ADD(NOW(), INTERVAL 1 DAY), DATE_SUB(NOW(), INTERVAL 1 DAY), NOW()),
@@ -307,7 +307,7 @@ INSERT INTO ai_customer_tags (customer_id, tag_name, tag_category, confidence, s
 -- =====================================================
 -- 10. 通知消息
 -- =====================================================
-INSERT INTO notifications (user_id, type, title, content, link, is_read, create_time, update_time) VALUES
+INSERT INTO notification (user_id, type, title, content, link, is_read, create_time, update_time) VALUES
 (4, 'task', '客户跟进提醒', '客户"张三"需要在今天跟进，请及时联系', '/customer/detail/1', 0, DATE_SUB(NOW(), INTERVAL 2 HOUR), NOW()),
 (4, 'order', '新订单通知', '客户"吴九"的订单已支付成功', '/order/list', 1, DATE_SUB(NOW(), INTERVAL 30 DAY), NOW()),
 (5, 'task', '客户跟进提醒', '客户"赵六"明天需要跟进', '/customer/detail/4', 0, DATE_SUB(NOW(), INTERVAL 5 HOUR), NOW()),
@@ -324,7 +324,7 @@ SELECT '测试数据创建完成！' AS message;
 SELECT COUNT(*) AS user_count FROM users;
 SELECT COUNT(*) AS customer_count FROM customers;
 SELECT COUNT(*) AS order_count FROM orders;
-SELECT COUNT(*) AS follow_count FROM follow_records;
+SELECT COUNT(*) AS follow_count FROM customer_follow_records;
 SELECT COUNT(*) AS ai_chat_count FROM ai_chat_records;
 SELECT COUNT(*) AS ai_tag_count FROM ai_customer_tags;
 SELECT COUNT(*) AS commission_count FROM commission_calculations;
