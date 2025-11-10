@@ -116,28 +116,21 @@ INSERT INTO customer_follow_records (customer_id, follow_content, follow_time, o
 -- 5. 订单数据
 -- =====================================================
 INSERT INTO orders (id, order_no, customer_id, wechat_id, wechat_nickname, phone, sales_id, campus_id,
-    course_name, payment_amount, payment_time, is_new_student, order_status, order_tag, remark,
-    commission_scheme_id, commission_amount, commission_calculated_at) VALUES
+    course_name, payment_amount, payment_time, is_new_student, order_status, order_tag, remark) VALUES
 -- 已完成订单
 (1, 'ORD202501001', 7, 'wx_wujiu', '学霸养成', '13900000007', 4, 1,
-    '初中数学精品班', 16000.00, DATE_SUB(NOW(), INTERVAL 30 DAY), 0, '上课中', '续费', '续费老客户，给予优惠',
-    NULL, NULL, NULL),
+    '初中数学精品班', 16000.00, DATE_SUB(NOW(), INTERVAL 30 DAY), 0, '上课中', '续费', '续费老客户，给予优惠'),
 (2, 'ORD202501002', 8, 'wx_zhengshi', '优等生', '13900000008', 5, 1,
-    '高三全科冲刺班', 28000.00, DATE_SUB(NOW(), INTERVAL 25 DAY), 1, '上课中', '新签', '高考冲刺，全科辅导',
-    NULL, NULL, NULL),
+    '高三全科冲刺班', 28000.00, DATE_SUB(NOW(), INTERVAL 25 DAY), 1, '上课中', '新签', '高考冲刺，全科辅导'),
 (3, 'ORD202501003', 12, 'wx_yangshiliu', '拼搏者', '13900000014', 4, 1,
-    '高考全科冲刺套餐', 32000.00, DATE_SUB(NOW(), INTERVAL 40 DAY), 1, '上课中', '新签', '高三学生，冲刺985',
-    NULL, NULL, NULL),
+    '高考全科冲刺套餐', 32000.00, DATE_SUB(NOW(), INTERVAL 40 DAY), 1, '上课中', '新签', '高三学生，冲刺985'),
 (4, 'ORD202501004', 13, 'wx_heershi', '学习小达人', '13900000018', 5, 1,
-    '小学全科班', 13000.00, DATE_SUB(NOW(), INTERVAL 35 DAY), 1, '上课中', '新签', '小学全科辅导',
-    NULL, NULL, NULL),
+    '小学全科班', 13000.00, DATE_SUB(NOW(), INTERVAL 35 DAY), 1, '上课中', '新签', '小学全科辅导'),
 -- 短期课程
 (5, 'ORD202501005', 7, 'wx_wujiu', '学霸养成', '13900000007', 4, 1,
-    '寒假数学集训营', 4700.00, DATE_SUB(NOW(), INTERVAL 20 DAY), 0, '已完成', '续费', '寒假集训',
-    NULL, NULL, NULL),
+    '寒假数学集训营', 4700.00, DATE_SUB(NOW(), INTERVAL 20 DAY), 0, '已完成', '续费', '寒假集训'),
 (6, 'ORD202501006', 8, 'wx_zhengshi', '优等生', '13900000008', 5, 1,
-    '物理竞赛班', 11200.00, DATE_SUB(NOW(), INTERVAL 28 DAY), 0, '上课中', '续费', '物理竞赛辅导',
-    NULL, NULL, NULL);
+    '物理竞赛班', 11200.00, DATE_SUB(NOW(), INTERVAL 28 DAY), 0, '上课中', '续费', '物理竞赛辅导');
 
 -- =====================================================
 -- 6. 提成方案
