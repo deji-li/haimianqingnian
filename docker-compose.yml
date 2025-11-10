@@ -107,8 +107,8 @@ services:
   # 前端Nginx服务
   frontend:
     build:
-      context: ./frontend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./frontend/Dockerfile
     container_name: crm-frontend
     restart: always
     ports:
