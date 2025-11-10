@@ -8,6 +8,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Order } from '../../order/entities/order.entity';
+import { User } from '../../user/entities/user.entity';
 
 @Entity('commission_calculations')
 export class CommissionCalculation {
@@ -44,9 +45,9 @@ export class CommissionCalculation {
   @Column({ name: 'sales_id' })
   salesId: number;
 
-  @ManyToOne('User')
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'sales_id' })
-  sales: any;
+  sales: User;
 
   @Column({
     type: 'enum',

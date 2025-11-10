@@ -212,7 +212,7 @@ export class CommissionService {
         'calc.updateTime',
         'order.orderNo',
         'sales.id',
-        'sales.name',
+        'sales.realName',
       ]);
 
     if (status) {
