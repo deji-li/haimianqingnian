@@ -1,0 +1,22 @@
+{
+  "name": "education-crm",
+  "version": "1.0.0",
+  "description": "教育培训CRM系统 - Monorepo",
+  "private": true,
+  "scripts": {
+    "dev:backend": "cd backend && pnpm dev",
+    "dev:frontend": "cd frontend && pnpm dev",
+    "dev:mobile:h5": "cd mobile && pnpm dev:h5",
+    "dev:mobile:mp-weixin": "cd mobile && pnpm dev:mp-weixin",
+    "dev:all": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "build:frontend": "cd frontend && pnpm build",
+    "build:mobile:h5": "cd mobile && pnpm build:h5",
+    "build:mobile:mp-weixin": "cd mobile && pnpm build:mp-weixin"
+  },
+  "keywords": ["crm", "education", "monorepo"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

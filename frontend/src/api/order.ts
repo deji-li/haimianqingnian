@@ -1,60 +1,12 @@
 import request from '@/utils/request'
+// 使用@shared包的类型定义
+import type { Order, CreateOrderDto, OrderQuery, PageResponse } from '@shared/types'
 
-export interface Order {
-  id: number
-  orderNo: string
-  customerId?: number
-  wechatId?: string
-  wechatNickname?: string
-  phone?: string
-  salesId: number
-  campusId?: number
-  courseName: string
-  paymentAmount: number
-  paymentTime: Date
-  isNewStudent: number
-  orderStatus: string
-  teacherName?: string
-  region?: string
-  distributorSales?: string
-  remark?: string
-  dataSource: string
-  createTime: Date
-  updateTime: Date
-  salesName?: string
-  campusName?: string
-  customerName?: string
-}
+// 重新导出类型，保持向后兼容
+export type { Order, OrderQuery }
 
-export interface OrderQuery {
-  page: number
-  pageSize: number
-  keyword?: string
-  salesId?: number
-  campusId?: number
-  orderStatus?: string
-  isNewStudent?: number
-  startDate?: string
-  endDate?: string
-}
-
-export interface CreateOrderParams {
-  orderNo: string
-  customerId?: number
-  wechatId?: string
-  wechatNickname?: string
-  phone?: string
-  salesId: number
-  campusId?: number
-  courseName: string
-  paymentAmount: number
-  paymentTime: Date
-  orderStatus?: string
-  teacherName?: string
-  region?: string
-  distributorSales?: string
-  remark?: string
-}
+// 创建订单参数（使用shared的CreateOrderDto）
+export type CreateOrderParams = CreateOrderDto
 
 export interface OrderStatistics {
   totalOrders: number

@@ -1,37 +1,11 @@
 import request from '@/utils/request'
+// 使用@shared包的类型定义
+import type { LoginDto, LoginResponse, UserInfo } from '@shared/types'
 
-export interface LoginParams {
-  username: string
-  password: string
-}
-
-export interface LoginResult {
-  access_token: string
-  user: {
-    id: number
-    username: string
-    realName: string
-    roleCode: string
-    roleName: string
-    departmentId?: number
-    campusId?: number
-    permissions: string[]
-  }
-}
-
-export interface UserInfo {
-  id: number
-  username: string
-  realName: string
-  phone?: string
-  email?: string
-  roleCode: string
-  roleName: string
-  departmentName?: string
-  campusName?: string
-  avatar?: string
-  permissions: string[]
-}
+// 重新导出类型，保持向后兼容
+export type LoginParams = LoginDto
+export type LoginResult = LoginResponse
+export type { UserInfo }
 
 // 用户登录
 export function login(data: LoginParams) {

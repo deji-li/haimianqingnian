@@ -1,0 +1,16 @@
+{
+  "name": "@crm/shared",
+  "version": "1.0.0",
+  "description": "CRM共享代码层 - 类型定义、API接口、工具函数",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["crm", "shared", "types"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

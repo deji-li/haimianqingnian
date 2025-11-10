@@ -1,72 +1,30 @@
 import request from '@/utils/request'
+// 使用@shared包的类型定义
+import type {
+  Customer,
+  CreateCustomerDto,
+  UpdateCustomerDto,
+  CustomerQuery,
+  FollowRecord,
+  CreateFollowDto,
+  PageResponse,
+} from '@shared/types'
 
-export interface Customer {
-  id: number
-  wechatNickname: string
-  wechatId: string
-  phone?: string
-  realName?: string
-  trafficSource?: string
-  operatorId?: number
-  salesId: number
-  salesWechat?: string
-  customerIntent: string
-  nextFollowTime?: string
-  remark?: string
-  createTime: string
-  updateTime: string
-  salesName?: string
-  operatorName?: string
-  followRecordCount?: number
-}
+// 重新导出类型，保持向后兼容
+export type { Customer, CustomerQuery, FollowRecord }
 
-export interface CustomerQuery {
-  page?: number
-  pageSize?: number
-  keyword?: string
-  customerIntent?: string
-  trafficSource?: string
-  salesId?: number
-}
-
-export interface CustomerListResult {
-  list: Customer[]
-  total: number
+// 扩展的客户列表结果类型（包含额外的前端字段）
+export interface CustomerListResult extends PageResponse<Customer> {
   page: number
   pageSize: number
   totalPages: number
 }
 
-export interface CreateCustomerParams {
-  wechatNickname?: string
-  wechatId: string
-  phone?: string
-  realName?: string
-  trafficSource?: string
-  operatorId?: number
-  salesId: number
-  salesWechat?: string
-  customerIntent?: string
-  nextFollowTime?: string
-  remark?: string
-}
+// 创建客户参数（使用shared的CreateCustomerDto）
+export type CreateCustomerParams = CreateCustomerDto
 
-export interface FollowRecord {
-  id: number
-  customerId: number
-  followContent: string
-  followTime: string
-  operatorId: number
-  nextFollowTime?: string
-  createTime: string
-  operatorName?: string
-}
-
-export interface CreateFollowRecordParams {
-  customerId: number
-  followContent: string
-  nextFollowTime?: string
-}
+// 创建跟进记录参数（使用shared的CreateFollowDto）
+export type CreateFollowRecordParams = CreateFollowDto
 
 // 获取客户列表
 export function getCustomerList(params: CustomerQuery) {
