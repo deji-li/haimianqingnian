@@ -63,6 +63,7 @@ function responseInterceptor(response: any, options: RequestOptions) {
         errorMessage = '未授权，请重新登录'
         // 清除token并跳转到登录页
         uni.removeStorageSync(StorageKeys.TOKEN)
+        uni.removeStorageSync(StorageKeys.USER_INFO)
         uni.reLaunch({ url: '/pages/login/index' })
         break
       case 403:
@@ -72,27 +73,45 @@ function responseInterceptor(response: any, options: RequestOptions) {
         errorMessage = '请求的资源不存在'
         break
       case 500:
-        errorMessage = '服务器错误'
+        errorMessage = '服务器错误，请稍后重试'
+        break
+      case 503:
+        errorMessage = '服务暂时不可用'
         break
     }
 
-    uni.showToast({
-      title: errorMessage,
-      icon: 'none',
-      duration: 2000
-    })
+    // 只在非静默模式下显示错误
+    if (options.showLoading !== false) {
+      uni.showToast({
+        title: errorMessage,
+        icon: 'none',
+        duration: 2000
+      })
+    }
 
-    return Promise.reject(new Error(errorMessage))
+    return Promise.reject({
+      statusCode,
+      message: errorMessage
+    })
   }
 
   // 业务状态码检查
-  if (data.code && data.code !== 200) {
-    uni.showToast({
-      title: data.message || '请求失败',
-      icon: 'none',
-      duration: 2000
+  if (data.code && data.code !== 200 && data.code !== 0) {
+    const errorMessage = data.message || '请求失败'
+
+    // 只在非静默模式下显示错误
+    if (options.showLoading !== false) {
+      uni.showToast({
+        title: errorMessage,
+        icon: 'none',
+        duration: 2000
+      })
+    }
+
+    return Promise.reject({
+      code: data.code,
+      message: errorMessage
     })
-    return Promise.reject(new Error(data.message))
   }
 
   return data.data !== undefined ? data.data : data

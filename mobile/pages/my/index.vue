@@ -21,6 +21,15 @@
         <text class="menu-arrow">></text>
       </view>
 
+      <view class="menu-item" @click="navigateTo('/pages/my/notifications')">
+        <view class="menu-left">
+          <text class="menu-icon">🔔</text>
+          <text class="menu-title">消息通知</text>
+        </view>
+        <view v-if="unreadCount > 0" class="badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</view>
+        <text class="menu-arrow">></text>
+      </view>
+
       <view class="menu-item" @click="navigateTo('/pages/my/settings')">
         <view class="menu-left">
           <text class="menu-icon">⚙️</text>
@@ -51,11 +60,25 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/store/user'
+import { http } from '@/utils/request'
 
 const userStore = useUserStore()
 const userInfo = computed(() => userStore.userInfo)
+const unreadCount = ref(0)
+
+/**
+ * 获取未读消息数
+ */
+async function getUnreadCount() {
+  try {
+    const result = await http.get('/notification/unread-count')
+    unreadCount.value = result.count || 0
+  } catch (error) {
+    console.error('获取未读消息数失败:', error)
+  }
+}
 
 function navigateTo(url: string) {
   uni.navigateTo({ url })
@@ -72,6 +95,10 @@ function handleLogout() {
     }
   })
 }
+
+onMounted(() => {
+  getUnreadCount()
+})
 </script>
 
 <style lang="scss" scoped>
@@ -146,6 +173,16 @@ function handleLogout() {
         font-size: 30rpx;
         color: #333;
       }
+    }
+
+    .badge {
+      padding: 4rpx 12rpx;
+      background: #ef4444;
+      color: #fff;
+      font-size: 20rpx;
+      border-radius: 20rpx;
+      margin-left: auto;
+      margin-right: 20rpx;
     }
 
     .menu-arrow {

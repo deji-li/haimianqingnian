@@ -55,6 +55,11 @@
         </view>
       </view>
     </view>
+
+    <!-- 底部操作栏 -->
+    <view class="bottom-actions">
+      <button class="action-btn" @click="handleEdit">编辑订单</button>
+    </view>
   </view>
 </template>
 
@@ -80,6 +85,15 @@ async function loadOrderDetail(id: number) {
       icon: 'none'
     })
   }
+}
+
+/**
+ * 编辑订单
+ */
+function handleEdit() {
+  uni.navigateTo({
+    url: `/pages/order/edit?id=${order.value?.id}`
+  })
 }
 
 onLoad((options: any) => {
@@ -177,6 +191,26 @@ onLoad((options: any) => {
         color: #ef4444;
       }
     }
+  }
+}
+
+.bottom-actions {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  padding: 20rpx;
+  background: #fff;
+  border-top: 1rpx solid #f0f0f0;
+
+  .action-btn {
+    flex: 1;
+    height: 80rpx;
+    line-height: 80rpx;
+    font-size: 28rpx;
+    background: #3b82f6;
+    color: #fff;
   }
 }
 </style>
