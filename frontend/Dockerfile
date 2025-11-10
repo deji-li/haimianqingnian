@@ -18,7 +18,8 @@ COPY frontend ./frontend
 RUN pnpm install --frozen-lockfile
 
 # 构建前端应用
-RUN pnpm --filter frontend build
+WORKDIR /app/frontend
+RUN pnpm build
 
 # 生产阶段 - 使用Nginx服务静态文件
 FROM nginx:alpine
