@@ -38,7 +38,7 @@ export class StatsService {
     const todayFollowCount = await this.followRecordRepository.count({
       where: {
         followTime: Between(today, tomorrow),
-        ...(dataScope.userId && { userId: dataScope.userId }),
+        ...(dataScope.userId && { operatorId: dataScope.userId }),
       },
     });
 
@@ -53,7 +53,7 @@ export class StatsService {
     // 本月订单数
     const monthOrderCount = await this.orderRepository.count({
       where: {
-        createTime: Between(monthStart, monthEnd),
+        paymentTime: Between(monthStart, monthEnd),
         ...dataScopeWhere,
       },
     });
@@ -61,9 +61,9 @@ export class StatsService {
     // 本月订单金额
     const monthOrderResult = await this.orderRepository
       .createQueryBuilder('order')
-      .select('SUM(order.totalAmount)', 'total')
-      .where('order.createTime >= :monthStart', { monthStart })
-      .andWhere('order.createTime < :monthEnd', { monthEnd })
+      .select('SUM(order.paymentAmount)', 'total')
+      .where('order.paymentTime >= :monthStart', { monthStart })
+      .andWhere('order.paymentTime < :monthEnd', { monthEnd })
       .andWhere(
         dataScope.userId ? 'order.salesId = :userId' : '1=1',
         dataScope.userId ? { userId: dataScope.userId } : {},
@@ -80,7 +80,7 @@ export class StatsService {
     // 高意向客户数
     const highIntentCount = await this.customerRepository.count({
       where: {
-        intentionLevel: 'high',
+        customerIntent: '高',
         ...dataScopeWhere,
       },
     });
