@@ -53,8 +53,8 @@ function responseInterceptor(response: any, options: RequestOptions) {
 
   const { statusCode, data } = response
 
-  // HTTP状态码检查
-  if (statusCode !== 200) {
+  // HTTP状态码检查 - 接受2xx系列的成功状态码
+  if (statusCode < 200 || statusCode >= 300) {
     let errorMessage = '请求失败'
 
     switch (statusCode) {
