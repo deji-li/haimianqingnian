@@ -60,10 +60,14 @@ export function formatPhone(phone: string | undefined | null, mask = false): str
  * @param amount 金额
  * @param showSymbol 是否显示货币符号
  */
-export function formatMoney(amount: number | undefined | null, showSymbol = true): string {
-  if (amount === undefined || amount === null) return showSymbol ? '¥0.00' : '0.00'
+export function formatMoney(amount: number | string | undefined | null, showSymbol = true): string {
+  if (amount === undefined || amount === null || amount === '') return showSymbol ? '¥0.00' : '0.00'
 
-  const formatted = amount.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  // 转换为数字
+  const num = typeof amount === 'string' ? parseFloat(amount) : amount
+  if (isNaN(num)) return showSymbol ? '¥0.00' : '0.00'
+
+  const formatted = num.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
   return showSymbol ? `¥${formatted}` : formatted
 }
 

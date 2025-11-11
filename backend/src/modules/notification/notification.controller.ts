@@ -30,8 +30,9 @@ export class NotificationController {
 
   @Get('unread-count')
   @ApiOperation({ summary: '获取未读通知数量' })
-  getUnreadCount(@Request() req) {
-    return this.notificationService.getUnreadCount(req.user.id);
+  async getUnreadCount(@Request() req) {
+    const count = await this.notificationService.getUnreadCount(req.user.id);
+    return { count };
   }
 
   @Post(':id/read')
