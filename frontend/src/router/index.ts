@@ -285,34 +285,6 @@ const routes: RouteRecordRaw[] = [
         },
       },
       {
-        path: 'okr',
-        name: 'OKR',
-        redirect: '/okr/list',
-        meta: {
-          title: 'OKR管理',
-          icon: 'TrendCharts',
-        },
-        children: [
-          {
-            path: 'list',
-            name: 'OKRList',
-            component: () => import('@/views/okr/List.vue'),
-            meta: {
-              title: 'OKR列表',
-            },
-          },
-          {
-            path: 'detail/:id',
-            name: 'OKRDetail',
-            component: () => import('@/views/okr/Detail.vue'),
-            meta: {
-              title: 'OKR详情',
-              hidden: true,
-            },
-          },
-        ],
-      },
-      {
         path: 'system',
         name: 'System',
         redirect: '/system/user',

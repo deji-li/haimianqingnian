@@ -9,7 +9,6 @@ import { OrderModule } from './modules/order/order.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { CommissionModule } from './modules/commission/commission.module';
 import { SystemModule } from './modules/system/system.module';
-import { OkrModule } from './modules/okr/okr.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { LogModule } from './modules/log/log.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -40,8 +39,6 @@ import { Dictionary } from './modules/system/entities/dictionary.entity';
 import { Role } from './modules/system/entities/role.entity';
 import { Permission } from './modules/system/entities/permission.entity';
 import { RolePermission } from './modules/system/entities/role-permission.entity';
-import { Okr } from './modules/okr/entities/okr.entity';
-import { KeyResult } from './modules/okr/entities/key-result.entity';
 import { OperationLog } from './modules/log/entities/operation-log.entity';
 import { File } from './modules/upload/entities/file.entity';
 import { Notification } from './modules/notification/entities/notification.entity';
@@ -87,8 +84,6 @@ import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-
           Campus,
           Department,
           Dictionary,
-          Okr,
-          KeyResult,
           OperationLog,
           File,
           Notification,
@@ -126,7 +121,6 @@ import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-
     FinanceModule,
     CommissionModule,
     SystemModule,
-    OkrModule,
     DashboardModule,
     LogModule,
     UploadModule,
