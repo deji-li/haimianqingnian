@@ -24,7 +24,8 @@ RUN pnpm build
 
 # 构建移动端应用
 WORKDIR /app/mobile
-RUN pnpm build
+RUN pnpm build:h5
+RUN echo "=== Mobile build output ===" && find dist -type f 2>/dev/null || echo "No dist directory"
 
 # 生产阶段 - 使用Nginx服务静态文件
 FROM nginx:alpine
@@ -36,6 +37,7 @@ COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 
 # 从构建阶段复制移动端构建产物到 /mobile 子目录
+# uni-app H5输出在 dist/build/h5 目录
 COPY --from=builder /app/mobile/dist/build/h5 /usr/share/nginx/html/mobile
 
 # 暴露端口
