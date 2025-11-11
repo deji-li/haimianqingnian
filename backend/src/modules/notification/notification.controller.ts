@@ -79,4 +79,16 @@ export class NotificationController {
     );
     return { message: '系统通知已发送' };
   }
+
+  @Post('test')
+  @ApiOperation({ summary: '创建测试通知（开发用）' })
+  async createTestNotification(@Request() req) {
+    await this.notificationService.create({
+      userId: req.user.id,
+      type: 'system',
+      title: '测试通知',
+      content: '这是一条测试通知消息，用于测试未读消息提醒功能。',
+    });
+    return { message: '测试通知创建成功' };
+  }
 }
