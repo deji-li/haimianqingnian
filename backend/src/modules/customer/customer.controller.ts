@@ -113,6 +113,12 @@ export class CustomerController {
     return this.customerService.getPendingFollowUps(req.dataScope || {});
   }
 
+  @Get('follow/today')
+  @ApiOperation({ summary: '获取今日待跟进列表' })
+  async getTodayFollowList(@Request() req) {
+    return this.customerService.getPendingFollowUps(req.dataScope || {});
+  }
+
   @Get('follow/statistics')
   @ApiOperation({ summary: '获取跟进统计数据' })
   async getFollowStatistics(@Request() req) {

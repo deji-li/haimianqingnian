@@ -22,6 +22,7 @@ import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
 import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
 import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
+import { StatsModule } from './modules/stats/stats.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -138,6 +139,7 @@ import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-
     AiTagsModule,
     AiKnowledgeModule,
     AiToolsModule,
+    StatsModule,
   ],
 })
 export class AppModule {}
