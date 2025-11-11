@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { Customer } from '../customer/entities/customer.entity';
-import { FollowRecord } from '../customer/entities/follow-record.entity';
+import { CustomerFollowRecord } from '../customer/entities/customer-follow-record.entity';
 import { Order } from '../order/entities/order.entity';
 
 @Injectable()
@@ -10,8 +10,8 @@ export class StatsService {
   constructor(
     @InjectRepository(Customer)
     private customerRepository: Repository<Customer>,
-    @InjectRepository(FollowRecord)
-    private followRecordRepository: Repository<FollowRecord>,
+    @InjectRepository(CustomerFollowRecord)
+    private followRecordRepository: Repository<CustomerFollowRecord>,
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
   ) {}
