@@ -42,11 +42,10 @@ export class StatsService {
       },
     });
 
-    // 待跟进数（今天及之前需要跟进但未完成的）
+    // 待跟进数（今天及之前需要跟进的客户）
     const pendingFollowCount = await this.customerRepository.count({
       where: {
         nextFollowTime: Between(new Date(0), tomorrow),
-        status: 'pending',
         ...dataScopeWhere,
       },
     });
