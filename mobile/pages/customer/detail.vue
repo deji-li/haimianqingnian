@@ -293,7 +293,7 @@ onLoad((options: any) => {
 
     .card-action {
       font-size: 28rpx;
-      color: #3b82f6;
+      color: #FFB800;
     }
   }
 
@@ -376,7 +376,7 @@ onLoad((options: any) => {
 
       .next-follow {
         font-size: 24rpx;
-        color: #3b82f6;
+        color: #FFB800;
       }
     }
 
@@ -417,7 +417,7 @@ onLoad((options: any) => {
           }
 
           &.status-上课中 {
-            background: #3b82f6;
+            background: #FFB800;
           }
 
           &.status-已完成 {
@@ -459,7 +459,7 @@ onLoad((options: any) => {
     margin: 0 10rpx;
 
     &.primary {
-      background: #3b82f6;
+      background: #FFB800;
       color: #fff;
     }
   }
@@ -518,7 +518,7 @@ onLoad((options: any) => {
   .submit-btn {
     width: 100%;
     height: 80rpx;
-    background: #3b82f6;
+    background: #FFB800;
     color: #fff;
     font-size: 28rpx;
   }

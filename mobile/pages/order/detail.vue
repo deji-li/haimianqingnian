@@ -133,7 +133,7 @@ onLoad((options: any) => {
     }
 
     &.status-上课中 {
-      background: #3b82f6;
+      background: #FFB800;
     }
 
     &.status-已完成 {
@@ -209,7 +209,7 @@ onLoad((options: any) => {
     height: 80rpx;
     line-height: 80rpx;
     font-size: 28rpx;
-    background: #3b82f6;
+    background: #FFB800;
     color: #fff;
   }
 }

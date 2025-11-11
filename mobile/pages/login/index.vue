@@ -107,7 +107,7 @@ async function handleLogin() {
 <style lang="scss" scoped>
 .login-container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFB800 0%, #FF9800 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -175,7 +175,7 @@ async function handleLogin() {
   .login-btn {
     width: 100%;
     height: 90rpx;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #FFB800 0%, #FF9800 100%);
     border-radius: 10rpx;
     font-size: 32rpx;
     font-weight: bold;

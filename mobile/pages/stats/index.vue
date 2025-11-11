@@ -151,7 +151,7 @@ onMounted(() => {
 }
 
 .page-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFB800 0%, #FF9800 100%);
   padding: 40rpx 30rpx;
   color: #fff;
 
@@ -212,7 +212,7 @@ onMounted(() => {
     .stat-value {
       font-size: 48rpx;
       font-weight: bold;
-      color: #3b82f6;
+      color: #FFB800;
       margin-bottom: 15rpx;
     }
 

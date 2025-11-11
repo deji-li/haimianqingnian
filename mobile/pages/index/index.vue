@@ -28,7 +28,7 @@
     <!-- 快捷功能 -->
     <view class="quick-actions">
       <view class="action-item" @click="navigateTo('/pages/customer/add')">
-        <view class="action-icon" style="background: #3b82f6;">
+        <view class="action-icon" style="background: #FFB800;">
           <text>👤</text>
         </view>
         <text class="action-text">添加客户</text>
@@ -169,7 +169,7 @@ onMounted(() => {
 }
 
 .user-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFB800 0%, #FF9800 100%);
   border-radius: 20rpx;
   padding: 40rpx;
   margin-bottom: 20rpx;

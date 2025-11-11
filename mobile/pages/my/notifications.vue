@@ -224,7 +224,7 @@ onMounted(() => {
     color: #666;
 
     &.active {
-      background: #3b82f6;
+      background: #FFB800;
       color: #fff;
     }
   }
@@ -290,7 +290,7 @@ onMounted(() => {
         color: #fff;
 
         &.type-follow_reminder {
-          background: #3b82f6;
+          background: #FFB800;
         }
 
         &.type-order_update {
@@ -322,7 +322,7 @@ onMounted(() => {
   .action-btn {
     width: 100%;
     height: 80rpx;
-    background: #3b82f6;
+    background: #FFB800;
     color: #fff;
     font-size: 28rpx;
   }

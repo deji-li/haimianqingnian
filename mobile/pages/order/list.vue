@@ -199,7 +199,7 @@ onMounted(() => {
     color: #666;
 
     &.active {
-      background: #3b82f6;
+      background: #FFB800;
       color: #fff;
     }
   }
@@ -237,7 +237,7 @@ onMounted(() => {
         }
 
         &.status-上课中 {
-          background: #3b82f6;
+          background: #FFB800;
         }
 
         &.status-已完成 {
@@ -307,7 +307,7 @@ onMounted(() => {
   width: 120rpx;
   height: 120rpx;
   border-radius: 60rpx;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #FFB800 0%, #FF9800 100%);
   display: flex;
   align-items: center;
   justify-content: center;

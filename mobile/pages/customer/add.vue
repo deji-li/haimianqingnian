@@ -193,7 +193,7 @@ async function handleSubmit() {
   .submit-btn {
     width: 100%;
     height: 90rpx;
-    background: #3b82f6;
+    background: #FFB800;
     color: #fff;
     font-size: 32rpx;
     font-weight: bold;
