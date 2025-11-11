@@ -40,6 +40,9 @@ COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 # uni-app H5输出在 dist/build/h5 目录
 COPY --from=builder /app/mobile/dist/build/h5 /usr/share/nginx/html/mobile
 
+# 复制移动端static静态资源（uni-app不会自动处理static目录）
+COPY --from=builder /app/mobile/static /usr/share/nginx/html/mobile/static
+
 # 暴露端口
 EXPOSE 80
 
