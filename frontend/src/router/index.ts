@@ -21,6 +21,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/layouts/DefaultLayout.vue'),
     redirect: '/workspace',
     children: [
+      // 工作台
       {
         path: 'workspace',
         name: 'Workspace',
@@ -30,25 +31,7 @@ const routes: RouteRecordRaw[] = [
           icon: 'Monitor',
         },
       },
-      {
-        path: 'dashboard',
-        name: 'Dashboard',
-        component: () => import('@/views/dashboard/Index.vue'),
-        meta: {
-          title: '数据看板',
-          icon: 'DataLine',
-          permissions: ['dashboard:view'],
-        },
-      },
-      {
-        path: 'crm-stats',
-        name: 'CRMStats',
-        component: () => import('@/views/crm/PersonalStats.vue'),
-        meta: {
-          title: 'CRM统计',
-          icon: 'DataAnalysis',
-        },
-      },
+      // 个人中心（隐藏菜单）
       {
         path: 'profile',
         name: 'Profile',
@@ -59,6 +42,7 @@ const routes: RouteRecordRaw[] = [
           hidden: true,
         },
       },
+      // 消息中心（隐藏菜单）
       {
         path: 'notification',
         name: 'Notification',
@@ -69,6 +53,8 @@ const routes: RouteRecordRaw[] = [
           hidden: true,
         },
       },
+
+      // ========== 客户管理 ==========
       {
         path: 'customer',
         name: 'Customer',
@@ -109,6 +95,8 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+
+      // ========== 订单管理 ==========
       {
         path: 'order',
         name: 'Order',
@@ -137,15 +125,83 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
+
+      // ========== 销售工具（整合AI功能） ==========
+      {
+        path: 'sales-tools',
+        name: 'SalesTools',
+        redirect: '/sales-tools/chat-analysis',
+        meta: {
+          title: '销售工具',
+          icon: 'MagicStick',
+        },
+        children: [
+          {
+            path: 'chat-analysis',
+            name: 'ChatAnalysis',
+            component: () => import('@/views/ai/ChatAnalysis.vue'),
+            meta: {
+              title: '聊天分析',
+              permissions: ['ai-chat:view'],
+            },
+          },
+          {
+            path: 'knowledge',
+            name: 'Knowledge',
+            component: () => import('@/views/ai/Knowledge.vue'),
+            meta: {
+              title: '话术库',
+              permissions: ['ai-knowledge:view'],
+            },
+          },
+          {
+            path: 'tools',
+            name: 'AITools',
+            component: () => import('@/views/ai/ToolCenter.vue'),
+            meta: {
+              title: 'AI工具',
+              permissions: ['ai-tools:view'],
+            },
+          },
+          {
+            path: 'recovery',
+            name: 'CustomerRecovery',
+            component: () => import('@/views/ai/MarketingAssistant.vue'),
+            meta: {
+              title: '客户复苏',
+              permissions: ['ai-marketing:use'],
+            },
+          },
+        ],
+      },
+
+      // ========== 数据分析（整合所有分析功能） ==========
       {
         path: 'analytics',
         name: 'Analytics',
-        redirect: '/analytics/funnel',
+        redirect: '/analytics/dashboard',
         meta: {
           title: '数据分析',
           icon: 'TrendCharts',
         },
         children: [
+          {
+            path: 'dashboard',
+            name: 'AnalyticsDashboard',
+            component: () => import('@/views/dashboard/Index.vue'),
+            meta: {
+              title: '数据看板',
+              permissions: ['dashboard:view'],
+            },
+          },
+          {
+            path: 'personal',
+            name: 'PersonalStats',
+            component: () => import('@/views/crm/PersonalStats.vue'),
+            meta: {
+              title: '个人统计',
+            },
+          },
           {
             path: 'funnel',
             name: 'AnalyticsFunnel',
@@ -162,55 +218,16 @@ const routes: RouteRecordRaw[] = [
               title: '高级分析',
             },
           },
-        ],
-      },
-      {
-        path: 'ai',
-        name: 'AI',
-        redirect: '/ai/chat-analysis',
-        meta: {
-          title: 'AI智能助手',
-          icon: 'MagicStick',
-        },
-        children: [
           {
-            path: 'chat-analysis',
-            name: 'AIChatAnalysis',
-            component: () => import('@/views/ai/ChatAnalysis.vue'),
+            path: 'leaderboard',
+            name: 'TeamLeaderboard',
+            component: () => import('@/views/team/Leaderboard.vue'),
             meta: {
-              title: 'AI聊天记录分析',
-              permissions: ['ai-chat:view'],
+              title: '团队排行榜',
             },
           },
           {
-            path: 'knowledge',
-            name: 'AIKnowledge',
-            component: () => import('@/views/ai/Knowledge.vue'),
-            meta: {
-              title: 'AI知识库',
-              permissions: ['ai-knowledge:view'],
-            },
-          },
-          {
-            path: 'tools',
-            name: 'AITools',
-            component: () => import('@/views/ai/ToolCenter.vue'),
-            meta: {
-              title: 'AI工具中心',
-              permissions: ['ai-tools:view'],
-            },
-          },
-          {
-            path: 'marketing',
-            name: 'AIMarketing',
-            component: () => import('@/views/ai/MarketingAssistant.vue'),
-            meta: {
-              title: 'AI营销助手',
-              permissions: ['ai-marketing:use'],
-            },
-          },
-          {
-            path: 'analytics',
+            path: 'ai-analytics',
             name: 'AIAnalytics',
             component: () => import('@/views/ai/AIAnalytics.vue'),
             meta: {
@@ -219,7 +236,7 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'reports',
+            path: 'ai-reports',
             name: 'AIReports',
             component: () => import('@/views/ai/AIReports.vue'),
             meta: {
@@ -229,61 +246,57 @@ const routes: RouteRecordRaw[] = [
           },
         ],
       },
-      {
-        path: 'team-leaderboard',
-        name: 'TeamLeaderboard',
-        component: () => import('@/views/team/Leaderboard.vue'),
-        meta: {
-          title: '团队排行榜',
-          icon: 'trophy',
-        },
-      },
+
+      // ========== 财务提成（整合财务和提成） ==========
       {
         path: 'finance',
         name: 'Finance',
-        component: () => import('@/views/finance/Overview.vue'),
+        redirect: '/finance/statistics',
         meta: {
-          title: '财务统计',
-          icon: 'Wallet',
-        },
-      },
-      {
-        path: 'commission',
-        name: 'Commission',
-        redirect: '/commission/list',
-        meta: {
-          title: '提成管理',
+          title: '财务提成',
           icon: 'Money',
         },
         children: [
           {
-            path: 'list',
-            name: 'CommissionList',
-            component: () => import('@/views/commission/List.vue'),
+            path: 'statistics',
+            name: 'FinanceStatistics',
+            component: () => import('@/views/finance/Overview.vue'),
             meta: {
-              title: '我的提成',
+              title: '财务统计',
             },
           },
           {
-            path: 'schemes',
+            path: 'commission-records',
+            name: 'CommissionRecords',
+            component: () => import('@/views/commission/List.vue'),
+            meta: {
+              title: '提成记录',
+            },
+          },
+          {
+            path: 'commission-schemes',
             name: 'CommissionSchemes',
             component: () => import('@/views/commission/SchemeConfig.vue'),
             meta: {
-              title: '提成方案配置',
+              title: '提成方案',
               permissions: ['commission:manage'],
             },
           },
         ],
       },
+
+      // ========== 目标管理 ==========
       {
-        path: 'target-management',
-        name: 'TargetManagement',
+        path: 'target',
+        name: 'Target',
         component: () => import('@/views/target/Management.vue'),
         meta: {
-          title: '销售目标管理',
+          title: '目标管理',
           icon: 'Flag',
         },
       },
+
+      // ========== 系统管理 ==========
       {
         path: 'system',
         name: 'System',
@@ -341,10 +354,20 @@ const routes: RouteRecordRaw[] = [
               title: '操作日志',
             },
           },
+          {
+            path: 'ai-config',
+            name: 'SystemAiConfig',
+            component: () => import('@/views/system/AiConfig.vue'),
+            meta: {
+              title: 'AI配置',
+              permissions: ['system:ai-config'],
+            },
+          },
         ],
       },
     ],
   },
+  // 数据大屏（独立页面）
   {
     path: '/datascreen',
     name: 'DataScreen',
