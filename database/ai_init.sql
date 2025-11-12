@@ -209,16 +209,16 @@ SET @permission_table_exists = (
 );
 
 -- AI配置管理权限
-INSERT INTO `permissions` (`permission_key`, `permission_name`, `permission_group`, `description`, `sort`, `create_time`)
-SELECT 'system:ai-config', 'AI配置管理', '系统管理', '管理AI提示词配置', 100, NOW()
+INSERT INTO `permissions` (`code`, `name`, `module`, `description`, `status`)
+SELECT 'system:ai-config', 'AI配置管理', 'system', '管理AI提示词配置', 1
 WHERE @permission_table_exists > 0
-  AND NOT EXISTS (SELECT 1 FROM `permissions` WHERE `permission_key` = 'system:ai-config');
+  AND NOT EXISTS (SELECT 1 FROM `permissions` WHERE `code` = 'system:ai-config');
 
 -- 智能创建客户权限
-INSERT INTO `permissions` (`permission_key`, `permission_name`, `permission_group`, `description`, `sort`, `create_time`)
-SELECT 'customer:smart-create', '智能创建客户', '客户管理', 'AI智能识别创建客户', 10, NOW()
+INSERT INTO `permissions` (`code`, `name`, `module`, `description`, `status`)
+SELECT 'customer:smart-create', '智能创建客户', 'customer', 'AI智能识别创建客户', 1
 WHERE @permission_table_exists > 0
-  AND NOT EXISTS (SELECT 1 FROM `permissions` WHERE `permission_key` = 'customer:smart-create');
+  AND NOT EXISTS (SELECT 1 FROM `permissions` WHERE `code` = 'customer:smart-create');
 
 -- ========================================
 -- 4. 验证数据
