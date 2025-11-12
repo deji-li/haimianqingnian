@@ -1,11 +1,18 @@
 <template>
   <div class="ai-config-container">
     <el-card class="header-card">
-      <h2>AI提示词配置管理</h2>
-      <p class="desc">管理DeepSeek和豆包的提示词配置，支持多场景独立配置</p>
+      <h2>AI配置管理</h2>
+      <p class="desc">管理DeepSeek和豆包的API密钥和提示词配置</p>
     </el-card>
 
-    <div class="config-layout">
+    <!-- Tab切换 -->
+    <el-card style="margin-top: 20px">
+      <el-tabs v-model="activeTab">
+        <el-tab-pane label="API密钥配置" name="api-key">
+          <ApiKeyManagement />
+        </el-tab-pane>
+        <el-tab-pane label="提示词配置" name="prompt">
+          <div class="config-layout-inner">
       <!-- 左侧：场景列表 -->
       <el-card class="scenario-list">
         <template #header>
@@ -158,6 +165,10 @@
         <el-button type="primary" @click="createScenario">确定</el-button>
       </template>
     </el-dialog>
+          </div>
+        </el-tab-pane>
+      </el-tabs>
+    </el-card>
   </div>
 </template>
 
@@ -166,6 +177,10 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import ApiKeyManagement from '@/components/system/ApiKeyManagement.vue'
+
+// Tab切换
+const activeTab = ref('api-key')
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -412,10 +427,10 @@ onMounted(() => {
     }
   }
 
-  .config-layout {
+  .config-layout-inner {
     display: flex;
     gap: 20px;
-    height: calc(100vh - 240px);
+    height: calc(100vh - 320px);
 
     .scenario-list {
       width: 300px;

@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import * as fs from 'fs';
 import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
+import { AiApiKeyService } from '../../../modules/ai-config/ai-api-key.service';
 
 /**
  * 豆包OCR服务
@@ -11,39 +12,66 @@ import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
 @Injectable()
 export class DoubaoOcrService {
   private readonly logger = new Logger(DoubaoOcrService.name);
-  private readonly httpClient: AxiosInstance;
-  private readonly apiKey: string;
-  private readonly apiUrl: string;
-  private readonly endpointId: string;
   private readonly imageDownloadTimeout: number;
+
+  // 缓存API密钥配置，避免每次都查数据库
+  private cachedConfig: {
+    apiKey: string;
+    apiUrl: string;
+    endpointId: string;
+    lastUpdate: number;
+  } | null = null;
+  private readonly cacheTimeout = 60000; // 缓存1分钟
 
   constructor(
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => AiConfigService))
     private readonly aiConfigService: AiConfigService,
+    @Inject(forwardRef(() => AiApiKeyService))
+    private readonly aiApiKeyService: AiApiKeyService,
   ) {
-    this.apiKey = this.configService.get<string>('DOUBAO_API_KEY');
-    this.apiUrl = this.configService.get<string>('DOUBAO_API_URL');
-    this.endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID');
     this.imageDownloadTimeout = this.configService.get<number>('IMAGE_DOWNLOAD_TIMEOUT', 30000);
+  }
 
-    // 检查配置
-    if (!this.apiKey || this.apiKey.includes('your_')) {
-      this.logger.warn('豆包API密钥未配置，OCR功能将不可用');
-    }
-    if (!this.endpointId || this.endpointId.includes('your_')) {
-      this.logger.warn('豆包端点ID未配置，OCR功能将不可用');
+  /**
+   * 获取豆包API配置（优先从数据库，fallback到.env）
+   */
+  private async getApiConfig(): Promise<{ apiKey: string; apiUrl: string; endpointId: string }> {
+    // 检查缓存是否有效
+    if (this.cachedConfig && Date.now() - this.cachedConfig.lastUpdate < this.cacheTimeout) {
+      return this.cachedConfig;
     }
 
-    // 火山方舟视觉模型需要特殊的 header
-    this.httpClient = axios.create({
-      timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-        'x-ark-beta-vision': 'true',  // 视觉模型必需
-      },
-    });
+    try {
+      // 优先从数据库读取
+      const dbConfig = await this.aiApiKeyService.findByProvider('doubao');
+
+      if (dbConfig && dbConfig.apiKey && dbConfig.apiUrl) {
+        this.logger.log('使用数据库中的豆包API配置');
+        this.cachedConfig = {
+          apiKey: dbConfig.apiKey,
+          apiUrl: dbConfig.apiUrl,
+          endpointId: dbConfig.endpointId || '',
+          lastUpdate: Date.now(),
+        };
+        return this.cachedConfig;
+      }
+    } catch (error) {
+      this.logger.warn(`从数据库读取豆包配置失败，fallback到环境变量: ${error.message}`);
+    }
+
+    // Fallback到环境变量
+    const apiKey = this.configService.get<string>('DOUBAO_API_KEY', '');
+    const apiUrl = this.configService.get<string>('DOUBAO_API_URL', '');
+    const endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID', '');
+
+    if (!apiKey || apiKey.includes('your_')) {
+      throw new Error('豆包API密钥未配置，请在系统设置中配置');
+    }
+
+    this.logger.log('使用环境变量中的豆包API配置');
+    this.cachedConfig = { apiKey, apiUrl, endpointId, lastUpdate: Date.now() };
+    return this.cachedConfig;
   }
 
   /**
@@ -55,26 +83,39 @@ export class DoubaoOcrService {
     try {
       this.logger.log(`开始OCR识别: ${imagePath}`);
 
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
       const scenarioKey = 'chat_ocr_extract';
 
-      // 从数据库获取配置
-      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'doubao');
+      // 从数据库获取提示词配置
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'doubao');
 
       // 系统提示词
-      const systemPrompt = config?.systemPrompt || '你是一个专业的OCR文字识别助手。请提取图片中的所有文字内容，保持原有格式和顺序。';
+      const systemPrompt = promptConfig?.systemPrompt || '你是一个专业的OCR文字识别助手。请提取图片中的所有文字内容，保持原有格式和顺序。';
 
       // 用户提示词
       let userTextPrompt = '请识别这张微信聊天截图中的所有文字内容，包括发送者、时间和消息内容。';
-      if (config?.promptContent) {
-        userTextPrompt = config.promptContent;
+      if (promptConfig?.promptContent) {
+        userTextPrompt = promptConfig.promptContent;
       }
 
       // 读取图片并转为base64
       const imageBase64 = await this.imageToBase64(imagePath);
 
+      // 创建HTTP客户端（使用最新的API密钥）
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+          'x-ark-beta-vision': 'true',  // 视觉模型必需
+        },
+      });
+
       // 调用豆包视觉模型API（使用 Endpoint ID）
-      const response = await this.httpClient.post(this.apiUrl, {
-        model: config?.modelName || this.endpointId,
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: promptConfig?.modelName || apiConfig.endpointId,
         messages: [
           {
             role: 'system',
@@ -96,8 +137,8 @@ export class DoubaoOcrService {
             ]
           }
         ],
-        temperature: config?.temperature ?? 0.1,
-        max_tokens: config?.maxTokens ?? 2000
+        temperature: promptConfig?.temperature ?? 0.1,
+        max_tokens: promptConfig?.maxTokens ?? 2000
       });
 
       const extractedText = response.data.choices[0].message.content;
@@ -190,9 +231,21 @@ export class DoubaoOcrService {
    */
   async testConnection(): Promise<boolean> {
     try {
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
+      // 创建HTTP客户端
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
       // 简单测试请求
-      const response = await this.httpClient.post(this.apiUrl, {
-        model: this.endpointId,
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: apiConfig.endpointId,
         messages: [
           { role: 'system', content: '你是一个OCR助手' },
           { role: 'user', content: 'Hello' }

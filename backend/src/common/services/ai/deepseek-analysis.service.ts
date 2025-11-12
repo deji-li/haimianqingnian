@@ -2,6 +2,7 @@ import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
+import { AiApiKeyService } from '../../../modules/ai-config/ai-api-key.service';
 
 /**
  * AI分析结果接口（20+维度）
@@ -68,32 +69,63 @@ export interface AiAnalysisResult {
 @Injectable()
 export class DeepseekAnalysisService {
   private readonly logger = new Logger(DeepseekAnalysisService.name);
-  private readonly httpClient: AxiosInstance;
-  private readonly apiKey: string;
-  private readonly apiUrl: string;
-  private readonly model: string;
+
+  // 缓存API密钥配置，避免每次都查数据库
+  private cachedConfig: {
+    apiKey: string;
+    apiUrl: string;
+    modelName: string;
+    lastUpdate: number;
+  } | null = null;
+  private readonly cacheTimeout = 60000; // 缓存1分钟
 
   constructor(
     private readonly configService: ConfigService,
     @Inject(forwardRef(() => AiConfigService))
     private readonly aiConfigService: AiConfigService,
-  ) {
-    this.apiKey = this.configService.get<string>('DEEPSEEK_API_KEY');
-    this.apiUrl = this.configService.get<string>('DEEPSEEK_API_URL');
-    this.model = this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-chat');
+    @Inject(forwardRef(() => AiApiKeyService))
+    private readonly aiApiKeyService: AiApiKeyService,
+  ) {}
 
-    // 检查配置
-    if (!this.apiKey || this.apiKey.includes('your_')) {
-      this.logger.warn('DeepSeek API密钥未配置，AI分析功能将不可用');
+  /**
+   * 获取DeepSeek API配置（优先从数据库，fallback到.env）
+   */
+  private async getApiConfig(): Promise<{ apiKey: string; apiUrl: string; modelName: string }> {
+    // 检查缓存是否有效
+    if (this.cachedConfig && Date.now() - this.cachedConfig.lastUpdate < this.cacheTimeout) {
+      return this.cachedConfig;
     }
 
-    this.httpClient = axios.create({
-      timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
-      },
-    });
+    try {
+      // 优先从数据库读取
+      const dbConfig = await this.aiApiKeyService.findByProvider('deepseek');
+
+      if (dbConfig && dbConfig.apiKey && dbConfig.apiUrl) {
+        this.logger.log('使用数据库中的DeepSeek API配置');
+        this.cachedConfig = {
+          apiKey: dbConfig.apiKey,
+          apiUrl: dbConfig.apiUrl,
+          modelName: dbConfig.modelName || 'deepseek-chat',
+          lastUpdate: Date.now(),
+        };
+        return this.cachedConfig;
+      }
+    } catch (error) {
+      this.logger.warn(`从数据库读取DeepSeek配置失败，fallback到环境变量: ${error.message}`);
+    }
+
+    // Fallback到环境变量
+    const apiKey = this.configService.get<string>('DEEPSEEK_API_KEY', '');
+    const apiUrl = this.configService.get<string>('DEEPSEEK_API_URL', '');
+    const modelName = this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-chat');
+
+    if (!apiKey || apiKey.includes('your_')) {
+      throw new Error('DeepSeek API密钥未配置，请在系统设置中配置');
+    }
+
+    this.logger.log('使用环境变量中的DeepSeek API配置');
+    this.cachedConfig = { apiKey, apiUrl, modelName, lastUpdate: Date.now() };
+    return this.cachedConfig;
   }
 
   /**
@@ -109,17 +141,29 @@ export class DeepseekAnalysisService {
     try {
       this.logger.log(`开始AI分析，文本长度: ${chatText.length}`);
 
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
       const scenarioKey = 'chat_deep_analysis';
       const systemPrompt = await this.getSystemPrompt(scenarioKey);
       const userPrompt = await this.buildAnalysisPrompt(scenarioKey, chatText, customerInfo);
 
       // 获取配置的模型参数
-      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
-      const temperature = config?.temperature ?? this.configService.get<number>('AI_TEMPERATURE', 0.3);
-      const maxTokens = config?.maxTokens ?? this.configService.get<number>('AI_MAX_TOKENS', 4000);
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      const temperature = promptConfig?.temperature ?? this.configService.get<number>('AI_TEMPERATURE', 0.3);
+      const maxTokens = promptConfig?.maxTokens ?? this.configService.get<number>('AI_MAX_TOKENS', 4000);
 
-      const response = await this.httpClient.post(this.apiUrl, {
-        model: config?.modelName || this.model,
+      // 创建HTTP客户端（使用最新的API密钥）
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: promptConfig?.modelName || apiConfig.modelName,
         messages: [
           {
             role: 'system',
