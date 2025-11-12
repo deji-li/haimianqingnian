@@ -23,20 +23,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: any) {
     const user = await this.userRepository
       .createQueryBuilder('user')
-      .leftJoin('user.role', 'role')
+      .leftJoin('roles', 'role', 'user.role_id = role.id')
       .where('user.id = :id', { id: payload.sub })
       .select([
-        'user.id',
-        'user.username',
-        'user.realName',
-        'user.phone',
-        'user.email',
-        'user.roleId',
-        'user.departmentId',
-        'user.campusId',
-        'user.status',
-        'role.code',
-        'role.name',
+        'user.id AS user_id',
+        'user.username AS user_username',
+        'user.real_name AS user_realName',
+        'user.phone AS user_phone',
+        'user.email AS user_email',
+        'user.role_id AS user_roleId',
+        'user.department_id AS user_departmentId',
+        'user.campus_id AS user_campusId',
+        'user.status AS user_status',
+        'role.code AS roleCode',
+        'role.name AS roleName',
       ])
       .getRawOne();
 
@@ -48,13 +48,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('用户已被禁用');
     }
 
+    console.log('=== DEBUG JWT VALIDATE ===');
+    console.log('Validated user:', JSON.stringify(user, null, 2));
+    console.log('Returning roleCode:', user.roleCode);
+    console.log('==========================');
+
     return {
       id: user.user_id,
       username: user.user_username,
       realName: user.user_realName,
       roleId: user.user_roleId,
-      roleCode: user.role_code,
-      roleName: user.role_name,
+      roleCode: user.roleCode,
+      roleName: user.roleName,
       departmentId: user.user_departmentId,
       campusId: user.user_campusId,
     };
