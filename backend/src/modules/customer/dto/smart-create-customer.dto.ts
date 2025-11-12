@@ -1,3 +1,5 @@
+import { IsOptional, IsArray, IsNumber, IsString, IsObject } from 'class-validator';
+
 /**
  * 智能创建客户请求DTO
  */
@@ -5,21 +7,32 @@ export class SmartCreateCustomerDto {
   /**
    * 聊天截图的文件ID列表（已上传到系统的文件）
    */
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
   imageFileIds?: number[];
 
   /**
    * 聊天截图的URL列表（外部URL或临时URL）
    */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   imageUrls?: string[];
 
   /**
    * 聊天截图的base64列表（用于Ctrl+V粘贴场景）
    */
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
   imageBase64List?: string[];
 
   /**
    * 已知的客户基本信息（可选，用于辅助AI分析）
    */
+  @IsOptional()
+  @IsObject()
   knownInfo?: {
     wechatNickname?: string;
     phone?: string;

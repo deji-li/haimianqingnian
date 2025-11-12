@@ -14,11 +14,6 @@
           <span>工作台</span>
         </el-menu-item>
 
-        <el-menu-item index="/dashboard">
-          <el-icon><DataLine /></el-icon>
-          <span>数据看板</span>
-        </el-menu-item>
-
         <el-sub-menu index="/customer">
           <template #title>
             <el-icon><User /></el-icon>
