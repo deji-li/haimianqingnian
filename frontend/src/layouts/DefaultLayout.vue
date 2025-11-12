@@ -28,11 +28,6 @@
           <span>订单管理</span>
         </el-menu-item>
 
-        <el-menu-item index="/team-leaderboard">
-          <el-icon><Trophy /></el-icon>
-          <span>团队排行榜</span>
-        </el-menu-item>
-
         <el-sub-menu index="/finance">
           <template #title>
             <el-icon><Money /></el-icon>
@@ -43,9 +38,9 @@
           <el-menu-item index="/finance/commission-schemes">提成方案</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/target-management">
+        <el-menu-item index="/target">
           <el-icon><Flag /></el-icon>
-          <span>销售目标管理</span>
+          <span>目标管理</span>
         </el-menu-item>
 
         <el-sub-menu index="/system">
@@ -83,6 +78,7 @@
           <el-menu-item index="/analytics/personal">个人统计</el-menu-item>
           <el-menu-item index="/analytics/funnel">销售漏斗</el-menu-item>
           <el-menu-item index="/analytics/advanced">高级分析</el-menu-item>
+          <el-menu-item index="/analytics/leaderboard">团队排行榜</el-menu-item>
           <el-menu-item index="/analytics/ai-analytics">AI人效分析</el-menu-item>
           <el-menu-item index="/analytics/ai-reports">AI诊断报告</el-menu-item>
         </el-sub-menu>
