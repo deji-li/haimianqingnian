@@ -147,8 +147,14 @@ export class DoubaoOcrService {
       return extractedText;
 
     } catch (error) {
-      this.logger.error(`OCR识别失败: ${error.message}`, error.stack);
-      throw new Error(`OCR识别失败: ${error.message}`);
+      // 记录详细的错误信息
+      if (error.response) {
+        this.logger.error(`OCR识别失败: ${error.message}, 状态码: ${error.response.status}, 响应数据: ${JSON.stringify(error.response.data)}`);
+        throw new Error(`OCR识别失败: ${error.message}, 详情: ${JSON.stringify(error.response.data)}`);
+      } else {
+        this.logger.error(`OCR识别失败: ${error.message}`, error.stack);
+        throw new Error(`OCR识别失败: ${error.message}`);
+      }
     }
   }
 
