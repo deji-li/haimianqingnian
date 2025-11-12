@@ -188,7 +188,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import request from '@/utils/request'
 import { Plus, Search } from '@element-plus/icons-vue'
 
 // 查询表单
@@ -246,7 +246,7 @@ const loadTags = async () => {
       source: queryForm.source || undefined,
     }
 
-    const { data } = await axios.get('/api/ai-tags/list', { params })
+    const data = await request.get('/ai-tags/list', { params })
 
     tagList.value = data.data.list || []
     pagination.total = data.data.total || 0
@@ -260,7 +260,7 @@ const loadTags = async () => {
 // 加载统计数据
 const loadStatistics = async () => {
   try {
-    const { data } = await axios.get('/api/ai-tags/statistics')
+    const data = await request.get('/ai-tags/statistics')
 
     statistics.value = {
       totalTags: data.data.totalTags || 0,
@@ -288,7 +288,7 @@ const handleAdd = async () => {
 
   adding.value = true
   try {
-    await axios.post('/api/ai-tags', {
+    await request.post('/ai-tags', {
       customerId: Number(addForm.customerId),
       tagCategory: addForm.tagCategory,
       tagName: addForm.tagName,
@@ -321,7 +321,7 @@ const handleDelete = async (row: any) => {
     })
 
     row.deleting = true
-    await axios.delete(`/api/ai-tags/${row.id}`)
+    await request.delete(`/ai-tags/${row.id}`)
 
     ElMessage.success('删除成功')
     loadTags()
