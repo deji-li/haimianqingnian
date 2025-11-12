@@ -137,8 +137,8 @@ export class DoubaoOcrService {
             ]
           }
         ],
-        temperature: promptConfig?.temperature ?? 0.1,
-        max_tokens: promptConfig?.maxTokens ?? 2000
+        temperature: parseFloat(promptConfig?.temperature?.toString() || '0.1'),
+        max_tokens: parseInt(promptConfig?.maxTokens?.toString() || '2000', 10)
       });
 
       const extractedText = response.data.choices[0].message.content;

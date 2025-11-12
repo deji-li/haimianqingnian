@@ -150,8 +150,8 @@ export class DeepseekAnalysisService {
 
       // 获取配置的模型参数
       const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
-      const temperature = promptConfig?.temperature ?? this.configService.get<number>('AI_TEMPERATURE', 0.3);
-      const maxTokens = promptConfig?.maxTokens ?? this.configService.get<number>('AI_MAX_TOKENS', 4000);
+      const temperature = parseFloat((promptConfig?.temperature ?? this.configService.get<number>('AI_TEMPERATURE', 0.3)).toString());
+      const maxTokens = parseInt((promptConfig?.maxTokens ?? this.configService.get<number>('AI_MAX_TOKENS', 4000)).toString(), 10);
 
       // 创建HTTP客户端（使用最新的API密钥）
       const httpClient = axios.create({
@@ -399,8 +399,8 @@ export class DeepseekAnalysisService {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: promptConfig?.temperature ?? 0.7,
-        max_tokens: promptConfig?.maxTokens ?? 500,
+        temperature: parseFloat((promptConfig?.temperature ?? 0.7).toString()),
+        max_tokens: parseInt((promptConfig?.maxTokens ?? 500).toString(), 10),
       });
 
       return response.data.choices[0].message.content.trim();
