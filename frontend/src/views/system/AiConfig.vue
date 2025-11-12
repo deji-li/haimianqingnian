@@ -165,7 +165,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, InfoFilled } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 
 // 搜索关键词
 const searchKeyword = ref('')
@@ -238,7 +238,7 @@ const scenarioTree = computed(() => {
 // 加载场景列表
 async function loadScenarios() {
   try {
-    const { data } = await axios.get('/api/ai-config', {
+    const data = await request.get('/ai-config', {
       params: { limit: 1000 },
     })
     scenarios.value = data.list || []
@@ -261,8 +261,8 @@ async function loadConfig() {
 
   loading.value = true
   try {
-    const { data } = await axios.get(
-      `/api/ai-config/by-scenario/${selectedScenario.value.scenarioKey}/${currentProvider.value}`
+    const data = await request.get(
+      `/ai-config/by-scenario/${selectedScenario.value.scenarioKey}/${currentProvider.value}`
     )
 
     if (data) {
@@ -296,7 +296,7 @@ async function saveConfig() {
 
   saving.value = true
   try {
-    await axios.put(`/api/ai-config/${currentConfigId.value}`, formData.value)
+    await request.put(`/ai-config/${currentConfigId.value}`, formData.value)
     ElMessage.success('保存成功')
     loadScenarios()
   } catch (error: any) {
@@ -320,7 +320,7 @@ async function createProviderConfig() {
 
   saving.value = true
   try {
-    await axios.post('/api/ai-config', payload)
+    await request.post('/ai-config', payload)
     ElMessage.success('创建成功')
     loadScenarios()
     loadConfig()
@@ -340,7 +340,7 @@ async function deleteConfig() {
   })
 
   try {
-    await axios.delete(`/api/ai-config/${currentConfigId.value}`)
+    await request.delete(`/ai-config/${currentConfigId.value}`)
     ElMessage.success('删除成功')
     loadScenarios()
     resetForm()
@@ -373,7 +373,7 @@ async function createScenario() {
   }
 
   try {
-    await axios.post('/api/ai-config', payload)
+    await request.post('/ai-config', payload)
     ElMessage.success('创建成功')
     showCreateDialog.value = false
     loadScenarios()
