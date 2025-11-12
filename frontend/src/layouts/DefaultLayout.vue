@@ -37,15 +37,6 @@
           <el-menu-item index="/order/dashboard">订单看板</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="/analytics">
-          <template #title>
-            <el-icon><TrendCharts /></el-icon>
-            <span>数据分析</span>
-          </template>
-          <el-menu-item index="/analytics/funnel">销售漏斗</el-menu-item>
-          <el-menu-item index="/analytics/advanced">高级分析</el-menu-item>
-        </el-sub-menu>
-
         <el-menu-item index="/team-leaderboard">
           <el-icon><Trophy /></el-icon>
           <span>团队排行榜</span>
@@ -66,14 +57,6 @@
           <span>销售目标管理</span>
         </el-menu-item>
 
-        <el-sub-menu index="/okr">
-          <template #title>
-            <el-icon><TrendCharts /></el-icon>
-            <span>OKR管理</span>
-          </template>
-          <el-menu-item index="/okr/list">OKR列表</el-menu-item>
-        </el-sub-menu>
-
         <el-sub-menu index="/system">
           <template #title>
             <el-icon><Setting /></el-icon>
@@ -85,19 +68,32 @@
           <el-menu-item index="/system/dictionary">字典管理</el-menu-item>
           <el-menu-item index="/system/role">角色权限</el-menu-item>
           <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
+          <el-menu-item index="/system/ai-config">AI配置</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="/ai">
+        <el-sub-menu index="/sales-tools">
           <template #title>
             <el-icon><MagicStick /></el-icon>
-            <span>AI智能助手</span>
+            <span>销售工具</span>
           </template>
-          <el-menu-item index="/ai/chat-analysis">AI聊天分析</el-menu-item>
-          <el-menu-item index="/ai/knowledge">AI知识库</el-menu-item>
-          <el-menu-item index="/ai/tools">AI工具中心</el-menu-item>
-          <el-menu-item index="/ai/marketing">AI营销助手</el-menu-item>
-          <el-menu-item index="/ai/analytics">AI人效分析</el-menu-item>
-          <el-menu-item index="/ai/reports">AI诊断报告</el-menu-item>
+          <el-menu-item index="/sales-tools/chat-analysis">聊天分析</el-menu-item>
+          <el-menu-item index="/sales-tools/knowledge">话术库</el-menu-item>
+          <el-menu-item index="/sales-tools/tools">AI工具</el-menu-item>
+          <el-menu-item index="/sales-tools/recovery">客户复苏</el-menu-item>
+          <el-menu-item index="/sales-tools/tags">标签管理</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="/analytics">
+          <template #title>
+            <el-icon><TrendCharts /></el-icon>
+            <span>数据分析</span>
+          </template>
+          <el-menu-item index="/analytics/dashboard">数据看板</el-menu-item>
+          <el-menu-item index="/analytics/personal">个人统计</el-menu-item>
+          <el-menu-item index="/analytics/funnel">销售漏斗</el-menu-item>
+          <el-menu-item index="/analytics/advanced">高级分析</el-menu-item>
+          <el-menu-item index="/analytics/ai-analytics">AI人效分析</el-menu-item>
+          <el-menu-item index="/analytics/ai-reports">AI诊断报告</el-menu-item>
         </el-sub-menu>
 
         <el-menu-item index="/datascreen">
