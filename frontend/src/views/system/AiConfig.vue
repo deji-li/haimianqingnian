@@ -165,7 +165,6 @@
         <el-button type="primary" @click="createScenario">确定</el-button>
       </template>
     </el-dialog>
-          </div>
         </el-tab-pane>
       </el-tabs>
     </el-card>
