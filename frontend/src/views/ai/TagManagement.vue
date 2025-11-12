@@ -248,10 +248,11 @@ const loadTags = async () => {
 
     const data = await request.get('/ai-tags/list', { params })
 
-    tagList.value = data.data.list || []
-    pagination.total = data.data.total || 0
+    tagList.value = data.list || []
+    pagination.total = data.total || 0
   } catch (error: any) {
-    ElMessage.error(error.response?.data?.message || '加载标签列表失败')
+    const message = error.response?.data?.message || error.message || '加载标签列表失败'
+    ElMessage.error(message)
   } finally {
     loading.value = false
   }
@@ -263,10 +264,10 @@ const loadStatistics = async () => {
     const data = await request.get('/ai-tags/statistics')
 
     statistics.value = {
-      totalTags: data.data.totalTags || 0,
-      aiGeneratedTags: data.data.aiGeneratedTags || 0,
-      manualTags: data.data.manualTags || 0,
-      categoryCount: data.data.categoryCount || 0,
+      totalTags: data.totalTags || 0,
+      aiGeneratedTags: data.aiGeneratedTags || 0,
+      manualTags: data.manualTags || 0,
+      categoryCount: data.categoryCount || 0,
     }
   } catch (error: any) {
     console.error('加载统计数据失败:', error)
