@@ -23,14 +23,10 @@
           <el-menu-item index="/customer/lifecycle-board">生命周期看板</el-menu-item>
         </el-sub-menu>
 
-        <el-sub-menu index="/order">
-          <template #title>
-            <el-icon><Document /></el-icon>
-            <span>订单管理</span>
-          </template>
-          <el-menu-item index="/order/list">订单列表</el-menu-item>
-          <el-menu-item index="/order/dashboard">订单看板</el-menu-item>
-        </el-sub-menu>
+        <el-menu-item index="/order">
+          <el-icon><Document /></el-icon>
+          <span>订单管理</span>
+        </el-menu-item>
 
         <el-menu-item index="/team-leaderboard">
           <el-icon><Trophy /></el-icon>
