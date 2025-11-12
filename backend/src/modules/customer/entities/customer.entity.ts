@@ -120,6 +120,18 @@ export class Customer {
 
   @Column({ name: 'last_ai_analysis_time', type: 'datetime', nullable: true, comment: '最后一次AI分析时间' })
   lastAiAnalysisTime: Date;
+
+  @Column({
+    name: 'ai_processing_status',
+    type: 'enum',
+    enum: ['pending', 'processing', 'completed', 'failed'],
+    nullable: true,
+    comment: 'AI识别处理状态：pending-待处理，processing-识别中，completed-已完成，failed-失败'
+  })
+  aiProcessingStatus: string;
+
+  @Column({ name: 'ai_processing_error', type: 'text', nullable: true, comment: 'AI识别失败原因' })
+  aiProcessingError: string;
   // ========== AI分析字段结束 ==========
 
   @CreateDateColumn({ name: 'create_time' })

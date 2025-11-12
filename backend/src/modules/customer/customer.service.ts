@@ -531,14 +531,75 @@ export class CustomerService {
   async smartCreateCustomer(
     smartCreateDto: SmartCreateCustomerDto,
     user: any,
-  ): Promise<SmartCreateCustomerResponseDto> {
+  ): Promise<any> {
     try {
-      this.logger.log('开始AI智能识别创建客户...');
+      this.logger.log('开始AI智能识别创建客户（异步模式）...');
+
+      // 1. 验证微信号
+      if (!smartCreateDto.knownInfo?.wechatId) {
+        throw new BadRequestException('请提供微信号');
+      }
+
+      // 2. 检查微信号是否已存在
+      const existingCustomer = await this.customerRepository.findOne({
+        where: { wechatId: smartCreateDto.knownInfo.wechatId },
+      });
+
+      if (existingCustomer) {
+        throw new BadRequestException('该微信号对应的客户已存在');
+      }
+
+      // 3. 立即创建客户记录（仅保存微信号和基本信息）
+      const customer = this.customerRepository.create({
+        wechatId: smartCreateDto.knownInfo.wechatId,
+        wechatNickname: smartCreateDto.knownInfo?.wechatNickname || null,
+        phone: smartCreateDto.knownInfo?.phone || null,
+        salesId: user.id,
+        customerIntent: '中',
+        lifecycleStage: '线索',
+        aiProcessingStatus: 'pending', // 标记为待处理
+        remark: 'AI识别中，请稍后查看完整信息...',
+      });
+
+      const savedCustomer = await this.customerRepository.save(customer);
+      this.logger.log(`客户创建成功，ID: ${savedCustomer.id}，开始后台AI识别...`);
+
+      // 4. 异步处理OCR和AI分析（不等待结果）
+      this.processAiRecognitionAsync(savedCustomer.id, smartCreateDto).catch(error => {
+        this.logger.error(`客户${savedCustomer.id}的AI识别失败: ${error.message}`, error.stack);
+      });
+
+      // 5. 立即返回客户信息
+      return {
+        success: true,
+        customerId: savedCustomer.id,
+        message: '客户创建成功，AI正在后台识别中，请稍后查看详情',
+        customer: savedCustomer,
+      };
+
+    } catch (error) {
+      this.logger.error(`创建客户失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 异步处理AI识别（不阻塞主流程）
+   */
+  private async processAiRecognitionAsync(
+    customerId: number,
+    smartCreateDto: SmartCreateCustomerDto,
+  ): Promise<void> {
+    try {
+      // 更新状态为处理中
+      await this.customerRepository.update(customerId, {
+        aiProcessingStatus: 'processing',
+      });
 
       // 1. 收集图片路径
       const imagePaths: string[] = [];
 
-      // 处理base64图片（Ctrl+V粘贴场景）
+      // 处理base64图片
       if (smartCreateDto.imageBase64List && smartCreateDto.imageBase64List.length > 0) {
         for (let i = 0; i < smartCreateDto.imageBase64List.length; i++) {
           const base64Data = smartCreateDto.imageBase64List[i];
@@ -552,19 +613,13 @@ export class CustomerService {
         imagePaths.push(...smartCreateDto.imageUrls);
       }
 
-      // TODO: 处理已上传文件ID（需要从文件表获取路径）
-      // if (smartCreateDto.imageFileIds && smartCreateDto.imageFileIds.length > 0) {
-      //   const files = await this.fileRepository.findByIds(smartCreateDto.imageFileIds);
-      //   imagePaths.push(...files.map(f => f.filePath));
-      // }
-
       if (imagePaths.length === 0) {
-        throw new BadRequestException('请提供至少一张聊天截图');
+        throw new Error('没有提供图片');
       }
 
-      this.logger.log(`收集到${imagePaths.length}张图片，开始OCR识别...`);
+      this.logger.log(`客户${customerId}: 收集到${imagePaths.length}张图片，开始OCR识别...`);
 
-      // 2. OCR识别聊天文本
+      // 2. OCR识别
       let chatText: string;
       if (imagePaths.length === 1) {
         chatText = await this.doubaoOcrService.extractTextFromImage(imagePaths[0]);
@@ -572,66 +627,55 @@ export class CustomerService {
         chatText = await this.doubaoOcrService.extractTextFromImages(imagePaths);
       }
 
-      this.logger.log(`OCR识别完成，文本长度: ${chatText.length}`);
+      this.logger.log(`客户${customerId}: OCR识别完成，文本长度: ${chatText.length}`);
 
-      // 3. AI深度分析（20+维度）
+      // 3. AI深度分析
       const analysisResult = await this.deepseekAnalysisService.analyzeChat(
         chatText,
         smartCreateDto.knownInfo,
       );
 
-      this.logger.log('AI分析完成，开始构建响应数据...');
+      this.logger.log(`客户${customerId}: AI分析完成，开始更新客户信息...`);
 
-      // 4. 构建响应数据
-      const response: SmartCreateCustomerResponseDto = {
-        basicInfo: {
-          realName: analysisResult.customerProfile.parentRole || undefined,
-          wechatNickname: smartCreateDto.knownInfo?.wechatNickname,
-          phone: smartCreateDto.knownInfo?.phone,
-          gender: undefined,
-          location: analysisResult.customerProfile.location,
-          studentGrade: analysisResult.customerProfile.studentGrade,
-          studentAge: analysisResult.customerProfile.studentAge,
-        },
-        intentInfo: {
-          customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
-          intentionScore: analysisResult.intentionScore,
-          customerStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
-          estimatedValue: analysisResult.estimatedValue,
-          estimatedCycle: analysisResult.estimatedCycle,
-          dealOpportunity: analysisResult.dealOpportunity,
-        },
-        tags: {
-          aiTags: this.generateTagsFromAnalysis(analysisResult),
-          profile: {
-            parentRole: analysisResult.customerProfile.parentRole,
-            familyEconomicLevel: analysisResult.customerProfile.familyEconomicLevel,
-            educationAttitude: analysisResult.customerProfile.educationAttitude,
-            decisionMakerRole: analysisResult.customerProfile.decisionMakerRole,
-            communicationStyle: analysisResult.customerProfile.communicationStyle,
-            trustLevel: analysisResult.trustLevel,
-          },
-        },
-        followUpAdvice: {
+      // 4. 更新客户信息
+      await this.customerRepository.update(customerId, {
+        realName: analysisResult.customerProfile.parentRole || null,
+        phone: smartCreateDto.knownInfo?.phone || null,
+        location: analysisResult.customerProfile.location || null,
+        studentGrade: analysisResult.customerProfile.studentGrade || null,
+        studentAge: analysisResult.customerProfile.studentAge || null,
+        familyEconomicLevel: analysisResult.customerProfile.familyEconomicLevel || null,
+        decisionMakerRole: analysisResult.customerProfile.decisionMakerRole || null,
+        parentRole: analysisResult.customerProfile.parentRole || null,
+        estimatedValue: analysisResult.estimatedValue || null,
+        qualityLevel: analysisResult.qualityLevel || null,
+        customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
+        lifecycleStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
+        aiProfile: {
+          needs: analysisResult.customerNeeds,
+          painPoints: analysisResult.customerPainPoints,
+          objections: analysisResult.customerObjections,
           nextSteps: analysisResult.nextSteps,
           salesStrategy: analysisResult.salesStrategy,
           riskFactors: analysisResult.riskFactors,
-          customerNeeds: analysisResult.customerNeeds,
-          customerPainPoints: analysisResult.customerPainPoints,
-          customerObjections: analysisResult.customerObjections,
         },
-        chatText,
-        rawAnalysisResult: analysisResult,
-      };
+        aiProcessingStatus: 'completed',
+        lastAiAnalysisTime: new Date(),
+        remark: `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`,
+      });
 
       // 5. 清理临时文件
       this.cleanupTempFiles(imagePaths);
 
-      this.logger.log('AI智能识别完成');
-      return response;
+      this.logger.log(`客户${customerId}: AI识别处理完成`);
 
     } catch (error) {
-      this.logger.error(`AI智能识别失败: ${error.message}`, error.stack);
+      // 更新失败状态
+      await this.customerRepository.update(customerId, {
+        aiProcessingStatus: 'failed',
+        aiProcessingError: error.message,
+        remark: `AI识别失败: ${error.message}`,
+      });
       throw error;
     }
   }
