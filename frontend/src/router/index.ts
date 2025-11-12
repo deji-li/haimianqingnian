@@ -100,30 +100,12 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'order',
         name: 'Order',
-        redirect: '/order/list',
+        component: () => import('@/views/order/List.vue'),
         meta: {
           title: '订单管理',
           icon: 'Document',
           permissions: ['order:view'],
         },
-        children: [
-          {
-            path: 'list',
-            name: 'OrderList',
-            component: () => import('@/views/order/List.vue'),
-            meta: {
-              title: '订单列表',
-            },
-          },
-          {
-            path: 'dashboard',
-            name: 'OrderDashboard',
-            component: () => import('@/views/order/Dashboard.vue'),
-            meta: {
-              title: '订单看板',
-            },
-          },
-        ],
       },
 
       // ========== 销售工具（整合AI功能） ==========

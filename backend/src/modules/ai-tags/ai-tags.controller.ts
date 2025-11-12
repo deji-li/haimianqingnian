@@ -13,12 +13,13 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AiTagsService } from './ai-tags.service';
 import { CreateTagDto, QueryTagsDto } from './dto/tag.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermissions } from '../../common/decorators/permission.decorator';
 
 @ApiTags('AI客户标签')
 @ApiBearerAuth()
 @Controller('ai-tags')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class AiTagsController {
   constructor(private readonly aiTagsService: AiTagsService) {}
 
