@@ -1,6 +1,7 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
+import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
 
 /**
  * AI分析结果接口（20+维度）
@@ -72,7 +73,11 @@ export class DeepseekAnalysisService {
   private readonly apiUrl: string;
   private readonly model: string;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(forwardRef(() => AiConfigService))
+    private readonly aiConfigService: AiConfigService,
+  ) {
     this.apiKey = this.configService.get<string>('DEEPSEEK_API_KEY');
     this.apiUrl = this.configService.get<string>('DEEPSEEK_API_URL');
     this.model = this.configService.get<string>('DEEPSEEK_MODEL', 'deepseek-chat');
@@ -104,22 +109,29 @@ export class DeepseekAnalysisService {
     try {
       this.logger.log(`开始AI分析，文本长度: ${chatText.length}`);
 
-      const prompt = this.buildAnalysisPrompt(chatText, customerInfo);
+      const scenarioKey = 'chat_deep_analysis';
+      const systemPrompt = await this.getSystemPrompt(scenarioKey);
+      const userPrompt = await this.buildAnalysisPrompt(scenarioKey, chatText, customerInfo);
+
+      // 获取配置的模型参数
+      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      const temperature = config?.temperature ?? this.configService.get<number>('AI_TEMPERATURE', 0.3);
+      const maxTokens = config?.maxTokens ?? this.configService.get<number>('AI_MAX_TOKENS', 4000);
 
       const response = await this.httpClient.post(this.apiUrl, {
-        model: this.model,
+        model: config?.modelName || this.model,
         messages: [
           {
             role: 'system',
-            content: this.getSystemPrompt(),
+            content: systemPrompt,
           },
           {
             role: 'user',
-            content: prompt,
+            content: userPrompt,
           },
         ],
-        temperature: this.configService.get<number>('AI_TEMPERATURE', 0.3),
-        max_tokens: this.configService.get<number>('AI_MAX_TOKENS', 4000),
+        temperature,
+        max_tokens: maxTokens,
       });
 
       const aiResponse = response.data.choices[0].message.content;
@@ -139,9 +151,19 @@ export class DeepseekAnalysisService {
   }
 
   /**
-   * 系统提示词（定义AI角色）
+   * 系统提示词（从数据库获取或使用默认）
    */
-  private getSystemPrompt(): string {
+  private async getSystemPrompt(scenarioKey: string): Promise<string> {
+    try {
+      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      if (config && config.systemPrompt) {
+        return config.systemPrompt;
+      }
+    } catch (error) {
+      this.logger.warn(`获取系统提示词失败，使用默认配置: ${error.message}`);
+    }
+
+    // 默认系统提示词
     return `你是一个专业的教育培训行业销售分析专家，擅长分析微信聊天记录并提供深度洞察。
 
 你的任务是：
@@ -159,9 +181,25 @@ export class DeepseekAnalysisService {
   }
 
   /**
-   * 构建分析提示词
+   * 构建分析提示词（从数据库获取或使用默认）
    */
-  private buildAnalysisPrompt(chatText: string, customerInfo?: any): string {
+  private async buildAnalysisPrompt(scenarioKey: string, chatText: string, customerInfo?: any): Promise<string> {
+    try {
+      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      if (config && config.promptContent) {
+        // 使用数据库配置的提示词模板，替换变量
+        let prompt = config.promptContent;
+        prompt = prompt.replace(/\{\{chatText\}\}/g, chatText);
+        prompt = prompt.replace(/\{\{customerName\}\}/g, customerInfo?.wechatNickname || '未知');
+        prompt = prompt.replace(/\{\{customerPhone\}\}/g, customerInfo?.phone || '未知');
+        prompt = prompt.replace(/\{\{customerIntent\}\}/g, customerInfo?.customerIntent || '未知');
+        return prompt;
+      }
+    } catch (error) {
+      this.logger.warn(`获取用户提示词失败，使用默认配置: ${error.message}`);
+    }
+
+    // 默认提示词
     let prompt = `请深度分析以下微信聊天记录，并按照JSON格式输出分析结果。\n\n`;
 
     if (customerInfo) {
@@ -266,7 +304,23 @@ export class DeepseekAnalysisService {
    */
   async generateRecoveryScript(customerData: any): Promise<string> {
     try {
-      const prompt = `请为以下沉睡客户生成一条复苏话术：
+      const scenarioKey = 'customer_recovery_script';
+      const systemPrompt = await this.getSystemPrompt(scenarioKey);
+
+      // 尝试从数据库获取配置
+      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      let userPrompt = '';
+
+      if (config && config.promptContent) {
+        // 使用数据库配置，替换变量
+        userPrompt = config.promptContent
+          .replace(/\{\{customerName\}\}/g, customerData.realName || customerData.wechatNickname)
+          .replace(/\{\{lastContactTime\}\}/g, customerData.lastContactTime)
+          .replace(/\{\{needs\}\}/g, customerData.needs || '未知')
+          .replace(/\{\{objections\}\}/g, customerData.objections || '无');
+      } else {
+        // 使用默认提示词
+        userPrompt = `请为以下沉睡客户生成一条复苏话术：
 
 客户信息：
 - 姓名：${customerData.realName || customerData.wechatNickname}
@@ -281,15 +335,16 @@ export class DeepseekAnalysisService {
 4. 100字以内
 
 请直接输出话术内容，不要其他说明。`;
+      }
 
       const response = await this.httpClient.post(this.apiUrl, {
-        model: this.model,
+        model: config?.modelName || this.model,
         messages: [
-          { role: 'system', content: '你是一个教育培训销售话术专家' },
-          { role: 'user', content: prompt },
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
         ],
-        temperature: 0.7,
-        max_tokens: 500,
+        temperature: config?.temperature ?? 0.7,
+        max_tokens: config?.maxTokens ?? 500,
       });
 
       return response.data.choices[0].message.content.trim();

@@ -10,6 +10,7 @@ import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analy
 import { AiCacheService } from '../../common/services/ai/ai-cache.service';
 import { AiTagsModule } from '../ai-tags/ai-tags.module';
 import { AiToolsModule } from '../ai-tools/ai-tools.module';
+import { AiConfigModule } from '../ai-config/ai-config.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AiToolsModule } from '../ai-tools/ai-tools.module';
     ConfigModule,
     AiTagsModule,
     AiToolsModule,
+    AiConfigModule,
   ],
   controllers: [AiChatController],
   providers: [

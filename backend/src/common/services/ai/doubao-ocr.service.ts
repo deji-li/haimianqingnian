@@ -1,7 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import * as fs from 'fs';
+import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
 
 /**
  * 豆包OCR服务
@@ -16,7 +17,11 @@ export class DoubaoOcrService {
   private readonly endpointId: string;
   private readonly imageDownloadTimeout: number;
 
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    private readonly configService: ConfigService,
+    @Inject(forwardRef(() => AiConfigService))
+    private readonly aiConfigService: AiConfigService,
+  ) {
     this.apiKey = this.configService.get<string>('DOUBAO_API_KEY');
     this.apiUrl = this.configService.get<string>('DOUBAO_API_URL');
     this.endpointId = this.configService.get<string>('DOUBAO_ENDPOINT_ID');
@@ -50,23 +55,37 @@ export class DoubaoOcrService {
     try {
       this.logger.log(`开始OCR识别: ${imagePath}`);
 
+      const scenarioKey = 'chat_ocr_extract';
+
+      // 从数据库获取配置
+      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'doubao');
+
+      // 系统提示词
+      const systemPrompt = config?.systemPrompt || '你是一个专业的OCR文字识别助手。请提取图片中的所有文字内容，保持原有格式和顺序。';
+
+      // 用户提示词
+      let userTextPrompt = '请识别这张微信聊天截图中的所有文字内容，包括发送者、时间和消息内容。';
+      if (config?.promptContent) {
+        userTextPrompt = config.promptContent;
+      }
+
       // 读取图片并转为base64
       const imageBase64 = await this.imageToBase64(imagePath);
 
       // 调用豆包视觉模型API（使用 Endpoint ID）
       const response = await this.httpClient.post(this.apiUrl, {
-        model: this.endpointId,
+        model: config?.modelName || this.endpointId,
         messages: [
           {
             role: 'system',
-            content: '你是一个专业的OCR文字识别助手。请提取图片中的所有文字内容，保持原有格式和顺序。'
+            content: systemPrompt
           },
           {
             role: 'user',
             content: [
               {
                 type: 'text',
-                text: '请识别这张微信聊天截图中的所有文字内容，包括发送者、时间和消息内容。'
+                text: userTextPrompt
               },
               {
                 type: 'image_url',
@@ -77,8 +96,8 @@ export class DoubaoOcrService {
             ]
           }
         ],
-        temperature: 0.1,
-        max_tokens: 2000
+        temperature: config?.temperature ?? 0.1,
+        max_tokens: config?.maxTokens ?? 2000
       });
 
       const extractedText = response.data.choices[0].message.content;
