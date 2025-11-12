@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   Logger,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between } from 'typeorm';
@@ -13,6 +14,14 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BatchUpdateCustomerDto } from './dto/batch-update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateFollowRecordDto } from './dto/create-follow-record.dto';
+import {
+  SmartCreateCustomerDto,
+  SmartCreateCustomerResponseDto,
+} from './dto/smart-create-customer.dto';
+import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
+import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class CustomerService {
@@ -23,6 +32,8 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerFollowRecord)
     private followRecordRepository: Repository<CustomerFollowRecord>,
+    private readonly doubaoOcrService: DoubaoOcrService,
+    private readonly deepseekAnalysisService: DeepseekAnalysisService,
   ) {}
 
   // 创建客户
@@ -509,5 +520,231 @@ export class CustomerService {
       overdueFollow: overdueCount,
       totalCustomers,
     };
+  }
+
+  /**
+   * AI智能识别创建客户
+   * @param smartCreateDto 智能创建DTO（包含图片）
+   * @param user 当前用户
+   * @returns 识别后的客户信息结构化数据
+   */
+  async smartCreateCustomer(
+    smartCreateDto: SmartCreateCustomerDto,
+    user: any,
+  ): Promise<SmartCreateCustomerResponseDto> {
+    try {
+      this.logger.log('开始AI智能识别创建客户...');
+
+      // 1. 收集图片路径
+      const imagePaths: string[] = [];
+
+      // 处理base64图片（Ctrl+V粘贴场景）
+      if (smartCreateDto.imageBase64List && smartCreateDto.imageBase64List.length > 0) {
+        for (let i = 0; i < smartCreateDto.imageBase64List.length; i++) {
+          const base64Data = smartCreateDto.imageBase64List[i];
+          const tempPath = await this.saveBase64ToTemp(base64Data, i);
+          imagePaths.push(tempPath);
+        }
+      }
+
+      // 处理URL图片
+      if (smartCreateDto.imageUrls && smartCreateDto.imageUrls.length > 0) {
+        imagePaths.push(...smartCreateDto.imageUrls);
+      }
+
+      // TODO: 处理已上传文件ID（需要从文件表获取路径）
+      // if (smartCreateDto.imageFileIds && smartCreateDto.imageFileIds.length > 0) {
+      //   const files = await this.fileRepository.findByIds(smartCreateDto.imageFileIds);
+      //   imagePaths.push(...files.map(f => f.filePath));
+      // }
+
+      if (imagePaths.length === 0) {
+        throw new BadRequestException('请提供至少一张聊天截图');
+      }
+
+      this.logger.log(`收集到${imagePaths.length}张图片，开始OCR识别...`);
+
+      // 2. OCR识别聊天文本
+      let chatText: string;
+      if (imagePaths.length === 1) {
+        chatText = await this.doubaoOcrService.extractTextFromImage(imagePaths[0]);
+      } else {
+        chatText = await this.doubaoOcrService.extractTextFromImages(imagePaths);
+      }
+
+      this.logger.log(`OCR识别完成，文本长度: ${chatText.length}`);
+
+      // 3. AI深度分析（20+维度）
+      const analysisResult = await this.deepseekAnalysisService.analyzeChat(
+        chatText,
+        smartCreateDto.knownInfo,
+      );
+
+      this.logger.log('AI分析完成，开始构建响应数据...');
+
+      // 4. 构建响应数据
+      const response: SmartCreateCustomerResponseDto = {
+        basicInfo: {
+          realName: analysisResult.customerProfile.parentRole || undefined,
+          wechatNickname: smartCreateDto.knownInfo?.wechatNickname,
+          phone: smartCreateDto.knownInfo?.phone,
+          gender: undefined,
+          location: analysisResult.customerProfile.location,
+          studentGrade: analysisResult.customerProfile.studentGrade,
+          studentAge: analysisResult.customerProfile.studentAge,
+        },
+        intentInfo: {
+          customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
+          intentionScore: analysisResult.intentionScore,
+          customerStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
+          estimatedValue: analysisResult.estimatedValue,
+          estimatedCycle: analysisResult.estimatedCycle,
+          dealOpportunity: analysisResult.dealOpportunity,
+        },
+        tags: {
+          aiTags: this.generateTagsFromAnalysis(analysisResult),
+          profile: {
+            parentRole: analysisResult.customerProfile.parentRole,
+            familyEconomicLevel: analysisResult.customerProfile.familyEconomicLevel,
+            educationAttitude: analysisResult.customerProfile.educationAttitude,
+            decisionMakerRole: analysisResult.customerProfile.decisionMakerRole,
+            communicationStyle: analysisResult.customerProfile.communicationStyle,
+            trustLevel: analysisResult.trustLevel,
+          },
+        },
+        followUpAdvice: {
+          nextSteps: analysisResult.nextSteps,
+          salesStrategy: analysisResult.salesStrategy,
+          riskFactors: analysisResult.riskFactors,
+          customerNeeds: analysisResult.customerNeeds,
+          customerPainPoints: analysisResult.customerPainPoints,
+          customerObjections: analysisResult.customerObjections,
+        },
+        chatText,
+        rawAnalysisResult: analysisResult,
+      };
+
+      // 5. 清理临时文件
+      this.cleanupTempFiles(imagePaths);
+
+      this.logger.log('AI智能识别完成');
+      return response;
+
+    } catch (error) {
+      this.logger.error(`AI智能识别失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 保存base64图片到临时目录
+   */
+  private async saveBase64ToTemp(base64Data: string, index: number): Promise<string> {
+    try {
+      // 移除data:image/xxx;base64,前缀
+      const base64 = base64Data.replace(/^data:image\/\w+;base64,/, '');
+      const buffer = Buffer.from(base64, 'base64');
+
+      // 创建临时目录
+      const tempDir = path.join(process.cwd(), 'temp', 'smart-create');
+      if (!fs.existsSync(tempDir)) {
+        fs.mkdirSync(tempDir, { recursive: true });
+      }
+
+      // 生成文件名
+      const fileName = `paste-${Date.now()}-${index}.jpg`;
+      const filePath = path.join(tempDir, fileName);
+
+      // 写入文件
+      fs.writeFileSync(filePath, buffer);
+
+      this.logger.log(`保存临时文件: ${filePath}`);
+      return filePath;
+
+    } catch (error) {
+      this.logger.error(`保存base64图片失败: ${error.message}`);
+      throw new BadRequestException('图片格式错误');
+    }
+  }
+
+  /**
+   * 清理临时文件
+   */
+  private cleanupTempFiles(imagePaths: string[]) {
+    for (const filePath of imagePaths) {
+      try {
+        // 只删除临时目录中的文件
+        if (filePath.includes('/temp/smart-create') || filePath.includes('\\temp\\smart-create')) {
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+            this.logger.log(`删除临时文件: ${filePath}`);
+          }
+        }
+      } catch (error) {
+        this.logger.warn(`删除临时文件失败: ${filePath}, ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * 将意向分数映射为意向等级
+   */
+  private mapIntentionScoreToLevel(score: number): string {
+    if (score >= 80) return '高意向';
+    if (score >= 60) return '中意向';
+    if (score >= 40) return '低意向';
+    return '无意向';
+  }
+
+  /**
+   * 将质量等级映射为客户阶段
+   */
+  private mapQualityLevelToStage(qualityLevel: string): string {
+    const map: Record<string, string> = {
+      'A': '报价',
+      'B': '方案沟通',
+      'C': '需求确认',
+      'D': '初次接触',
+    };
+    return map[qualityLevel] || '初次接触';
+  }
+
+  /**
+   * 从AI分析结果生成标签
+   */
+  private generateTagsFromAnalysis(analysisResult: any): string[] {
+    const tags: string[] = [];
+
+    // 意向相关
+    if (analysisResult.intentionScore >= 80) {
+      tags.push('高意向');
+    } else if (analysisResult.intentionScore >= 60) {
+      tags.push('中意向');
+    }
+
+    // 风险相关
+    if (analysisResult.riskLevel !== '无风险' && analysisResult.riskLevel !== '低') {
+      tags.push(`${analysisResult.riskLevel}风险`);
+    }
+
+    // 客户画像相关
+    if (analysisResult.customerProfile.familyEconomicLevel === '高') {
+      tags.push('高消费力');
+    }
+    if (analysisResult.customerProfile.educationAttitude === '很重视') {
+      tags.push('教育重视');
+    }
+
+    // 紧迫性
+    if (analysisResult.urgency === '高') {
+      tags.push('急需成交');
+    }
+
+    // 客户心态
+    if (analysisResult.customerMindset) {
+      tags.push(analysisResult.customerMindset);
+    }
+
+    return tags;
   }
 }

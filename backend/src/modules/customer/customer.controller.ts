@@ -22,6 +22,7 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BatchUpdateCustomerDto } from './dto/batch-update-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { CreateFollowRecordDto } from './dto/create-follow-record.dto';
+import { SmartCreateCustomerDto } from './dto/smart-create-customer.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { DataScopeGuard } from '../../common/guards/data-scope.guard';
 import { PermissionGuard } from '../../common/guards/permission.guard';
@@ -39,6 +40,16 @@ export class CustomerController {
   @RequirePermissions('customer:create')
   async create(@Body() createCustomerDto: CreateCustomerDto) {
     return this.customerService.create(createCustomerDto);
+  }
+
+  @Post('smart-create')
+  @ApiOperation({ summary: 'AI智能识别创建客户' })
+  @RequirePermissions('customer:create')
+  async smartCreate(
+    @Body() smartCreateDto: SmartCreateCustomerDto,
+    @Request() req,
+  ) {
+    return this.customerService.smartCreateCustomer(smartCreateDto, req.user);
   }
 
   @Get()
