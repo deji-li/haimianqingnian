@@ -18,9 +18,18 @@ service.interceptors.request.use(
     const userStore = useUserStore()
     const token = userStore.token
 
+    console.log('=== REQUEST INTERCEPTOR DEBUG ===')
+    console.log('userStore:', userStore)
+    console.log('token from store:', token)
+    console.log('config.url:', config.url)
+    console.log('=================================')
+
     // 添加 Token
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+      console.log('Authorization header set:', config.headers.Authorization)
+    } else {
+      console.warn('No token found in userStore!')
     }
 
     return config
