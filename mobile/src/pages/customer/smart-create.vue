@@ -216,6 +216,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import { http } from '../../utils/request'
 
 const currentStep = ref(0)
 const selectedImages = ref<any[]>([])
@@ -373,36 +374,22 @@ const startAI = async () => {
 
     const imageBase64List = selectedImages.value.map((img) => img.base64)
 
-    // 调用API
-    const res = await uni.request({
-      url: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000'}/api/customer/smart-create`,
-      method: 'POST',
-      data: {
-        imageBase64List,
-        knownInfo: {},
-      },
-      header: {
-        'Content-Type': 'application/json',
-        // TODO: 添加token认证
-      },
+    // 调用API（使用封装的http方法，自动添加token）
+    const data = await http.post('/customer/smart-create', {
+      imageBase64List,
+      knownInfo: {},
+    }, {
+      showLoading: true,
+      loadingText: 'AI识别中...'
     })
 
-    if (res.statusCode === 200 && res.data) {
-      const data = res.data as any
-      fillFormData(data)
-      currentStep.value = 2
-      uni.showToast({ title: 'AI识别完成！', icon: 'success' })
-    } else {
-      throw new Error('识别失败')
-    }
+    fillFormData(data)
+    currentStep.value = 2
+    uni.showToast({ title: 'AI识别完成！', icon: 'success' })
   } catch (err: any) {
     console.error('AI识别失败', err)
-    uni.showToast({
-      title: err.message || 'AI识别失败，请重试',
-      icon: 'none',
-      duration: 3000,
-    })
     currentStep.value = 0
+    // http封装已经显示了错误提示，这里不需要重复显示
   }
 }
 
@@ -437,12 +424,42 @@ const submitCreate = async () => {
 
     submitLoading.value = true
 
-    // TODO: 调用创建客户API
-    // await uni.request({
-    //   url: '/api/customer',
-    //   method: 'POST',
-    //   data: formData.value
-    // })
+    // 构建创建客户的请求数据
+    const customerData = {
+      wechatNickname: formData.value.wechatNickname,
+      wechatId: formData.value.wechatNickname, // 如果没有微信号，使用昵称
+      realName: formData.value.realName,
+      phone: formData.value.phone,
+      customerIntent: formData.value.customerIntent,
+      trafficSource: 'AI智能识别',
+      remark: `【AI识别信息】
+意向分数：${formData.value.intentionScore}分
+客户阶段：${formData.value.customerStage}
+预估金额：${formData.value.estimatedValue}元
+预估周期：${formData.value.estimatedCycle}
+成交机会：${formData.value.dealOpportunity}
+
+【AI标签】
+${formData.value.aiTags.join('、')}
+
+【下一步行动】
+${formData.value.nextSteps.join('\n')}
+
+【销售策略】
+${formData.value.salesStrategy}
+
+【客户需求】
+${formData.value.customerNeeds.join('、')}
+
+【风险因素】
+${formData.value.riskFactors.join('、')}`,
+    }
+
+    // 调用创建客户API（使用封装的http方法，自动添加token）
+    await http.post('/customer', customerData, {
+      showLoading: true,
+      loadingText: '创建中...'
+    })
 
     uni.showToast({ title: '客户创建成功！', icon: 'success' })
 
@@ -451,9 +468,7 @@ const submitCreate = async () => {
     }, 1500)
   } catch (err: any) {
     console.error('创建客户失败', err)
-    if (err.message) {
-      uni.showToast({ title: err.message, icon: 'none' })
-    }
+    // http封装已经显示了错误提示
   } finally {
     submitLoading.value = false
   }

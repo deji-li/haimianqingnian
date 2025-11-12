@@ -497,21 +497,68 @@ const handleSubmit = async () => {
 
     submitLoading.value = true
 
-    // TODO: 调用创建客户API
-    // await axios.post('/api/customer', formData.value)
+    // 构建创建客户的请求数据
+    const customerData = {
+      wechatNickname: formData.value.wechatNickname,
+      wechatId: formData.value.wechatNickname, // 如果没有微信号，使用昵称
+      realName: formData.value.realName,
+      phone: formData.value.phone,
+      customerIntent: formData.value.customerIntent,
+      trafficSource: 'AI智能识别',
+      remark: `【AI识别信息】
+意向分数：${formData.value.intentionScore}分
+客户阶段：${formData.value.customerStage}
+预估金额：${formData.value.estimatedValue}元
+预估周期：${formData.value.estimatedCycle}
+成交机会：${formData.value.dealOpportunity}
+
+【AI标签】
+${formData.value.aiTags.join('、')}
+
+【客户画像】
+家长角色：${formData.value.parentRole}
+家庭经济：${formData.value.familyEconomicLevel}
+教育态度：${formData.value.educationAttitude}
+沟通风格：${formData.value.communicationStyle}
+信任程度：${formData.value.trustLevel}
+
+【下一步行动】
+${formData.value.nextSteps.join('\n')}
+
+【销售策略】
+${formData.value.salesStrategy}
+
+【客户需求】
+${formData.value.customerNeeds.join('、')}
+
+【客户痛点】
+${formData.value.customerPainPoints.join('、')}
+
+【风险因素】
+${formData.value.riskFactors.join('、')}`,
+    }
+
+    // 调用创建客户API
+    await axios.post('/api/customer', customerData)
 
     ElMessage.success('客户创建成功！')
     visible.value = false
 
     // emit事件通知父组件刷新
+    emit('created')
   } catch (error: any) {
     if (error.response) {
       ElMessage.error(error.response.data.message || '创建失败')
+    } else {
+      ElMessage.error('创建客户失败，请重试')
     }
   } finally {
     submitLoading.value = false
   }
 }
+
+// 定义emits
+const emit = defineEmits(['created'])
 
 defineExpose({
   open,
