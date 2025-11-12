@@ -51,6 +51,7 @@ import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity
 import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-base.entity';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
+import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
 
 @Module({
   imports: [
@@ -101,6 +102,7 @@ import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.en
           AiTrainingRecord,
           AiReport,
           AiPromptConfig,
+          AiApiKey,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
