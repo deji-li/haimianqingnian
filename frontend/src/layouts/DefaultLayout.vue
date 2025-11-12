@@ -33,15 +33,15 @@
           <span>团队排行榜</span>
         </el-menu-item>
 
-        <el-menu-item index="/finance">
-          <el-icon><Wallet /></el-icon>
-          <span>财务统计</span>
-        </el-menu-item>
-
-        <el-menu-item index="/commission">
-          <el-icon><Money /></el-icon>
-          <span>提成管理</span>
-        </el-menu-item>
+        <el-sub-menu index="/finance">
+          <template #title>
+            <el-icon><Money /></el-icon>
+            <span>财务提成</span>
+          </template>
+          <el-menu-item index="/finance/statistics">财务统计</el-menu-item>
+          <el-menu-item index="/finance/commission-records">提成记录</el-menu-item>
+          <el-menu-item index="/finance/commission-schemes">提成方案</el-menu-item>
+        </el-sub-menu>
 
         <el-menu-item index="/target-management">
           <el-icon><Flag /></el-icon>
