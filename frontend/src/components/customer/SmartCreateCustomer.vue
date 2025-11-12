@@ -268,7 +268,7 @@
 import { ref, computed, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Picture, Plus, CircleClose } from '@element-plus/icons-vue'
-import axios from 'axios'
+import request from '@/utils/request'
 
 const visible = ref(false)
 const currentStep = ref(0)
@@ -434,7 +434,7 @@ const handleStartAI = async () => {
     const imageBase64List = pastedImages.value.map((img) => img.base64)
 
     // 调用AI识别API
-    const { data } = await axios.post('/api/customer/smart-create', {
+    const data = await request.post('/customer/smart-create', {
       imageBase64List,
       knownInfo: {},
     })
@@ -539,7 +539,7 @@ ${formData.value.riskFactors.join('、')}`,
     }
 
     // 调用创建客户API
-    await axios.post('/api/customer', customerData)
+    await request.post('/customer', customerData)
 
     ElMessage.success('客户创建成功！')
     visible.value = false
