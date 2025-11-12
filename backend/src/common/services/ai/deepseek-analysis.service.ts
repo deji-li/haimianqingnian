@@ -348,16 +348,19 @@ export class DeepseekAnalysisService {
    */
   async generateRecoveryScript(customerData: any): Promise<string> {
     try {
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
       const scenarioKey = 'customer_recovery_script';
       const systemPrompt = await this.getSystemPrompt(scenarioKey);
 
-      // 尝试从数据库获取配置
-      const config = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+      // 尝试从数据库获取提示词配置
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
       let userPrompt = '';
 
-      if (config && config.promptContent) {
+      if (promptConfig && promptConfig.promptContent) {
         // 使用数据库配置，替换变量
-        userPrompt = config.promptContent
+        userPrompt = promptConfig.promptContent
           .replace(/\{\{customerName\}\}/g, customerData.realName || customerData.wechatNickname)
           .replace(/\{\{lastContactTime\}\}/g, customerData.lastContactTime)
           .replace(/\{\{needs\}\}/g, customerData.needs || '未知')
@@ -381,14 +384,23 @@ export class DeepseekAnalysisService {
 请直接输出话术内容，不要其他说明。`;
       }
 
-      const response = await this.httpClient.post(this.apiUrl, {
-        model: config?.modelName || this.model,
+      // 创建HTTP客户端（使用最新的API密钥）
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: promptConfig?.modelName || apiConfig.modelName,
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt },
         ],
-        temperature: config?.temperature ?? 0.7,
-        max_tokens: config?.maxTokens ?? 500,
+        temperature: promptConfig?.temperature ?? 0.7,
+        max_tokens: promptConfig?.maxTokens ?? 500,
       });
 
       return response.data.choices[0].message.content.trim();
@@ -404,8 +416,20 @@ export class DeepseekAnalysisService {
    */
   async testConnection(): Promise<boolean> {
     try {
-      const response = await this.httpClient.post(this.apiUrl, {
-        model: this.model,
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
+      // 创建HTTP客户端
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: apiConfig.modelName,
         messages: [
           { role: 'system', content: '你是一个助手' },
           { role: 'user', content: 'Hello' },

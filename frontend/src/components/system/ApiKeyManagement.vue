@@ -45,11 +45,18 @@
 
       <el-table-column label="端点ID/模型" width="180">
         <template #default="{ row }">
-          <el-input
-            v-if="row.editing"
-            v-model="row.provider === 'doubao' ? row.endpointId : row.modelName"
-            :placeholder="row.provider === 'doubao' ? 'Endpoint ID' : '模型名称'"
-          />
+          <template v-if="row.editing">
+            <el-input
+              v-if="row.provider === 'doubao'"
+              v-model="row.endpointId"
+              placeholder="Endpoint ID"
+            />
+            <el-input
+              v-else
+              v-model="row.modelName"
+              placeholder="模型名称"
+            />
+          </template>
           <span v-else style="font-size: 12px">
             {{ row.provider === 'doubao' ? row.endpointId : row.modelName }}
           </span>
