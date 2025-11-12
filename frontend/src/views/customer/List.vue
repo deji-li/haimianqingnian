@@ -70,6 +70,10 @@
             <el-icon><Plus /></el-icon>
             新增客户
           </el-button>
+          <el-button type="success" @click="handleSmartCreate" v-permission="'customer:create'">
+            <el-icon><MagicStick /></el-icon>
+            AI智能创建
+          </el-button>
           <el-button @click="handleDownloadTemplate" v-permission="'customer:import'">
             <el-icon><Download /></el-icon>
             下载导入模板
@@ -330,13 +334,16 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- AI智能创建客户 -->
+    <SmartCreateCustomer ref="smartCreateRef" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Download, Upload, Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { Download, Upload, Plus, Search, Refresh, MagicStick } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { downloadCustomerTemplate } from '@/utils/excel-template'
@@ -352,6 +359,7 @@ import {
 } from '@/api/customer'
 import { getDictionaryByType, type Dictionary } from '@/api/dictionary'
 import { getUserList } from '@/api/user'
+import SmartCreateCustomer from '@/components/customer/SmartCreateCustomer.vue'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -377,6 +385,7 @@ const dialogTitle = ref('新增客户')
 const isEdit = ref(false)
 const submitLoading = ref(false)
 const formRef = ref<FormInstance>()
+const smartCreateRef = ref()
 
 const formData = reactive<CreateCustomerParams>({
   wechatNickname: '',
@@ -461,6 +470,11 @@ const handleAdd = () => {
   isEdit.value = false
   resetForm()
   dialogVisible.value = true
+}
+
+// AI智能创建客户
+const handleSmartCreate = () => {
+  smartCreateRef.value?.open()
 }
 
 // 下载导入模板
