@@ -172,6 +172,15 @@ const routes: RouteRecordRaw[] = [
               permissions: ['ai-marketing:use'],
             },
           },
+          {
+            path: 'tags',
+            name: 'TagManagement',
+            component: () => import('@/views/ai/TagManagement.vue'),
+            meta: {
+              title: '标签管理',
+              permissions: ['ai:tag:view'],
+            },
+          },
         ],
       },
 
