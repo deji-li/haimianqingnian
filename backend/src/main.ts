@@ -9,8 +9,15 @@ import { DataSource } from 'typeorm';
 import { seedDatabase } from './database/seed';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    bodyParser: true,
+    rawBody: true,
+  });
   const logger = new Logger('Bootstrap');
+
+  // 设置请求体大小限制为100MB
+  app.use(require('express').json({ limit: '100mb' }));
+  app.use(require('express').urlencoded({ limit: '100mb', extended: true }));
 
   // 初始化数据库种子数据
   try {
