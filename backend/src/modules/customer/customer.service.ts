@@ -651,14 +651,14 @@ export class CustomerService {
         qualityLevel: analysisResult.qualityLevel || null,
         customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
         lifecycleStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
-        aiProfile: {
+        aiProfile: JSON.stringify({
           needs: analysisResult.customerNeeds,
           painPoints: analysisResult.customerPainPoints,
           objections: analysisResult.customerObjections,
           nextSteps: analysisResult.nextSteps,
           salesStrategy: analysisResult.salesStrategy,
           riskFactors: analysisResult.riskFactors,
-        },
+        }) as any,
         aiProcessingStatus: 'completed',
         lastAiAnalysisTime: new Date(),
         remark: `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`,

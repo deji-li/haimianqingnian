@@ -29,11 +29,12 @@ export class SmartCreateCustomerDto {
   imageBase64List?: string[];
 
   /**
-   * 已知的客户基本信息（可选，用于辅助AI分析）
+   * 已知的客户基本信息（wechatId必填，其他可选）
    */
   @IsOptional()
   @IsObject()
   knownInfo?: {
+    wechatId?: string; // 微信号（必填）
     wechatNickname?: string;
     phone?: string;
   };
