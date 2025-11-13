@@ -556,7 +556,7 @@ export class CustomerService {
         phone: smartCreateDto.knownInfo?.phone || null,
         operatorId: smartCreateDto.knownInfo?.operatorId || null,
         salesId: user.id,
-        customerIntent: '中',
+        customerIntent: '中意向',
         lifecycleStage: '线索',
         aiProcessingStatus: 'pending', // 标记为待处理
         remark: 'AI识别中，请稍后查看完整信息...',

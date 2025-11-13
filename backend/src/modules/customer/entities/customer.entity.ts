@@ -58,8 +58,8 @@ export class Customer {
   @Column({
     name: 'customer_intent',
     type: 'enum',
-    enum: ['高', '中', '低'],
-    default: '中',
+    enum: ['高意向', '中意向', '低意向', '无意向'],
+    default: '中意向',
   })
   customerIntent: string;
 
