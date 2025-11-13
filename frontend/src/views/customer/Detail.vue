@@ -215,7 +215,7 @@
           <el-button
             type="primary"
             @click="handleGenerateScript('开场白')"
-            :loading="generatingScript"
+            :loading="scriptLoading['开场白']"
             size="default"
           >
             <el-icon><ChatDotRound /></el-icon>
@@ -224,7 +224,7 @@
           <el-button
             type="success"
             @click="handleGenerateScript('价值主张')"
-            :loading="generatingScript"
+            :loading="scriptLoading['价值主张']"
             size="default"
           >
             <el-icon><Star /></el-icon>
@@ -233,7 +233,7 @@
           <el-button
             type="warning"
             @click="handleGenerateScript('异议处理')"
-            :loading="generatingScript"
+            :loading="scriptLoading['异议处理']"
             size="default"
           >
             <el-icon><QuestionFilled /></el-icon>
@@ -615,7 +615,11 @@ const customerOrders = ref<Order[]>([])
 const lifecycleHistory = ref<LifecycleHistory[]>([])
 const aiTags = ref<any[]>([])
 const latestAiAnalysis = ref<any>(null)
-const generatingScript = ref(false)
+const scriptLoading = ref<Record<string, boolean>>({
+  '开场白': false,
+  '价值主张': false,
+  '异议处理': false
+})
 const aiFieldMappings = ref<any[]>([]) // AI字段映射配置
 
 const editDialogVisible = ref(false)
@@ -757,22 +761,22 @@ const handleGenerateScript = async (scriptType: string) => {
   const customerId = Number(route.params.id)
   if (!customerId) return
 
-  generatingScript.value = true
+  scriptLoading.value[scriptType] = true
   try {
     const res = await generateScript(customerId, scriptType)
     ElMessage.success('话术生成成功')
     // 在对话框中展示生成的话术
-    ElMessageBox.alert(res.data.scriptContent, `${scriptType}话术`, {
+    ElMessageBox.alert(res.scriptContent, `${scriptType}话术`, {
       confirmButtonText: '复制',
       callback: () => {
-        navigator.clipboard.writeText(res.data.scriptContent)
+        navigator.clipboard.writeText(res.scriptContent)
         ElMessage.success('已复制到剪贴板')
       },
     })
   } catch (error: any) {
     ElMessage.error(error.message || '生成失败')
   } finally {
-    generatingScript.value = false
+    scriptLoading.value[scriptType] = false
   }
 }
 
