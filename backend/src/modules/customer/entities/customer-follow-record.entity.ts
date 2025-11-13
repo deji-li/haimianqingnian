@@ -22,8 +22,8 @@ export class CustomerFollowRecord {
   @Column({ name: 'follow_time', type: 'datetime' })
   followTime: Date;
 
-  @Column({ name: 'operator_id' })
-  operatorId: number;
+  @Column({ name: 'operator_id', nullable: true, comment: '操作员ID（AI自动创建时为NULL）' })
+  operatorId: number | null;
 
   @Column({ name: 'next_follow_time', type: 'datetime', nullable: true })
   nextFollowTime: Date;

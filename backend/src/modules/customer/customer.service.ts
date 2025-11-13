@@ -338,7 +338,7 @@ export class CustomerService {
       operatorId: item.record_operator_id,
       nextFollowTime: item.record_next_follow_time,
       createTime: item.record_create_time,
-      operatorName: item.operatorName,
+      operatorName: item.operatorName || 'AI智能助手',
     }));
   }
 
