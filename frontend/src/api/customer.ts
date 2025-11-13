@@ -135,3 +135,30 @@ export function getFollowStatistics() {
     method: 'get',
   })
 }
+
+// AI智能创建客户
+export interface SmartCreateCustomerParams {
+  imageBase64List?: string[]
+  imageUrls?: string[]
+  imageFileIds?: number[]
+  knownInfo?: {
+    wechatId?: string
+    wechatNickname?: string
+    phone?: string
+  }
+}
+
+export interface SmartCreateCustomerResponse {
+  success: boolean
+  customerId: number
+  message: string
+  customer: Customer
+}
+
+export function smartCreateCustomer(data: SmartCreateCustomerParams) {
+  return request<SmartCreateCustomerResponse>({
+    url: '/customer/smart-create',
+    method: 'post',
+    data,
+  })
+}
