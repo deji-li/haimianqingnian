@@ -18,29 +18,17 @@ service.interceptors.request.use(
     const userStore = useUserStore()
     const token = userStore.token
 
-    console.log('=== REQUEST INTERCEPTOR DEBUG ===')
-    console.log('userStore:', userStore)
-    console.log('token from store:', token)
-    console.log('config.url:', config.url)
-    console.log('config.headers before:', config.headers)
-    console.log('=================================')
-
-    // 添加 Token - 使用正确的方式设置header
+    // 添加 Token
     if (token) {
       if (!config.headers) {
         config.headers = {}
       }
       config.headers['Authorization'] = `Bearer ${token}`
-      console.log('Authorization header set:', config.headers['Authorization'])
-      console.log('config.headers after:', config.headers)
-    } else {
-      console.warn('No token found in userStore!')
     }
 
     return config
   },
   (error) => {
-    console.error('Request Error:', error)
     return Promise.reject(error)
   }
 )
@@ -49,25 +37,17 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
-    console.log('[响应拦截器] 收到响应:', {
-      url: response.config.url,
-      status: response.status,
-      data: res
-    })
 
     // 业务成功
     if (res.code === 200) {
-      console.log('[响应拦截器] 业务成功，返回数据:', res.data)
       return res.data
     }
 
     // 业务失败
-    console.error('[响应拦截器] 业务失败:', res)
     ElMessage.error(res.message || '请求失败')
     return Promise.reject(new Error(res.message || 'Error'))
   },
   (error) => {
-    console.error('Response Error:', error)
 
     // 判断是否为静默请求（某些后台接口失败不应该弹出提示）
     const config = error.config
