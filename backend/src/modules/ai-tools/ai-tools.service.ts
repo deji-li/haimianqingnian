@@ -36,41 +36,15 @@ export class AiToolsService {
         throw new Error('客户不存在');
       }
 
-      // 构建prompt生成话术
-      const prompt = `请为以下客户生成${scriptType}话术：
-
-客户信息：
-- 微信昵称：${customer.wechatNickname}
-- 意向等级：${customer.customerIntent}
-- 生命周期：${customer.lifecycleStage}
-
-要求：
-1. 话术要自然、亲切
-2. 符合教育培训行业特点
-3. 100字以内
-4. 直接输出话术内容，不要其他说明`;
-
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个教育培训销售话术专家' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 500,
-        },
-      );
-
-      const scriptContent = response.data.choices[0].message.content.trim();
+      // 使用DeepseekAnalysisService的通用方法生成话术
+      const scriptContent = await this.deepseekService.generateSalesScript(customer, scriptType);
 
       // 保存话术
       const script = this.scriptRepository.create({
         scriptType,
         scenario: `客户ID_${customerId}`,
-        customerProfile: `${customer.customerIntent}意向`,
-        scriptTitle: `${scriptType} - ${customer.wechatNickname}`,
+        customerProfile: `${customer.customerIntent || '未知'}意向`,
+        scriptTitle: `${scriptType} - ${customer.wechatNickname || customer.realName || '客户'}`,
         scriptContent,
         source: 'AI生成',
         isActive: 1,
@@ -78,7 +52,7 @@ export class AiToolsService {
 
       return this.scriptRepository.save(script);
     } catch (error) {
-      this.logger.error(`生成话术失败: ${error.message}`);
+      this.logger.error(`生成话术失败: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -278,20 +252,11 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 3. 50字以内
 4. 直接输出客户的话，不要"客户："前缀`;
 
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个教育培训的潜在客户' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.8,
-          max_tokens: 200,
-        },
+      const aiReply = await this.deepseekService.callAI(
+        '你是一个教育培训的潜在客户',
+        prompt,
+        { temperature: 0.8, maxTokens: 200 },
       );
-
-      const aiReply = response.data.choices[0].message.content.trim();
       conversation.push({ role: 'assistant', message: aiReply });
 
       // 更新训练记录
@@ -434,20 +399,11 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       prompt += `\n${typeConfig.tips}\n\n直接输出文案内容，不要其他说明。`;
 
       // 调用DeepSeek API生成
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个专业的教育培训行业营销文案专家' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.8,
-          max_tokens: 2000,
-        },
+      const content = await this.deepseekService.callAI(
+        '你是一个专业的教育培训行业营销文案专家',
+        prompt,
+        { temperature: 0.8, maxTokens: 2000 },
       );
-
-      const content = response.data.choices[0].message.content.trim();
 
       this.logger.log(`生成${contentType}成功`);
 
@@ -718,20 +674,12 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 
 请以JSON数组格式输出洞察，例如：["洞察1", "洞察2", "洞察3"]`;
 
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个专业的CRM数据分析专家' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        },
+      const content = await this.deepseekService.callAI(
+        '你是一个专业的CRM数据分析专家',
+        prompt,
+        { temperature: 0.7, maxTokens: 1000 },
       );
 
-      const content = response.data.choices[0].message.content.trim();
       // 尝试解析JSON
       try {
         return JSON.parse(content);
@@ -759,20 +707,12 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 
 请以JSON数组格式输出问题，例如：["问题1", "问题2"]`;
 
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个专业的CRM数据分析专家' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        },
+      const content = await this.deepseekService.callAI(
+        '你是一个专业的CRM数据分析专家',
+        prompt,
+        { temperature: 0.7, maxTokens: 1000 },
       );
 
-      const content = response.data.choices[0].message.content.trim();
       try {
         return JSON.parse(content);
       } catch {
@@ -796,20 +736,12 @@ ${problems.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 请以JSON数组格式输出建议，例如：["建议1", "建议2"]`;
 
-      const response = await this.deepseekService['httpClient'].post(
-        this.deepseekService['apiUrl'],
-        {
-          model: this.deepseekService['model'],
-          messages: [
-            { role: 'system', content: '你是一个专业的CRM顾问' },
-            { role: 'user', content: prompt },
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        },
+      const content = await this.deepseekService.callAI(
+        '你是一个专业的CRM顾问',
+        prompt,
+        { temperature: 0.7, maxTokens: 1000 },
       );
 
-      const content = response.data.choices[0].message.content.trim();
       try {
         return JSON.parse(content);
       } catch {

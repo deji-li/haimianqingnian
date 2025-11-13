@@ -414,6 +414,134 @@ export class DeepseekAnalysisService {
   }
 
   /**
+   * 生成销售话术（通用方法）
+   * @param customerData 客户信息
+   * @param scriptType 话术类型：开场白、价值主张、异议处理等
+   */
+  async generateSalesScript(customerData: any, scriptType: string): Promise<string> {
+    try {
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
+      // 根据话术类型选择场景key
+      const scenarioKeyMap = {
+        '开场白': 'sales_script_opening',
+        '价值主张': 'sales_script_value',
+        '异议处理': 'sales_script_objection',
+        '促成话术': 'sales_script_closing',
+      };
+      const scenarioKey = scenarioKeyMap[scriptType] || 'sales_script_general';
+
+      // 获取系统提示词和用户提示词配置
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+
+      let systemPrompt = '你是一个专业的教育培训销售话术专家，擅长根据客户画像生成个性化的销售话术。';
+      let userPrompt = '';
+
+      if (promptConfig) {
+        // 使用数据库配置
+        systemPrompt = promptConfig.systemPrompt || systemPrompt;
+
+        if (promptConfig.promptContent) {
+          userPrompt = promptConfig.promptContent
+            .replace(/\{\{customerName\}\}/g, customerData.wechatNickname || customerData.realName || '客户')
+            .replace(/\{\{customerIntent\}\}/g, customerData.customerIntent || '未知')
+            .replace(/\{\{lifecycleStage\}\}/g, customerData.lifecycleStage || '未知')
+            .replace(/\{\{scriptType\}\}/g, scriptType);
+        }
+      }
+
+      // 如果没有配置或配置为空，使用默认提示词
+      if (!userPrompt) {
+        userPrompt = `请为以下客户生成${scriptType}话术：
+
+客户信息：
+- 微信昵称：${customerData.wechatNickname || customerData.realName || '客户'}
+- 意向等级：${customerData.customerIntent || '未知'}
+- 生命周期：${customerData.lifecycleStage || '未知'}
+
+要求：
+1. 话术要自然、亲切、专业
+2. 符合教育培训行业特点
+3. 针对客户情况个性化定制
+4. 100字以内
+5. 直接输出话术内容，不要其他说明`;
+      }
+
+      // 创建HTTP客户端（使用最新的API密钥）
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: promptConfig?.modelName || apiConfig.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: parseFloat((promptConfig?.temperature ?? 0.7).toString()),
+        max_tokens: parseInt((promptConfig?.maxTokens ?? 500).toString(), 10),
+      });
+
+      return response.data.choices[0].message.content.trim();
+
+    } catch (error) {
+      this.logger.error(`生成销售话术失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 通用AI调用方法
+   * @param systemPrompt 系统提示词
+   * @param userPrompt 用户提示词
+   * @param options 可选参数
+   */
+  async callAI(
+    systemPrompt: string,
+    userPrompt: string,
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      modelName?: string;
+    },
+  ): Promise<string> {
+    try {
+      // 获取API密钥配置
+      const apiConfig = await this.getApiConfig();
+
+      // 创建HTTP客户端（使用最新的API密钥）
+      const httpClient = axios.create({
+        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiConfig.apiKey}`,
+        },
+      });
+
+      const response = await httpClient.post(apiConfig.apiUrl, {
+        model: options?.modelName || apiConfig.modelName,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        temperature: options?.temperature ?? 0.7,
+        max_tokens: options?.maxTokens ?? 1000,
+      });
+
+      return response.data.choices[0].message.content.trim();
+
+    } catch (error) {
+      this.logger.error(`AI调用失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
    * 测试DeepSeek连接
    */
   async testConnection(): Promise<boolean> {
