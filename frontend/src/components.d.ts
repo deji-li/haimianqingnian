@@ -58,6 +58,7 @@ declare module 'vue' {
     ElTimelineItem: typeof import('element-plus/es')['ElTimelineItem']
     ElTree: typeof import('element-plus/es')['ElTree']
     ElUpload: typeof import('element-plus/es')['ElUpload']
+    FieldMappingConfig: typeof import('./components/system/FieldMappingConfig.vue')['default']
     FileUpload: typeof import('./components/FileUpload.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
