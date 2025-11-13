@@ -23,6 +23,7 @@ import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
 import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
+import { BusinessConfigModule } from './modules/business-config/business-config.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -52,6 +53,7 @@ import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-ba
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
+import { BusinessConfig } from './modules/business-config/entities/business-config.entity';
 
 @Module({
   imports: [
@@ -103,6 +105,7 @@ import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
           AiReport,
           AiPromptConfig,
           AiApiKey,
+          BusinessConfig,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -140,6 +143,7 @@ import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
     AiToolsModule,
     StatsModule,
     AiConfigModule,
+    BusinessConfigModule,
   ],
 })
 export class AppModule {}

@@ -17,6 +17,7 @@ import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analy
 import { AiCacheService } from '../../common/services/ai/ai-cache.service';
 import { AiConfigModule } from '../ai-config/ai-config.module';
 import { AiTagsModule } from '../ai-tags/ai-tags.module';
+import { BusinessConfigModule } from '../business-config/business-config.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AiTagsModule } from '../ai-tags/ai-tags.module';
     ConfigModule,
     AiConfigModule,
     AiTagsModule,
+    BusinessConfigModule,
   ],
   controllers: [CustomerController, LifecycleController, AnalyticsController],
   providers: [

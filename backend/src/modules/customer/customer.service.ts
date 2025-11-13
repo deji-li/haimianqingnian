@@ -22,6 +22,7 @@ import {
 import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiTagsService } from '../ai-tags/ai-tags.service';
+import { BusinessConfigService } from '../business-config/business-config.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -39,6 +40,7 @@ export class CustomerService {
     private readonly doubaoOcrService: DoubaoOcrService,
     private readonly deepseekAnalysisService: DeepseekAnalysisService,
     private readonly aiTagsService: AiTagsService,
+    private readonly businessConfigService: BusinessConfigService,
   ) {}
 
   // 创建客户
@@ -643,33 +645,10 @@ export class CustomerService {
 
       this.logger.log(`客户${customerId}: AI分析完成，开始更新客户信息...`);
 
-      // 4. 更新客户信息
-      await this.customerRepository.update(customerId, {
-        wechatNickname: analysisResult.customerProfile.wechatNickname || smartCreateDto.knownInfo?.wechatNickname || null,
-        realName: analysisResult.customerProfile.parentRole || null,
-        phone: smartCreateDto.knownInfo?.phone || null,
-        location: analysisResult.customerProfile.location || null,
-        studentGrade: analysisResult.customerProfile.studentGrade || null,
-        studentAge: analysisResult.customerProfile.studentAge || null,
-        familyEconomicLevel: analysisResult.customerProfile.familyEconomicLevel || null,
-        decisionMakerRole: analysisResult.customerProfile.decisionMakerRole || null,
-        parentRole: analysisResult.customerProfile.parentRole || null,
-        estimatedValue: analysisResult.estimatedValue || null,
-        qualityLevel: analysisResult.qualityLevel || null,
-        customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
-        lifecycleStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
-        aiProfile: JSON.stringify({
-          needs: analysisResult.customerNeeds,
-          painPoints: analysisResult.customerPainPoints,
-          objections: analysisResult.customerObjections,
-          nextSteps: analysisResult.nextSteps,
-          salesStrategy: analysisResult.salesStrategy,
-          riskFactors: analysisResult.riskFactors,
-        }) as any,
-        aiProcessingStatus: 'completed',
-        lastAiAnalysisTime: new Date(),
-        remark: `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`,
-      });
+      // 4. 更新客户信息（使用动态配置）
+      const updateData = await this.applyAiFieldMapping(analysisResult, smartCreateDto.knownInfo);
+      await this.customerRepository.update(customerId, updateData);
+      this.logger.log(`客户${customerId}: 客户信息更新完成，应用了${Object.keys(updateData).length}个字段`);
 
       // 5. 创建跟进记录，保存聊天文本
       const followRecord = this.followRecordRepository.create({
@@ -793,6 +772,102 @@ export class CustomerService {
         this.logger.warn(`删除临时文件失败: ${filePath}, ${error.message}`);
       }
     }
+  }
+
+  /**
+   * 根据AI字段映射配置动态应用字段
+   */
+  private async applyAiFieldMapping(analysisResult: any, knownInfo?: any): Promise<any> {
+    try {
+      // 从配置中获取字段映射规则
+      const fieldMappings = await this.businessConfigService.getConfig('ai_field_mapping');
+
+      if (!fieldMappings || !Array.isArray(fieldMappings)) {
+        this.logger.warn('AI字段映射配置不存在或格式错误，使用默认映射');
+        return this.getDefaultFieldMapping(analysisResult, knownInfo);
+      }
+
+      const updateData: any = {};
+
+      // 遍历配置的每个字段映射
+      for (const mapping of fieldMappings) {
+        if (!mapping.enabled) {
+          continue; // 跳过未启用的字段
+        }
+
+        // 从AI结果中获取值
+        let aiValue = this.getNestedValue(analysisResult, mapping.aiField);
+
+        // 如果AI没有识别到，且有已知信息，使用已知信息
+        if (!aiValue && knownInfo) {
+          aiValue = knownInfo[mapping.dbField];
+        }
+
+        // 如果有值，则添加到更新数据中
+        if (aiValue !== undefined && aiValue !== null) {
+          updateData[mapping.dbField] = aiValue;
+        }
+      }
+
+      // 添加固定字段
+      updateData.customerIntent = this.mapIntentionScoreToLevel(analysisResult.intentionScore);
+      updateData.lifecycleStage = this.mapQualityLevelToStage(analysisResult.qualityLevel);
+      updateData.aiProfile = JSON.stringify({
+        needs: analysisResult.customerNeeds,
+        painPoints: analysisResult.customerPainPoints,
+        objections: analysisResult.customerObjections,
+        nextSteps: analysisResult.nextSteps,
+        salesStrategy: analysisResult.salesStrategy,
+        riskFactors: analysisResult.riskFactors,
+      });
+      updateData.aiProcessingStatus = 'completed';
+      updateData.lastAiAnalysisTime = new Date();
+      updateData.remark = `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`;
+
+      return updateData;
+    } catch (error) {
+      this.logger.error(`应用AI字段映射失败: ${error.message}`, error.stack);
+      return this.getDefaultFieldMapping(analysisResult, knownInfo);
+    }
+  }
+
+  /**
+   * 获取嵌套对象的值（例如：'customerProfile.wechatNickname'）
+   */
+  private getNestedValue(obj: any, path: string): any {
+    return path.split('.').reduce((current, key) => current?.[key], obj);
+  }
+
+  /**
+   * 默认字段映射（配置不可用时使用）
+   */
+  private getDefaultFieldMapping(analysisResult: any, knownInfo?: any): any {
+    return {
+      wechatNickname: analysisResult.customerProfile?.wechatNickname || knownInfo?.wechatNickname || null,
+      realName: analysisResult.customerProfile?.parentRole || null,
+      phone: knownInfo?.phone || null,
+      location: analysisResult.customerProfile?.location || null,
+      studentGrade: analysisResult.customerProfile?.studentGrade || null,
+      studentAge: analysisResult.customerProfile?.studentAge || null,
+      familyEconomicLevel: analysisResult.customerProfile?.familyEconomicLevel || null,
+      decisionMakerRole: analysisResult.customerProfile?.decisionMakerRole || null,
+      parentRole: analysisResult.customerProfile?.parentRole || null,
+      estimatedValue: analysisResult.estimatedValue || null,
+      qualityLevel: analysisResult.qualityLevel || null,
+      customerIntent: this.mapIntentionScoreToLevel(analysisResult.intentionScore),
+      lifecycleStage: this.mapQualityLevelToStage(analysisResult.qualityLevel),
+      aiProfile: JSON.stringify({
+        needs: analysisResult.customerNeeds,
+        painPoints: analysisResult.customerPainPoints,
+        objections: analysisResult.customerObjections,
+        nextSteps: analysisResult.nextSteps,
+        salesStrategy: analysisResult.salesStrategy,
+        riskFactors: analysisResult.riskFactors,
+      }),
+      aiProcessingStatus: 'completed',
+      lastAiAnalysisTime: new Date(),
+      remark: `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`,
+    };
   }
 
   /**
