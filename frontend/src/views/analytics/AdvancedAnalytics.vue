@@ -126,7 +126,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh as RefreshIcon } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -427,6 +427,12 @@ const handleResize = () => {
 onMounted(() => {
   fetchRevenueForecast()
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  forecastChart?.dispose()
+  conversionChart?.dispose()
 })
 </script>
 

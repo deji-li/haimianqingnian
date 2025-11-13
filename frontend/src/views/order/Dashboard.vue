@@ -174,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
@@ -187,6 +187,11 @@ const dateRange = ref<string[]>([])
 const quickFilter = ref('thisMonth')
 const statusChartRef = ref<HTMLElement>()
 const studentChartRef = ref<HTMLElement>()
+
+// 存储chart实例用于清理
+let statusChart: echarts.ECharts | null = null
+let studentChart: echarts.ECharts | null = null
+const resizeHandlers: (() => void)[] = []
 
 const statistics = reactive({
   totalOrders: 0,
@@ -280,7 +285,7 @@ const handleDateRangeChange = () => {
 const renderStatusChart = () => {
   if (!statusChartRef.value) return
 
-  const chart = echarts.init(statusChartRef.value)
+  statusChart = echarts.init(statusChartRef.value)
   const data = statistics.statusStats.map((item) => ({
     value: item.count,
     name: item.status,
@@ -327,19 +332,19 @@ const renderStatusChart = () => {
     ],
   }
 
-  chart.setOption(option)
+  statusChart.setOption(option)
 
   // 响应式
-  window.addEventListener('resize', () => {
-    chart.resize()
-  })
+  const resizeHandler = () => statusChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染新老学员占比图表
 const renderStudentChart = () => {
   if (!studentChartRef.value) return
 
-  const chart = echarts.init(studentChartRef.value)
+  studentChart = echarts.init(studentChartRef.value)
   const data = [
     { value: statistics.newStudentOrders, name: '新学员' },
     { value: statistics.oldStudentOrders, name: '老学员' },
@@ -374,12 +379,12 @@ const renderStudentChart = () => {
     ],
   }
 
-  chart.setOption(option)
+  studentChart.setOption(option)
 
   // 响应式
-  window.addEventListener('resize', () => {
-    chart.resize()
-  })
+  const resizeHandler = () => studentChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 跳转到订单列表
@@ -399,6 +404,14 @@ onMounted(() => {
   dateRange.value = [startOfMonth, endOfMonth]
 
   fetchStatistics()
+})
+
+onUnmounted(() => {
+  // 清理所有resize监听器
+  resizeHandlers.forEach(handler => window.removeEventListener('resize', handler))
+  // 清理chart实例
+  statusChart?.dispose()
+  studentChart?.dispose()
 })
 </script>
 

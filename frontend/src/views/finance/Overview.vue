@@ -141,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
 import dayjs from 'dayjs'
 import {
@@ -163,6 +163,12 @@ const trendType = ref<'day' | 'month'>('day')
 const trendChartRef = ref<HTMLElement>()
 const salesChartRef = ref<HTMLElement>()
 const campusChartRef = ref<HTMLElement>()
+
+// 存储chart实例用于清理
+let trendChart: echarts.ECharts | null = null
+let salesChart: echarts.ECharts | null = null
+let campusChart: echarts.ECharts | null = null
+const resizeHandlers: (() => void)[] = []
 
 const overview = reactive<FinanceOverview>({
   totalRevenue: 0,
@@ -254,7 +260,7 @@ const fetchCourseRevenue = async (startDate?: string, endDate?: string) => {
 const renderTrendChart = () => {
   if (!trendChartRef.value) return
 
-  const chart = echarts.init(trendChartRef.value)
+  trendChart = echarts.init(trendChartRef.value)
   const dates = revenueTrend.value.map((item) => item.date)
   const revenues = revenueTrend.value.map((item) => item.revenue)
   const counts = revenueTrend.value.map((item) => item.count)
@@ -321,18 +327,18 @@ const renderTrendChart = () => {
     ],
   }
 
-  chart.setOption(option)
+  trendChart.setOption(option)
 
-  window.addEventListener('resize', () => {
-    chart.resize()
-  })
+  const resizeHandler = () => trendChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染销售排行图表
 const renderSalesChart = () => {
   if (!salesChartRef.value) return
 
-  const chart = echarts.init(salesChartRef.value)
+  salesChart = echarts.init(salesChartRef.value)
   const names = salesRanking.value.map((item) => item.salesName)
   const revenues = salesRanking.value.map((item) => item.totalRevenue)
 
@@ -377,18 +383,18 @@ const renderSalesChart = () => {
     ],
   }
 
-  chart.setOption(option)
+  salesChart.setOption(option)
 
-  window.addEventListener('resize', () => {
-    chart.resize()
-  })
+  const resizeHandler = () => salesChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染校区销售额图表
 const renderCampusChart = () => {
   if (!campusChartRef.value) return
 
-  const chart = echarts.init(campusChartRef.value)
+  campusChart = echarts.init(campusChartRef.value)
   const data = campusRevenue.value.map((item) => ({
     value: item.revenue,
     name: item.campusName,
@@ -423,11 +429,11 @@ const renderCampusChart = () => {
     ],
   }
 
-  chart.setOption(option)
+  campusChart.setOption(option)
 
-  window.addEventListener('resize', () => {
-    chart.resize()
-  })
+  const resizeHandler = () => campusChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 onMounted(() => {
@@ -437,6 +443,15 @@ onMounted(() => {
   dateRange.value = [startOfMonth, endOfMonth]
 
   fetchAllData()
+})
+
+onUnmounted(() => {
+  // 清理所有resize监听器
+  resizeHandlers.forEach(handler => window.removeEventListener('resize', handler))
+  // 清理chart实例
+  trendChart?.dispose()
+  salesChart?.dispose()
+  campusChart?.dispose()
 })
 </script>
 

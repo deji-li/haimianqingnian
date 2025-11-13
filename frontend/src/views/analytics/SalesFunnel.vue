@@ -174,7 +174,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { Refresh } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -516,6 +516,12 @@ onMounted(() => {
   handleRefresh()
 
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  funnelChart?.dispose()
+  sourceChart?.dispose()
 })
 </script>
 

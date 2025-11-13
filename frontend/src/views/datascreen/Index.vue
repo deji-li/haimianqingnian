@@ -162,6 +162,15 @@ const studentChartRef = ref<HTMLElement>()
 const salesChartRef = ref<HTMLElement>()
 const campusChartRef = ref<HTMLElement>()
 
+// 存储chart实例用于清理
+let trendChart: echarts.ECharts | null = null
+let intentChart: echarts.ECharts | null = null
+let statusChart: echarts.ECharts | null = null
+let studentChart: echarts.ECharts | null = null
+let salesChart: echarts.ECharts | null = null
+let campusChart: echarts.ECharts | null = null
+const resizeHandlers: (() => void)[] = []
+
 const overview = reactive<DashboardOverview>({
   customer: { total: 0, byIntent: [] },
   order: { total: 0, newStudent: 0, oldStudent: 0, byStatus: [] },
@@ -220,11 +229,11 @@ const renderAllCharts = () => {
 const renderTrendChart = () => {
   if (!trendChartRef.value) return
 
-  const chart = echarts.init(trendChartRef.value)
+  trendChart = echarts.init(trendChartRef.value)
   const dates = weeklyTrend.value.map((item) => item.date.substring(5))
   const revenues = weeklyTrend.value.map((item) => item.revenue)
 
-  chart.setOption({
+  trendChart.setOption({
     tooltip: { trigger: 'axis' },
     grid: { left: 50, right: 30, bottom: 30, top: 30 },
     xAxis: {
@@ -254,20 +263,22 @@ const renderTrendChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler = () => trendChart?.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 客户意向图
 const renderIntentChart = () => {
   if (!intentChartRef.value) return
 
-  const chart = echarts.init(intentChartRef.value)
+  intentChart = echarts.init(intentChartRef.value)
   const data = overview.customer.byIntent.map((item) => ({
     value: item.count,
     name: item.intent,
   }))
 
-  chart.setOption({
+  intentChart.setOption({
     tooltip: { trigger: 'item' },
     legend: {
       orient: 'vertical',
@@ -295,20 +306,22 @@ const renderIntentChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler2 = () => intentChart?.resize()
+  window.addEventListener('resize', resizeHandler2)
+  resizeHandlers.push(resizeHandler2)
 }
 
 // 订单状态图
 const renderStatusChart = () => {
   if (!statusChartRef.value) return
 
-  const chart = echarts.init(statusChartRef.value)
+  statusChart = echarts.init(statusChartRef.value)
   const data = overview.order.byStatus.map((item) => ({
     value: item.count,
     name: item.status,
   }))
 
-  chart.setOption({
+  statusChart.setOption({
     tooltip: { trigger: 'item' },
     legend: {
       orient: 'horizontal',
@@ -332,20 +345,22 @@ const renderStatusChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler3 = () => statusChart?.resize()
+  window.addEventListener('resize', resizeHandler3)
+  resizeHandlers.push(resizeHandler3)
 }
 
 // 新老学员图
 const renderStudentChart = () => {
   if (!studentChartRef.value) return
 
-  const chart = echarts.init(studentChartRef.value)
+  studentChart = echarts.init(studentChartRef.value)
   const data = [
     { value: overview.order.newStudent, name: '新学员' },
     { value: overview.order.oldStudent, name: '老学员' },
   ]
 
-  chart.setOption({
+  studentChart.setOption({
     tooltip: { trigger: 'item' },
     legend: {
       orient: 'vertical',
@@ -373,18 +388,20 @@ const renderStudentChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler4 = () => studentChart?.resize()
+  window.addEventListener('resize', resizeHandler4)
+  resizeHandlers.push(resizeHandler4)
 }
 
 // 销售排行图
 const renderSalesChart = () => {
   if (!salesChartRef.value) return
 
-  const chart = echarts.init(salesChartRef.value)
+  salesChart = echarts.init(salesChartRef.value)
   const names = salesRanking.value.map((item) => item.salesName)
   const revenues = salesRanking.value.map((item) => item.totalRevenue)
 
-  chart.setOption({
+  salesChart.setOption({
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     grid: { left: 80, right: 30, bottom: 30, top: 10 },
     xAxis: {
@@ -417,20 +434,22 @@ const renderSalesChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler5 = () => salesChart?.resize()
+  window.addEventListener('resize', resizeHandler5)
+  resizeHandlers.push(resizeHandler5)
 }
 
 // 校区销售额图
 const renderCampusChart = () => {
   if (!campusChartRef.value) return
 
-  const chart = echarts.init(campusChartRef.value)
+  campusChart = echarts.init(campusChartRef.value)
   const data = campusRevenue.value.map((item) => ({
     value: item.revenue,
     name: item.campusName,
   }))
 
-  chart.setOption({
+  campusChart.setOption({
     tooltip: { trigger: 'item' },
     legend: {
       orient: 'vertical',
@@ -455,7 +474,9 @@ const renderCampusChart = () => {
     }],
   })
 
-  window.addEventListener('resize', () => chart.resize())
+  const resizeHandler6 = () => campusChart?.resize()
+  window.addEventListener('resize', resizeHandler6)
+  resizeHandlers.push(resizeHandler6)
 }
 
 onMounted(() => {
@@ -472,6 +493,17 @@ onMounted(() => {
 onUnmounted(() => {
   if (timeInterval) clearInterval(timeInterval)
   if (dataInterval) clearInterval(dataInterval)
+
+  // 清理所有resize监听器
+  resizeHandlers.forEach(handler => window.removeEventListener('resize', handler))
+
+  // 清理所有chart实例
+  trendChart?.dispose()
+  intentChart?.dispose()
+  statusChart?.dispose()
+  studentChart?.dispose()
+  salesChart?.dispose()
+  campusChart?.dispose()
 })
 </script>
 

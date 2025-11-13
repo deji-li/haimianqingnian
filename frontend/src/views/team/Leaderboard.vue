@@ -183,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick, watch } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import * as echarts from 'echarts'
 import type { ECharts } from 'echarts'
@@ -476,6 +476,12 @@ const handleResize = () => {
 onMounted(() => {
   fetchData()
   window.addEventListener('resize', handleResize)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  departmentChart?.dispose()
+  campusChart?.dispose()
 })
 </script>
 
