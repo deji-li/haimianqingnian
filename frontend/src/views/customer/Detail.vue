@@ -86,44 +86,23 @@
         </el-descriptions-item>
         <el-descriptions-item label="跟进次数">{{ customerInfo.followRecordCount || 0 }} 次</el-descriptions-item>
 
-        <!-- AI分析字段 -->
-        <el-descriptions-item label="学生年级" v-if="customerInfo.studentGrade">
-          <el-tag type="primary">{{ customerInfo.studentGrade }}</el-tag>
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="学生年龄" v-if="customerInfo.studentAge">
-          {{ customerInfo.studentAge }}岁
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="家庭经济" v-if="customerInfo.familyEconomicLevel">
-          <el-tag :type="customerInfo.familyEconomicLevel === '高' ? 'success' : customerInfo.familyEconomicLevel === '中' ? 'warning' : 'info'">
-            {{ customerInfo.familyEconomicLevel }}
-          </el-tag>
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
+        <!-- AI分析字段（动态渲染） -->
+        <template v-for="field in aiFieldMappings" :key="field.dbField">
+          <el-descriptions-item
+            v-if="getFieldValue(field.dbField)"
+            :label="field.description.replace(/（.*?）/, '')"
+          >
+            <el-tag v-if="shouldShowAsTag(field.dbField)" :type="getFieldTagType(field.dbField, getFieldValue(field.dbField))">
+              {{ formatFieldValue(field.dbField, getFieldValue(field.dbField)) }}
+            </el-tag>
+            <template v-else>
+              {{ formatFieldValue(field.dbField, getFieldValue(field.dbField)) }}
+            </template>
+            <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
+          </el-descriptions-item>
+        </template>
 
-        <el-descriptions-item label="质量等级" v-if="customerInfo.qualityLevel">
-          <el-tag :type="getQualityType(customerInfo.qualityLevel)">{{ customerInfo.qualityLevel }}级</el-tag>
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI评估"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="预估价值" v-if="customerInfo.estimatedValue">
-          ¥{{ customerInfo.estimatedValue }}
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI评估"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="决策角色" v-if="customerInfo.decisionMakerRole">
-          {{ customerInfo.decisionMakerRole }}
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
-
-        <el-descriptions-item label="所在地区" v-if="customerInfo.location">
-          {{ customerInfo.location }}
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="家长身份" v-if="customerInfo.parentRole">
-          {{ customerInfo.parentRole }}
-          <el-icon style="color: #409EFF; margin-left: 4px" title="AI自动识别"><MagicStick /></el-icon>
-        </el-descriptions-item>
-        <el-descriptions-item label="AI分析时间" v-if="customerInfo.lastAiAnalysisTime">
+        <el-descriptions-item label="AI分析时间" v-if="customerInfo && customerInfo.lastAiAnalysisTime">
           {{ formatDateTime(customerInfo.lastAiAnalysisTime) }}
         </el-descriptions-item>
         <!-- AI分析字段结束 -->
@@ -621,6 +600,7 @@ import {
 } from '@/api/ai'
 import { useUserStore } from '@/store/user'
 import dayjs from 'dayjs'
+import request from '@/utils/request'
 
 const route = useRoute()
 const router = useRouter()
@@ -635,6 +615,7 @@ const lifecycleHistory = ref<LifecycleHistory[]>([])
 const aiTags = ref<any[]>([])
 const latestAiAnalysis = ref<any>(null)
 const generatingScript = ref(false)
+const aiFieldMappings = ref<any[]>([]) // AI字段映射配置
 
 const editDialogVisible = ref(false)
 const submitLoading = ref(false)
@@ -999,6 +980,66 @@ const getRiskType = (level: string) => {
   return types[level] || 'info'
 }
 
+// 加载AI字段映射配置
+const loadFieldMappings = async () => {
+  try {
+    const data = await request.get('/business-config/ai_field_mapping')
+    if (data && data.configValue) {
+      // 只保留启用的字段
+      aiFieldMappings.value = data.configValue.filter((field: any) => field.enabled)
+    }
+  } catch (error) {
+    console.error('加载字段映射配置失败:', error)
+  }
+}
+
+// 获取字段值
+const getFieldValue = (fieldName: string) => {
+  if (!customerInfo.value) return null
+  return (customerInfo.value as any)[fieldName]
+}
+
+// 格式化字段显示
+const formatFieldValue = (fieldName: string, value: any) => {
+  if (!value) return '-'
+
+  // 预估价值显示为金额
+  if (fieldName === 'estimatedValue') {
+    return `¥${value}`
+  }
+
+  // 质量等级显示带"级"后缀
+  if (fieldName === 'qualityLevel') {
+    return `${value}级`
+  }
+
+  // 学生年龄显示带"岁"后缀
+  if (fieldName === 'studentAge') {
+    return `${value}岁`
+  }
+
+  return value
+}
+
+// 获取字段标签类型（用于el-tag）
+const getFieldTagType = (fieldName: string, value: any) => {
+  if (fieldName === 'familyEconomicLevel') {
+    return value === '高' ? 'success' : value === '中' ? 'warning' : 'info'
+  }
+  if (fieldName === 'qualityLevel') {
+    return getQualityType(value)
+  }
+  if (fieldName === 'studentGrade') {
+    return 'primary'
+  }
+  return ''
+}
+
+// 判断字段是否应该显示为tag
+const shouldShowAsTag = (fieldName: string) => {
+  return ['familyEconomicLevel', 'qualityLevel', 'studentGrade'].includes(fieldName)
+}
+
 onMounted(() => {
   fetchCustomerInfo()
   fetchFollowRecords()
@@ -1006,6 +1047,7 @@ onMounted(() => {
   fetchLifecycleHistory()
   fetchAiTags()
   fetchLatestAiAnalysis()
+  loadFieldMappings()
 })
 </script>
 
