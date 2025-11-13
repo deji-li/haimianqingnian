@@ -15,12 +15,14 @@ import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiCacheService } from '../../common/services/ai/ai-cache.service';
 import { AiConfigModule } from '../ai-config/ai-config.module';
+import { AiTagsModule } from '../ai-tags/ai-tags.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Customer, CustomerFollowRecord, CustomerLifecycle, Order]),
     ConfigModule,
     AiConfigModule,
+    AiTagsModule,
   ],
   controllers: [CustomerController, LifecycleController, AnalyticsController],
   providers: [

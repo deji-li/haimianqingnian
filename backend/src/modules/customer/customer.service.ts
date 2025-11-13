@@ -20,6 +20,7 @@ import {
 } from './dto/smart-create-customer.dto';
 import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
+import { AiTagsService } from '../ai-tags/ai-tags.service';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -34,6 +35,7 @@ export class CustomerService {
     private followRecordRepository: Repository<CustomerFollowRecord>,
     private readonly doubaoOcrService: DoubaoOcrService,
     private readonly deepseekAnalysisService: DeepseekAnalysisService,
+    private readonly aiTagsService: AiTagsService,
   ) {}
 
   // 创建客户
@@ -665,7 +667,26 @@ export class CustomerService {
         remark: `AI分析完成\n\n【客户需求】\n${analysisResult.customerNeeds.join('\n')}\n\n【下一步建议】\n${analysisResult.nextSteps.join('\n')}`,
       });
 
-      // 5. 清理临时文件
+      // 5. 创建跟进记录，保存聊天文本
+      const followRecord = this.followRecordRepository.create({
+        customerId,
+        followContent: `【AI智能创建客户-聊天记录】\n\n${chatText}\n\n---\n【AI分析摘要】\n意向等级：${this.mapIntentionScoreToLevel(analysisResult.intentionScore)}\n客户需求：${analysisResult.customerNeeds.slice(0, 3).join('、')}\n下一步建议：${analysisResult.nextSteps.slice(0, 2).join('、')}`,
+        followTime: new Date(),
+        operatorId: null, // AI自动创建，无操作员
+        nextFollowTime: null,
+      });
+      const savedFollowRecord = await this.followRecordRepository.save(followRecord);
+      this.logger.log(`客户${customerId}: 创建跟进记录ID=${savedFollowRecord.id}`);
+
+      // 6. 创建AI标签
+      await this.aiTagsService.autoTagFromAnalysis(
+        customerId,
+        analysisResult,
+        savedFollowRecord.id,
+      );
+      this.logger.log(`客户${customerId}: AI标签创建完成`);
+
+      // 7. 清理临时文件
       this.cleanupTempFiles(imagePaths);
 
       this.logger.log(`客户${customerId}: AI识别处理完成`);
