@@ -355,6 +355,7 @@ const loadRiskAlerts = async () => {
     riskAlerts.value = res
   } catch (error) {
     console.error('加载风险预警失败', error)
+    // 风险预警加载失败不影响主要功能，仅记录日志
   }
 }
 

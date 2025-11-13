@@ -222,6 +222,7 @@ const loadCategories = async () => {
     categories.value = res
   } catch (error) {
     console.error('加载分类失败', error)
+    // 分类加载失败不影响主要功能，仅记录日志
   }
 }
 

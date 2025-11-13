@@ -271,6 +271,7 @@ const loadStatistics = async () => {
     }
   } catch (error: any) {
     console.error('加载统计数据失败:', error)
+    // 统计数据加载失败不影响主要功能，仅记录日志
   }
 }
 
