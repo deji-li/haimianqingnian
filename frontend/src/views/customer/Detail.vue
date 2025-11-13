@@ -52,11 +52,13 @@
         <el-descriptions-item label="客户意向">
           <el-tag
             :type="
-              customerInfo.customerIntent === '高'
+              customerInfo.customerIntent === '高意向' || customerInfo.customerIntent === '高'
                 ? 'success'
-                : customerInfo.customerIntent === '中'
+                : customerInfo.customerIntent === '中意向' || customerInfo.customerIntent === '中'
                   ? 'warning'
-                  : 'info'
+                  : customerInfo.customerIntent === '低意向' || customerInfo.customerIntent === '低'
+                    ? 'info'
+                    : 'danger'
             "
           >
             {{ customerInfo.customerIntent }}

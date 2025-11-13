@@ -14,8 +14,9 @@ export interface AiAnalysisResult {
   intentionScore: number; // 0-100
   communicationSummary: string;
 
-  // 客户画像 (10个维度)
+  // 客户画像 (11个维度)
   customerProfile: {
+    wechatNickname?: string; // 微信昵称（从聊天截图识别）
     parentRole: string; // 家长身份：妈妈/爸爸/爷爷奶奶
     studentGrade: string; // 学生年级
     studentAge: number; // 学生年龄
@@ -273,6 +274,7 @@ export class DeepseekAnalysisService {
   "communicationSummary": "简要概括本次沟通的核心内容（100字以内）",
 
   "customerProfile": {
+    "wechatNickname": "从聊天截图中识别的客户微信昵称（如果能识别）",
     "parentRole": "家长身份",
     "studentGrade": "学生年级",
     "studentAge": 10,

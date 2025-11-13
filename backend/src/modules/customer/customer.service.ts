@@ -645,6 +645,7 @@ export class CustomerService {
 
       // 4. 更新客户信息
       await this.customerRepository.update(customerId, {
+        wechatNickname: analysisResult.customerProfile.wechatNickname || smartCreateDto.knownInfo?.wechatNickname || null,
         realName: analysisResult.customerProfile.parentRole || null,
         phone: smartCreateDto.knownInfo?.phone || null,
         location: analysisResult.customerProfile.location || null,
