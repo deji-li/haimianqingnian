@@ -56,7 +56,7 @@ export class DashboardService {
       qb.where('customer.sales_id = :salesId', { salesId: dataScope.salesId });
     }
     if (dataScope?.campusId) {
-      qb.where('customer.campus_id = :campusId', {
+      qb.andWhere('customer.campus_id = :campusId', {
         campusId: dataScope.campusId,
       });
     }
@@ -90,7 +90,7 @@ export class DashboardService {
       qb.where('order.sales_id = :salesId', { salesId: dataScope.salesId });
     }
     if (dataScope?.campusId) {
-      qb.where('order.campus_id = :campusId', {
+      qb.andWhere('order.campus_id = :campusId', {
         campusId: dataScope.campusId,
       });
     }
@@ -132,7 +132,7 @@ export class DashboardService {
       qb.where('order.sales_id = :salesId', { salesId: dataScope.salesId });
     }
     if (dataScope?.campusId) {
-      qb.where('order.campus_id = :campusId', {
+      qb.andWhere('order.campus_id = :campusId', {
         campusId: dataScope.campusId,
       });
     }
@@ -296,7 +296,7 @@ export class DashboardService {
       qb.where('order.sales_id = :salesId', { salesId: dataScope.salesId });
     }
     if (dataScope?.campusId) {
-      qb.where('order.campus_id = :campusId', {
+      qb.andWhere('order.campus_id = :campusId', {
         campusId: dataScope.campusId,
       });
     }

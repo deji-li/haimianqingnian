@@ -290,7 +290,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import * as echarts from 'echarts'
@@ -301,6 +301,10 @@ import { getPendingFollowUps, type Customer } from '@/api/customer'
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
+
+// 存储chart实例和resize处理器，用于清理
+const chartInstances: echarts.ECharts[] = []
+const resizeHandlers: (() => void)[] = []
 
 // 团队业绩排行数据
 interface TeamRanking {
@@ -503,7 +507,10 @@ const renderTrendChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染客户意向图
@@ -543,7 +550,10 @@ const renderIntentChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染订单状态图
@@ -583,7 +593,10 @@ const renderStatusChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染新老学员图
@@ -623,7 +636,10 @@ const renderStudentChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染校区业绩对比图
@@ -690,7 +706,10 @@ const renderCampusChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 渲染课程销售分析图
@@ -748,7 +767,10 @@ const renderCourseChart = () => {
   }
 
   chart.setOption(option)
-  window.addEventListener('resize', () => chart.resize())
+  chartInstances.push(chart)
+  const resizeHandler = () => chart.resize()
+  window.addEventListener('resize', resizeHandler)
+  resizeHandlers.push(resizeHandler)
 }
 
 // 跳转到团队统计
@@ -758,6 +780,13 @@ const goToTeamStats = () => {
 
 onMounted(() => {
   fetchData()
+})
+
+onUnmounted(() => {
+  // 清理所有chart实例
+  chartInstances.forEach(chart => chart.dispose())
+  // 移除所有resize监听器
+  resizeHandlers.forEach(handler => window.removeEventListener('resize', handler))
 })
 </script>
 

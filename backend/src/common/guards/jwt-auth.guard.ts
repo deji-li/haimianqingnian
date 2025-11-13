@@ -23,17 +23,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any, info: any, context: ExecutionContext) {
-    const request = context.switchToHttp().getRequest();
-    console.log('=== JWT AUTH GUARD DEBUG ===');
-    console.log('Request URL:', request.url);
-    console.log('Authorization header:', request.headers.authorization);
-    console.log('Error:', err);
-    console.log('User:', user);
-    console.log('Info:', info);
-    console.log('============================');
-
     if (err || !user) {
-      console.error('JWT Auth failed, throwing UnauthorizedException');
       throw err || new UnauthorizedException('未授权，请先登录');
     }
     return user;

@@ -150,8 +150,6 @@ export class NotificationService {
     timeZone: 'Asia/Shanghai',
   })
   async checkFollowUpReminder() {
-    console.log('开始检查待回访客户...');
-
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -166,8 +164,6 @@ export class NotificationService {
       .andWhere('customer.sales_id IS NOT NULL')
       .getMany();
 
-    console.log(`找到 ${customers.length} 个待回访客户`);
-
     // 为每个客户的负责销售创建通知
     const notifications: CreateNotificationDto[] = customers.map(customer => ({
       userId: customer.salesId,
@@ -179,7 +175,6 @@ export class NotificationService {
 
     if (notifications.length > 0) {
       await this.createBatch(notifications);
-      console.log(`已创建 ${notifications.length} 条回访提醒通知`);
     }
   }
 

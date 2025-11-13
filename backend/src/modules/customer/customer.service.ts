@@ -435,10 +435,6 @@ export class CustomerService {
       operatorName: item.operatorName,
     }));
 
-    if (mapped.length > 0) {
-      console.log('[getPendingFollowUps] 映射后第一条:', mapped[0]);
-    }
-
     return mapped;
   }
 

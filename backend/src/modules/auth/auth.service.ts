@@ -49,11 +49,6 @@ export class AuthService {
       throw new UnauthorizedException('用户名或密码错误');
     }
 
-    console.log('=== DEBUG LOGIN ===');
-    console.log('Raw user data from DB:', JSON.stringify(user, null, 2));
-    console.log('All keys:', Object.keys(user));
-    console.log('==================');
-
     // 验证密码
     const isPasswordValid = await bcrypt.compare(password, user.user_password);
     if (!isPasswordValid) {
@@ -98,10 +93,6 @@ export class AuthService {
         permissions,
       },
     };
-
-    console.log('=== DEBUG LOGIN RESULT ===');
-    console.log('Returning user:', JSON.stringify(loginResult.user, null, 2));
-    console.log('==========================');
 
     return loginResult;
   }
@@ -159,11 +150,6 @@ export class AuthService {
       throw new UnauthorizedException('用户不存在');
     }
 
-    console.log('=== DEBUG getUserInfo ===');
-    console.log('Raw user data from DB:', JSON.stringify(user, null, 2));
-    console.log('user.user_real_name:', user.user_real_name);
-    console.log('========================');
-
     // 获取用户权限
     const permissions = await this.getUserPermissions(user.user_role_id, user.roleCode);
 
@@ -183,10 +169,6 @@ export class AuthService {
       avatar: user.user_avatar,
       permissions,
     };
-
-    console.log('=== DEBUG getUserInfo Result ===');
-    console.log('Returning result:', JSON.stringify(result, null, 2));
-    console.log('================================');
 
     return result;
   }

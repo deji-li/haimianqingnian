@@ -86,24 +86,9 @@ export class TargetService {
 
     const results = await queryBuilder.getRawMany();
 
-    console.log('[findAll] 查询到的原始数据数量:', results.length);
-    if (results.length > 0) {
-      const keys = Object.keys(results[0]);
-      console.log('[findAll] 字段数量:', keys.length);
-      keys.forEach(key => console.log('[findAll] 字段:', key));
-      console.log('[findAll] user_id字段值:', results[0]['user_id']);
-      console.log('[findAll] target_user_id字段值:', results[0]['target_user_id']);
-    }
-
     // 为每个目标实时计算实际完成情况
     const targetsWithActual = await Promise.all(
       results.map(async (item) => {
-        console.log('[findAll] 处理目标:', {
-          user_id: item.user_id,
-          start_date: item.start_date,
-          end_date: item.end_date,
-        });
-
         // 从订单表统计实际完成数据
         const orderStats = await this.targetRepository.query(
           `
@@ -117,8 +102,6 @@ export class TargetService {
         `,
           [item.user_id, item.start_date, item.end_date],
         );
-
-        console.log('[findAll] 订单统计结果:', orderStats);
 
         const actualAmount = orderStats && orderStats.length > 0 ? Number(orderStats[0].totalAmount) : 0;
         const actualCount = orderStats && orderStats.length > 0 ? Number(orderStats[0].orderCount) : 0;
@@ -232,8 +215,6 @@ export class TargetService {
       .orderBy('target.start_date', 'DESC')
       .getRawMany();
 
-    console.log('[getProgress] userId:', userId, '查询到的目标数量:', results.length);
-
     // 为每个目标实时计算实际完成情况
     const progressList = await Promise.all(
       results.map(async (item) => {
@@ -280,8 +261,6 @@ export class TargetService {
         };
       }),
     );
-
-    console.log('[getProgress] 返回的目标进度数量:', progressList.length);
 
     return progressList;
   }

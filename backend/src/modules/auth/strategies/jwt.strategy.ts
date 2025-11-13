@@ -48,11 +48,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('用户已被禁用');
     }
 
-    console.log('=== DEBUG JWT VALIDATE ===');
-    console.log('Validated user:', JSON.stringify(user, null, 2));
-    console.log('Returning roleCode:', user.roleCode);
-    console.log('==========================');
-
     return {
       id: user.user_id,
       username: user.user_username,

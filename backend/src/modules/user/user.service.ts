@@ -146,34 +146,46 @@ export class UserService {
 
     const rawResults = await qb.getRawMany();
 
-    // 格式化结果
-    const list = await Promise.all(
-      rawResults.map(async (raw) => {
-        // 查询用户关联的所有校区
-        const userCampuses = await this.userCampusRepository.find({
-          where: { userId: raw.user_id },
-        });
-        const campusIds = userCampuses.map((uc) => uc.campusId);
+    // 一次性查询所有用户的校区关联（避免N+1查询）
+    const userIds = rawResults.map((raw) => raw.user_id);
+    const allUserCampuses = userIds.length > 0
+      ? await this.userCampusRepository
+          .createQueryBuilder('uc')
+          .where('uc.userId IN (:...userIds)', { userIds })
+          .getMany()
+      : [];
 
-        return {
-          id: raw.user_id,
-          username: raw.user_username,
-          realName: raw.user_real_name,
-          roleCode: raw.user_role_code,
-          departmentId: raw.user_department_id,
-          campusId: raw.user_campus_id,
-          campusIds: campusIds,
-          phone: raw.user_phone,
-          email: raw.user_email,
-          status: raw.user_status,
-          createTime: raw.user_create_time,
-          updateTime: raw.user_update_time,
-          roleName: raw.roleName,
-          departmentName: raw.departmentName,
-          campusName: raw.campusName,
-        };
-      }),
-    );
+    // 按userId分组
+    const campusMap = new Map<number, number[]>();
+    allUserCampuses.forEach((uc) => {
+      if (!campusMap.has(uc.userId)) {
+        campusMap.set(uc.userId, []);
+      }
+      campusMap.get(uc.userId)!.push(uc.campusId);
+    });
+
+    // 格式化结果
+    const list = rawResults.map((raw) => {
+      const campusIds = campusMap.get(raw.user_id) || [];
+
+      return {
+        id: raw.user_id,
+        username: raw.user_username,
+        realName: raw.user_real_name,
+        roleCode: raw.user_role_code,
+        departmentId: raw.user_department_id,
+        campusId: raw.user_campus_id,
+        campusIds: campusIds,
+        phone: raw.user_phone,
+        email: raw.user_email,
+        status: raw.user_status,
+        createTime: raw.user_create_time,
+        updateTime: raw.user_update_time,
+        roleName: raw.roleName,
+        departmentName: raw.departmentName,
+        campusName: raw.campusName,
+      };
+    });
 
     return {
       list,

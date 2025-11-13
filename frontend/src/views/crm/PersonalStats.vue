@@ -144,7 +144,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
 import {
   Refresh,
@@ -371,15 +371,23 @@ const initTrendChart = () => {
   trendChart.setOption(option)
 }
 
+// 响应式处理函数
+const handleResize = () => {
+  stageChart?.resize()
+  sourceChart?.resize()
+  trendChart?.resize()
+}
+
 onMounted(() => {
   loadData()
+  window.addEventListener('resize', handleResize)
+})
 
-  // 响应式处理
-  window.addEventListener('resize', () => {
-    stageChart?.resize()
-    sourceChart?.resize()
-    trendChart?.resize()
-  })
+onUnmounted(() => {
+  window.removeEventListener('resize', handleResize)
+  stageChart?.dispose()
+  sourceChart?.dispose()
+  trendChart?.dispose()
 })
 </script>
 

@@ -28,35 +28,23 @@ export class PermissionGuard implements CanActivate {
       [context.getHandler(), context.getClass()],
     );
 
-    console.log('=== PERMISSION GUARD DEBUG ===');
-    console.log('Required permissions:', requiredPermissions);
-
     // 如果没有设置权限要求，则放行
     if (!requiredPermissions || requiredPermissions.length === 0) {
-      console.log('No permissions required, allowing access');
       return true;
     }
 
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    console.log('User from request:', user);
-    console.log('User roleCode:', user?.roleCode);
-    console.log('User roleId:', user?.roleId);
-
     // 如果没有用户信息，拒绝访问
     if (!user) {
-      console.error('No user found in request, throwing ForbiddenException');
       throw new ForbiddenException('未授权访问');
     }
 
     // 超级管理员拥有所有权限（优先检查，避免后面roleId检查失败）
     if (user.roleCode === 'admin' || user.roleCode === 'super_admin') {
-      console.log('User is admin, allowing access');
       return true;
     }
-
-    console.log('User is not admin, checking specific permissions...');
 
     // 检查roleId（非admin用户需要）
     if (!user.roleId) {
