@@ -58,6 +58,22 @@ export class AiConfigController {
     return this.aiConfigService.getPromptConfig(scenarioKey, modelProvider);
   }
 
+  @Get('variables/by-scenario/:scenarioKey')
+  @ApiOperation({ summary: '根据场景key获取变量列表' })
+  @ApiParam({ name: 'scenarioKey', description: '场景标识' })
+  @RequirePermissions('system:ai-config')
+  async getVariablesByScenario(@Param('scenarioKey') scenarioKey: string) {
+    return this.aiConfigService.getVariablesByScenarioKey(scenarioKey);
+  }
+
+  @Get(':id/variables')
+  @ApiOperation({ summary: '获取指定配置的所有变量' })
+  @ApiParam({ name: 'id', description: '配置ID' })
+  @RequirePermissions('system:ai-config')
+  async getVariables(@Param('id', ParseIntPipe) id: number) {
+    return this.aiConfigService.getVariables(id);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: '根据ID查询配置' })
   @RequirePermissions('system:ai-config')
@@ -81,21 +97,5 @@ export class AiConfigController {
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.aiConfigService.remove(id);
     return { message: '删除成功' };
-  }
-
-  @Get(':id/variables')
-  @ApiOperation({ summary: '获取指定配置的所有变量' })
-  @ApiParam({ name: 'id', description: '配置ID' })
-  @RequirePermissions('system:ai-config')
-  async getVariables(@Param('id', ParseIntPipe) id: number) {
-    return this.aiConfigService.getVariables(id);
-  }
-
-  @Get('variables/by-scenario/:scenarioKey')
-  @ApiOperation({ summary: '根据场景key获取变量列表' })
-  @ApiParam({ name: 'scenarioKey', description: '场景标识' })
-  @RequirePermissions('system:ai-config')
-  async getVariablesByScenario(@Param('scenarioKey') scenarioKey: string) {
-    return this.aiConfigService.getVariablesByScenarioKey(scenarioKey);
   }
 }
