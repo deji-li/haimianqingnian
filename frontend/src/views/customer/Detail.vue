@@ -666,7 +666,6 @@ const fetchCustomerInfo = async () => {
   const customerId = Number(route.params.id)
   if (!customerId) return
 
-  loading.value = true
   try {
     customerInfo.value = await getCustomerDetail(customerId)
 
@@ -681,8 +680,6 @@ const fetchCustomerInfo = async () => {
   } catch (error) {
     console.error('Failed to fetch customer:', error)
     ElMessage.error('获取客户信息失败')
-  } finally {
-    loading.value = false
   }
 }
 
@@ -1040,14 +1037,22 @@ const shouldShowAsTag = (fieldName: string) => {
   return ['familyEconomicLevel', 'qualityLevel', 'studentGrade'].includes(fieldName)
 }
 
-onMounted(() => {
-  fetchCustomerInfo()
-  fetchFollowRecords()
-  fetchCustomerOrders()
-  fetchLifecycleHistory()
-  fetchAiTags()
-  fetchLatestAiAnalysis()
-  loadFieldMappings()
+onMounted(async () => {
+  // 并行加载所有数据，提升页面加载速度
+  loading.value = true
+  try {
+    await Promise.allSettled([
+      fetchCustomerInfo(),
+      fetchFollowRecords(),
+      fetchCustomerOrders(),
+      fetchLifecycleHistory(),
+      fetchAiTags(),
+      fetchLatestAiAnalysis(),
+      loadFieldMappings()
+    ])
+  } finally {
+    loading.value = false
+  }
 })
 </script>
 

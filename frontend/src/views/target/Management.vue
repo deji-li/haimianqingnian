@@ -279,38 +279,24 @@ const handleBackToWorkspace = () => {
 
 // 获取销售目标列表
 const fetchTargetList = async () => {
-  console.log('fetchTargetList 开始执行...')
   loading.value = true
   try {
-    console.log('调用 getTargetList API...')
     let data = await getTargetList()
-    console.log('✅ API返回的原始数据:', data)
-    console.log('数据类型:', typeof data, '是否为数组:', Array.isArray(data))
-    console.log('数据长度:', data?.length)
 
     // 前端过滤
     if (queryParams.targetType) {
-      console.log('应用targetType过滤:', queryParams.targetType)
       data = data.filter(item => item.targetType === queryParams.targetType)
     }
     if (queryParams.status !== undefined) {
-      console.log('应用status过滤:', queryParams.status)
       data = data.filter(item => item.status === queryParams.status)
     }
 
     targetList.value = data
-    console.log('✅ 最终设置到targetList的数据:', targetList.value)
-    console.log('targetList长度:', targetList.value.length)
   } catch (error) {
-    console.error('❌ 获取销售目标列表失败:', error)
-    if (error.response) {
-      console.error('响应状态:', error.response.status)
-      console.error('响应数据:', error.response.data)
-    }
+    console.error('获取销售目标列表失败:', error)
     ElMessage.error('获取销售目标列表失败')
   } finally {
     loading.value = false
-    console.log('fetchTargetList 执行完成')
   }
 }
 
@@ -515,30 +501,14 @@ const getProgressStatus = (progress: number) => {
 }
 
 onMounted(async () => {
-  console.log('=================================')
-  console.log('=== Target Management 组件已挂载 ===')
-  console.log('=================================')
-  console.log('当前路由:', window.location.href)
-  console.log('开始加载数据...')
-  console.log('')
-
   try {
-    console.log('步骤1: 调用 fetchTargetList...')
-    await fetchTargetList()
-    console.log('步骤1: fetchTargetList 完成')
-    console.log('')
-
-    console.log('步骤2: 调用 fetchSalesList...')
-    await fetchSalesList()
-    console.log('步骤2: fetchSalesList 完成')
-    console.log('')
-
-    console.log('✅ 数据加载完成')
-    console.log('=================================')
+    // 并行加载目标列表和销售列表
+    await Promise.allSettled([
+      fetchTargetList(),
+      fetchSalesList()
+    ])
   } catch (error) {
-    console.error('❌ 数据加载失败:', error)
-    console.error('错误详情:', error)
-    console.log('=================================')
+    console.error('数据加载失败:', error)
   }
 })
 </script>

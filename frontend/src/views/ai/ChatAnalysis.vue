@@ -390,7 +390,7 @@ const handleDelete = (row: any) => {
   }).catch(() => {})
 }
 
-onMounted(() => {
+onMounted(async () => {
   // 检查URL参数中的customerId
   const customerIdParam = route.query.customerId
   if (customerIdParam) {
@@ -398,8 +398,11 @@ onMounted(() => {
     ElMessage.info('已自动筛选该客户的聊天记录')
   }
 
-  loadData()
-  loadStatistics()
+  // 并行加载数据和统计信息
+  await Promise.allSettled([
+    loadData(),
+    loadStatistics()
+  ])
 })
 </script>
 
