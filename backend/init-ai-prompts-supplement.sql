@@ -20,7 +20,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   'AI训练',
   'ai_training_conversation',
@@ -39,7 +41,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 4. 直接输出客户的话，不要"客户："前缀',
   0.8,
   200,
-  1
+  1,
+  JSON_ARRAY('scenario', 'conversationHistory'),
+  '【变量说明】
+scenario: 训练场景，如首次电话沟通/价格异议处理/课程介绍
+conversationHistory: 对话历史记录（系统自动拼接），格式如下：
+  销售：您好...
+  客户：...'
 );
 
 -- ================================================================
@@ -56,7 +64,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '营销工具',
   'marketing_content_generate',
@@ -83,7 +93,24 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 直接输出文案内容，不要其他说明。',
   0.8,
   2000,
-  1
+  1,
+  JSON_ARRAY('instruction', 'painPoints', 'needs', 'interests', 'purpose', 'style', 'wordCount', 'tips'),
+  '【变量说明】
+instruction: 文案类型指令（系统自动填充），支持的类型：
+  - 朋友圈文案
+  - 微信群发文案
+  - 抖音营销文案
+  - 小红书营销文案
+  - 短视频拍摄脚本
+  - 公众号推文
+
+painPoints: 客户痛点列表，多个用换行分隔
+needs: 客户需求列表，多个用换行分隔
+interests: 客户兴趣点列表，多个用换行分隔
+purpose: 发布目的，如引流/转化/品牌宣传
+style: 风格要求，如专业/亲切/幽默/激励
+wordCount: 字数要求，如100字以内/500-800字
+tips: 注意事项（系统根据文案类型自动填充）'
 );
 
 -- ================================================================
@@ -100,7 +127,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   'CRM分析',
   'crm_problem_diagnosis',
@@ -122,7 +151,15 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 4. 3-5个问题即可',
   0.7,
   1000,
-  1
+  1,
+  JSON_ARRAY('keyMetrics'),
+  '【变量说明】
+keyMetrics: 关键指标数据（系统自动计算并拼接），包括：
+  - 转化率：客户成交率
+  - 平均响应时间：销售响应客户的平均时长
+  - 高质量线索比例：A/B级客户占比
+  - 新增客户数、成交客户数
+  等多维度数据'
 );
 
 -- ================================================================
@@ -139,7 +176,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   'CRM分析',
   'crm_improvement_recommendation',
@@ -161,7 +200,14 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 4. 3-5条建议即可',
   0.7,
   1000,
-  1
+  1,
+  JSON_ARRAY('problems'),
+  '【变量说明】
+problems: 问题列表（由问题诊断功能自动生成），格式：
+  1. 问题1描述
+  2. 问题2描述
+  3. 问题3描述
+  （系统自动拼接，每行一个问题）'
 );
 
 -- ================================================================
@@ -178,7 +224,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   'CRM分析',
   'ai_efficiency_analysis',
@@ -198,7 +246,16 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 5. 以结构化格式输出',
   0.7,
   2000,
-  1
+  1,
+  JSON_ARRAY('salesData'),
+  '【变量说明】
+salesData: 销售人员数据（系统自动聚合），包括：
+  - 销售人员基本信息
+  - 客户跟进数据
+  - AI功能使用情况
+  - 成交数据
+  - 效率指标（响应时间、跟进频率等）
+  等综合数据'
 );
 
 -- ================================================================

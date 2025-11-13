@@ -20,7 +20,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   'AI聊天分析',
   'chat_deep_analysis',
@@ -78,7 +80,11 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 返回完整的JSON对象，不要添加其他说明文字。',
   0.3,
   4000,
-  1
+  1,
+  JSON_ARRAY('chatText', 'customerInfo'),
+  '【变量说明】
+chatText: 聊天记录文本内容，必填
+customerInfo: 客户基础信息（可选），格式示例：客户姓名、微信昵称、意向等级、生命周期'
 );
 
 -- ================================================================
@@ -96,7 +102,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '销售话术',
   'sales_script_opening',
@@ -120,7 +128,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 6. 开场白要引起客户兴趣，建立信任',
   0.7,
   500,
-  1
+  1,
+  JSON_ARRAY('customerName', 'customerIntent', 'lifecycleStage', 'scriptType'),
+  '【变量说明】
+customerName: 客户姓名或昵称，必填
+customerIntent: 意向等级，如A级/B级/C级/高意向/中等意向/低意向
+lifecycleStage: 生命周期，如新客户/意向客户/成交客户/流失客户
+scriptType: 话术类型（系统自动填充）'
 );
 
 -- 2.2 价值主张话术
@@ -134,7 +148,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '销售话术',
   'sales_script_value',
@@ -159,7 +175,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 7. 结合客户痛点和需求',
   0.7,
   500,
-  1
+  1,
+  JSON_ARRAY('customerName', 'customerIntent', 'lifecycleStage', 'scriptType'),
+  '【变量说明】
+customerName: 客户姓名或昵称，必填
+customerIntent: 意向等级，如A级/B级/C级/高意向/中等意向/低意向
+lifecycleStage: 生命周期，如新客户/意向客户/成交客户/流失客户
+scriptType: 话术类型（系统自动填充）'
 );
 
 -- 2.3 异议处理话术
@@ -173,7 +195,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '销售话术',
   'sales_script_objection',
@@ -198,7 +222,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 7. 采用同理心+价值重塑的方式',
   0.7,
   500,
-  1
+  1,
+  JSON_ARRAY('customerName', 'customerIntent', 'lifecycleStage', 'scriptType'),
+  '【变量说明】
+customerName: 客户姓名或昵称，必填
+customerIntent: 意向等级，如A级/B级/C级/高意向/中等意向/低意向
+lifecycleStage: 生命周期，如新客户/意向客户/成交客户/流失客户
+scriptType: 话术类型（系统自动填充）'
 );
 
 -- 2.4 促成话术
@@ -212,7 +242,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '销售话术',
   'sales_script_closing',
@@ -237,7 +269,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 7. 提供优惠或福利刺激成交',
   0.7,
   500,
-  1
+  1,
+  JSON_ARRAY('customerName', 'customerIntent', 'lifecycleStage', 'scriptType'),
+  '【变量说明】
+customerName: 客户姓名或昵称，必填
+customerIntent: 意向等级，如A级/B级/C级/高意向/中等意向/低意向
+lifecycleStage: 生命周期，如新客户/意向客户/成交客户/流失客户
+scriptType: 话术类型（系统自动填充）'
 );
 
 -- ================================================================
@@ -254,7 +292,9 @@ INSERT IGNORE INTO `ai_prompt_configs` (
   `prompt_content`,
   `temperature`,
   `max_tokens`,
-  `is_active`
+  `is_active`,
+  `variables`,
+  `variable_description`
 ) VALUES (
   '客户运营',
   'customer_recovery_script',
@@ -278,7 +318,13 @@ INSERT IGNORE INTO `ai_prompt_configs` (
 5. 直接输出话术内容，不要其他说明',
   0.7,
   500,
-  1
+  1,
+  JSON_ARRAY('customerName', 'customerIntent', 'reason', 'lastFollowTime'),
+  '【变量说明】
+customerName: 客户姓名或昵称，必填
+customerIntent: 原意向等级，如A级/B级/C级
+reason: 流失原因，如价格因素/时间不合适/竞品选择/无回应
+lastFollowTime: 上次跟进时间，格式YYYY-MM-DD'
 );
 
 -- ================================================================
