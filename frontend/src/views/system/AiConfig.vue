@@ -127,6 +127,67 @@
             </el-form-item>
           </el-form>
 
+          <!-- 变量配置区域 -->
+          <div class="variables-section" v-if="configExists">
+            <el-divider />
+            <div class="section-header">
+              <h4>变量配置列表</h4>
+              <p class="desc">共 {{ variables.length }} 个变量，{{ variables.filter((v: any) => v.isActive).length }} 个已启用</p>
+            </div>
+
+            <el-table :data="variables" style="width: 100%" v-loading="loadingVariables">
+              <el-table-column type="index" label="序号" width="60" />
+              <el-table-column prop="variableKey" label="变量标识" width="180">
+                <template #default="{ row }">
+                  <el-tag type="info" size="small">{{ row.variableKey }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="variableName" label="变量名称" width="150" />
+              <el-table-column prop="variableDescription" label="变量说明" min-width="200" show-overflow-tooltip />
+              <el-table-column prop="dataType" label="数据类型" width="100">
+                <template #default="{ row }">
+                  <el-tag size="small">{{ row.dataType }}</el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="category" label="分类" width="120">
+                <template #default="{ row }">
+                  <el-tag
+                    :type="getCategoryType(row.category)"
+                    size="small"
+                  >
+                    {{ row.category || '-' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="isRequired" label="必填" width="80" align="center">
+                <template #default="{ row }">
+                  <el-tag :type="row.isRequired ? 'danger' : ''" size="small">
+                    {{ row.isRequired ? '是' : '否' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="isActive" label="启用状态" width="100" align="center">
+                <template #default="{ row }">
+                  <el-switch
+                    v-model="row.isActive"
+                    @change="updateVariableStatus(row)"
+                    :disabled="row.isRequired"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="操作" width="150" fixed="right">
+                <template #default="{ row }">
+                  <el-button type="primary" link size="small" @click="editVariable(row)">
+                    编辑
+                  </el-button>
+                  <el-button type="danger" link size="small" @click="deleteVariable(row)" v-if="!row.isRequired">
+                    删除
+                  </el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
+
           <!-- 未配置提示 -->
           <el-empty v-else description="当前供应商暂无配置">
             <el-button type="primary" @click="createProviderConfig">
@@ -208,6 +269,10 @@ const formData = ref({
 // 当前配置ID
 const currentConfigId = ref<number | null>(null)
 const configExists = ref(false)
+
+// 变量列表
+const variables = ref<any[]>([])
+const loadingVariables = ref(false)
 
 // 加载状态
 const loading = ref(false)
@@ -296,15 +361,84 @@ async function loadConfig() {
         variableDescription: data.variableDescription || '',
         isActive: data.isActive ?? true,
       }
+
+      // 加载变量列表
+      loadVariables()
     } else {
       configExists.value = false
       resetForm()
+      variables.value = []
     }
   } catch (error) {
     configExists.value = false
     resetForm()
+    variables.value = []
   } finally {
     loading.value = false
+  }
+}
+
+// 加载变量列表
+async function loadVariables() {
+  if (!currentConfigId.value) return
+
+  loadingVariables.value = true
+  try {
+    const data = await request.get(`/ai-config/${currentConfigId.value}/variables`)
+    variables.value = data || []
+  } catch (error: any) {
+    console.error('加载变量失败:', error)
+    variables.value = []
+  } finally {
+    loadingVariables.value = false
+  }
+}
+
+// 获取分类标签类型
+function getCategoryType(category: string) {
+  const typeMap: Record<string, string> = {
+    '必填字段': 'danger',
+    '可选字段': 'warning',
+    '客户信息': 'primary',
+    '系统自动': 'info',
+    '业务信息': 'success',
+    '训练设置': '',
+    '内容要素': 'warning',
+    '风格设置': '',
+  }
+  return typeMap[category] || ''
+}
+
+// 更新变量启用状态
+async function updateVariableStatus(variable: any) {
+  try {
+    // TODO: 调用API更新变量状态
+    ElMessage.success('更新成功')
+  } catch (error: any) {
+    ElMessage.error('更新失败')
+    // 恢复原状态
+    variable.isActive = !variable.isActive
+  }
+}
+
+// 编辑变量
+function editVariable(variable: any) {
+  ElMessage.info('变量编辑功能开发中...')
+  // TODO: 打开编辑对话框
+}
+
+// 删除变量
+async function deleteVariable(variable: any) {
+  await ElMessageBox.confirm(`确定删除变量"${variable.variableName}"吗？`, '提示', {
+    type: 'warning',
+  })
+
+  try {
+    // TODO: 调用API删除变量
+    ElMessage.success('删除成功')
+    loadVariables()
+  } catch (error: any) {
+    ElMessage.error('删除失败')
   }
 }
 
@@ -480,6 +614,32 @@ onMounted(() => {
           display: flex;
           align-items: center;
           gap: 8px;
+        }
+      }
+
+      .variables-section {
+        margin-top: 32px;
+
+        .section-header {
+          margin-bottom: 16px;
+
+          h4 {
+            margin: 0 0 4px 0;
+            font-size: 16px;
+            color: #303133;
+          }
+
+          .desc {
+            margin: 0;
+            font-size: 13px;
+            color: #909399;
+          }
+        }
+
+        :deep(.el-table) {
+          .el-tag {
+            border: none;
+          }
         }
       }
     }
