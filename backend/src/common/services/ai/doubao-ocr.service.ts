@@ -105,7 +105,7 @@ export class DoubaoOcrService {
 
       // 创建HTTP客户端（使用最新的API密钥）
       const httpClient = axios.create({
-        timeout: this.configService.get<number>('AI_TIMEOUT', 30000),
+        timeout: this.configService.get<number>('AI_TIMEOUT', 120000), // 增加到120秒，因为OCR识别较慢
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiConfig.apiKey}`,

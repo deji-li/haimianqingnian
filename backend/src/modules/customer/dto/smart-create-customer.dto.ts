@@ -37,6 +37,7 @@ export class SmartCreateCustomerDto {
     wechatId?: string; // 微信号（必填）
     wechatNickname?: string;
     phone?: string;
+    operatorId?: number; // 运营人员ID
   };
 }
 

@@ -42,6 +42,22 @@
           />
         </el-form-item>
 
+        <el-form-item label="运营人员">
+          <el-select
+            v-model="formData.operatorId"
+            placeholder="选择运营人员（选填）"
+            clearable
+            filterable
+          >
+            <el-option
+              v-for="user in operatorList"
+              :key="user.id"
+              :label="user.realName"
+              :value="user.id"
+            />
+          </el-select>
+        </el-form-item>
+
         <el-form-item label="聊天截图" required>
           <div
             class="paste-area"
@@ -102,10 +118,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Picture, Plus, CircleClose } from '@element-plus/icons-vue'
 import { smartCreateCustomer } from '@/api/customer'
+import { getUserList } from '@/api/user'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -114,11 +131,27 @@ const visible = ref(false)
 const submitting = ref(false)
 const formRef = ref()
 const pasteAreaRef = ref()
+const operatorList = ref<any[]>([])
 
 const formData = ref({
   wechatId: '',
   wechatNickname: '',
-  phone: ''
+  phone: '',
+  operatorId: undefined as number | undefined
+})
+
+// 获取运营人员列表
+const fetchOperatorList = async () => {
+  try {
+    const res = await getUserList({ roleCode: 'operator' })
+    operatorList.value = res.list || []
+  } catch (error) {
+    console.error('获取运营人员列表失败:', error)
+  }
+}
+
+onMounted(() => {
+  fetchOperatorList()
 })
 
 const formRules = {
@@ -140,7 +173,8 @@ const open = () => {
   formData.value = {
     wechatId: '',
     wechatNickname: '',
-    phone: ''
+    phone: '',
+    operatorId: undefined
   }
   fileList.value = []
   pastedImages.value = []
@@ -229,7 +263,8 @@ const handleSubmit = async () => {
       knownInfo: {
         wechatId: formData.value.wechatId,
         wechatNickname: formData.value.wechatNickname || undefined,
-        phone: formData.value.phone || undefined
+        phone: formData.value.phone || undefined,
+        operatorId: formData.value.operatorId
       }
     })
 

@@ -554,6 +554,7 @@ export class CustomerService {
         wechatId: smartCreateDto.knownInfo.wechatId,
         wechatNickname: smartCreateDto.knownInfo?.wechatNickname || null,
         phone: smartCreateDto.knownInfo?.phone || null,
+        operatorId: smartCreateDto.knownInfo?.operatorId || null,
         salesId: user.id,
         customerIntent: '中',
         lifecycleStage: '线索',
