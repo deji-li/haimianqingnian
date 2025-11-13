@@ -278,7 +278,12 @@ const handleSubmit = async () => {
 
   } catch (error: any) {
     console.error('创建客户失败:', error)
-    ElMessage.error(error.message || '创建客户失败')
+    console.error('错误详情:', JSON.stringify(error, null, 2))
+    console.error('错误响应:', error.response)
+    console.error('错误响应数据:', error.response?.data)
+
+    const errorMsg = error.response?.data?.message || error.message || '创建客户失败'
+    ElMessage.error(errorMsg)
   } finally {
     submitting.value = false
   }
