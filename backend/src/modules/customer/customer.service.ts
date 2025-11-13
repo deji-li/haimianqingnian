@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, Between } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import { CustomerFollowRecord } from './entities/customer-follow-record.entity';
+import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BatchUpdateCustomerDto } from './dto/batch-update-customer.dto';
@@ -33,6 +34,8 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerFollowRecord)
     private followRecordRepository: Repository<CustomerFollowRecord>,
+    @InjectRepository(AiChatRecord)
+    private aiChatRecordRepository: Repository<AiChatRecord>,
     private readonly doubaoOcrService: DoubaoOcrService,
     private readonly deepseekAnalysisService: DeepseekAnalysisService,
     private readonly aiTagsService: AiTagsService,
@@ -686,7 +689,27 @@ export class CustomerService {
       );
       this.logger.log(`客户${customerId}: AI标签创建完成`);
 
-      // 7. 清理临时文件
+      // 7. 创建聊天记录分析
+      const aiChatRecord = this.aiChatRecordRepository.create({
+        customerId,
+        userId: customer.salesId, // 使用客户的销售ID
+        chatDate: new Date(),
+        wechatId: customer.wechatId,
+        images: [], // AI智能创建时图片已保存在跟进记录中
+        ocrText: chatText,
+        aiAnalysisResult: analysisResult,
+        qualityLevel: analysisResult.qualityLevel,
+        riskLevel: analysisResult.riskLevel,
+        intentionScore: analysisResult.intentionScore,
+        estimatedValue: analysisResult.estimatedValue,
+        decisionMakerRole: analysisResult.decisionMakerRole,
+        ocrStatus: '已完成',
+        analysisStatus: '已完成',
+      });
+      const savedChatRecord = await this.aiChatRecordRepository.save(aiChatRecord);
+      this.logger.log(`客户${customerId}: 创建聊天记录分析ID=${savedChatRecord.id}`);
+
+      // 8. 清理临时文件
       this.cleanupTempFiles(imagePaths);
 
       this.logger.log(`客户${customerId}: AI识别处理完成`);

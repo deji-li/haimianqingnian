@@ -10,6 +10,7 @@ import { AnalyticsService } from './analytics.service';
 import { Customer } from './entities/customer.entity';
 import { CustomerFollowRecord } from './entities/customer-follow-record.entity';
 import { CustomerLifecycle } from './entities/customer-lifecycle.entity';
+import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
 import { Order } from '../order/entities/order.entity';
 import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
@@ -19,7 +20,7 @@ import { AiTagsModule } from '../ai-tags/ai-tags.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Customer, CustomerFollowRecord, CustomerLifecycle, Order]),
+    TypeOrmModule.forFeature([Customer, CustomerFollowRecord, CustomerLifecycle, AiChatRecord, Order]),
     ConfigModule,
     AiConfigModule,
     AiTagsModule,
