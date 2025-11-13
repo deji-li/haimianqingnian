@@ -2,6 +2,7 @@ import { Injectable, Logger, NotFoundException, ConflictException } from '@nestj
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AiPromptConfig } from './entities/ai-prompt-config.entity';
+import { AiPromptVariable } from './entities/ai-prompt-variable.entity';
 import { CreateAiPromptConfigDto } from './dto/create-ai-prompt-config.dto';
 import { UpdateAiPromptConfigDto } from './dto/update-ai-prompt-config.dto';
 import { QueryAiPromptConfigDto } from './dto/query-ai-prompt-config.dto';
@@ -13,6 +14,8 @@ export class AiConfigService {
   constructor(
     @InjectRepository(AiPromptConfig)
     private readonly aiPromptConfigRepository: Repository<AiPromptConfig>,
+    @InjectRepository(AiPromptVariable)
+    private readonly aiPromptVariableRepository: Repository<AiPromptVariable>,
   ) {}
 
   /**
@@ -177,5 +180,56 @@ export class AiConfigService {
       .getRawMany();
 
     return result.map((r) => r.category);
+  }
+
+  /**
+   * 获取指定配置的所有变量
+   */
+  async getVariables(promptConfigId: number): Promise<AiPromptVariable[]> {
+    try {
+      return await this.aiPromptVariableRepository.find({
+        where: { promptConfigId },
+        order: { displayOrder: 'ASC', id: 'ASC' },
+      });
+    } catch (error) {
+      this.logger.error(`获取变量配置失败: ${error.message}`, error.stack);
+      return [];
+    }
+  }
+
+  /**
+   * 根据场景key获取变量列表
+   */
+  async getVariablesByScenarioKey(scenarioKey: string): Promise<AiPromptVariable[]> {
+    try {
+      return await this.aiPromptVariableRepository.find({
+        where: { scenarioKey, isActive: true },
+        order: { displayOrder: 'ASC', id: 'ASC' },
+      });
+    } catch (error) {
+      this.logger.error(`获取变量配置失败: ${error.message}`, error.stack);
+      return [];
+    }
+  }
+
+  /**
+   * 获取指定配置的变量（返回键值对格式，方便代码使用）
+   */
+  async getVariablesMap(scenarioKey: string): Promise<Record<string, any>> {
+    const variables = await this.getVariablesByScenarioKey(scenarioKey);
+    const map: Record<string, any> = {};
+
+    variables.forEach((v) => {
+      map[v.variableKey] = {
+        name: v.variableName,
+        description: v.variableDescription,
+        type: v.dataType,
+        required: v.isRequired,
+        defaultValue: v.defaultValue,
+        exampleValue: v.exampleValue,
+      };
+    });
+
+    return map;
   }
 }
