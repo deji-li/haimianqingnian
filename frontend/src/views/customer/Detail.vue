@@ -768,9 +768,27 @@ const handleGenerateScript = async (scriptType: string) => {
     // 在对话框中展示生成的话术
     ElMessageBox.alert(res.scriptContent, `${scriptType}话术`, {
       confirmButtonText: '复制',
-      callback: () => {
-        navigator.clipboard.writeText(res.scriptContent)
-        ElMessage.success('已复制到剪贴板')
+      callback: async () => {
+        try {
+          // 尝试使用现代 clipboard API
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            await navigator.clipboard.writeText(res.scriptContent)
+          } else {
+            // 降级方案：使用传统方法
+            const textarea = document.createElement('textarea')
+            textarea.value = res.scriptContent
+            textarea.style.position = 'fixed'
+            textarea.style.opacity = '0'
+            document.body.appendChild(textarea)
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+          }
+          ElMessage.success('已复制到剪贴板')
+        } catch (err) {
+          console.error('复制失败:', err)
+          ElMessage.error('复制失败，请手动复制')
+        }
       },
     })
   } catch (error: any) {

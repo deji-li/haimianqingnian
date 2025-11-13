@@ -29,11 +29,11 @@ export class QueryAiPromptConfigDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '每页数量', example: 20, maximum: 100 })
+  @ApiPropertyOptional({ description: '每页数量', example: 20, maximum: 1000 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  @Max(100)
+  @Max(1000)
   limit?: number = 20;
 }
