@@ -599,6 +599,7 @@ import {
   generateScript,
 } from '@/api/ai'
 import { useUserStore } from '@/store/user'
+import { formatDateTime, isOverdue } from '@/utils/date'
 import dayjs from 'dayjs'
 import request from '@/utils/request'
 
@@ -904,17 +905,6 @@ const handleSubmitStage = async () => {
 // 生命周期阶段对话框关闭
 const handleStageDialogClose = () => {
   stageFormRef.value?.resetFields()
-}
-
-// 格式化日期时间
-const formatDateTime = (date: string) => {
-  return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
-}
-
-// 检查是否逾期
-const isOverdue = (dateStr: string) => {
-  if (!dateStr) return false
-  return dayjs(dateStr).isBefore(dayjs())
 }
 
 // 检查是否即将到期（24小时内或已逾期）

@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsEnum, IsDateString } from 'class-validator';
+import { IsOptional, IsInt, IsEnum, IsDateString, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CommissionRecordQueryDto {
@@ -10,6 +10,8 @@ export class CommissionRecordQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: '每页数量必须是整数' })
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @IsOptional()

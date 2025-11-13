@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsString, Min } from 'class-validator';
+import { IsOptional, IsInt, IsString, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -10,11 +10,12 @@ export class QueryReportListDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ description: '每页数量', required: false, default: 20 })
+  @ApiProperty({ description: '每页数量', required: false, default: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20;
 
   @ApiProperty({ description: '报告类型', required: false })

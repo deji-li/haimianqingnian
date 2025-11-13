@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsDateString, IsEnum } from 'class-validator';
+import { IsOptional, IsInt, IsDateString, IsEnum, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class DailyReportQueryDto {
@@ -10,6 +10,8 @@ export class DailyReportQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: '每页数量必须是整数' })
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @IsOptional()

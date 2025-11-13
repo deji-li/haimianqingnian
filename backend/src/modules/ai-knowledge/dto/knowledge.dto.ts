@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsNumber, IsInt, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsNumber, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -69,11 +69,12 @@ export class QueryKnowledgeDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ description: '每页数量', required: false, default: 20 })
+  @ApiProperty({ description: '每页数量', required: false, default: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20;
 
   @ApiProperty({ description: '知识分类', required: false })

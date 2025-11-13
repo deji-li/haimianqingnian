@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsOptional, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateTagDto {
@@ -49,8 +49,9 @@ export class QueryTagsDto {
   @IsNumber()
   page?: number;
 
-  @ApiProperty({ description: '每页数量', required: false })
+  @ApiProperty({ description: '每页数量', required: false, maximum: 100 })
   @IsOptional()
   @IsNumber()
+  @Max(100)
   limit?: number;
 }

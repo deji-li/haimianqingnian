@@ -297,6 +297,7 @@ import * as echarts from 'echarts'
 import { getDashboardOverview, getWeeklyTrend, getComparisonData, type DashboardOverview, type WeeklyTrend, type ComparisonData } from '@/api/dashboard'
 import { Top, Bottom } from '@element-plus/icons-vue'
 import { getPendingFollowUps, type Customer } from '@/api/customer'
+import { formatDateTime } from '@/utils/date'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -454,18 +455,6 @@ const fetchCoursePerformance = async () => {
     { courseName: '数据分析', revenue: 265000, count: 38 },
     { courseName: 'UI设计', revenue: 198000, count: 29 },
   ]
-}
-
-// 格式化日期时间
-const formatDateTime = (dateStr: string) => {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  const hours = String(date.getHours()).padStart(2, '0')
-  const minutes = String(date.getMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes}`
 }
 
 // 渲染销售额趋势图

@@ -271,10 +271,10 @@
             </el-table-column>
             <el-table-column prop="lastFollowTime" label="最后跟进时间" width="220">
               <template #default="{ row }">
-                <span :class="isOverdue(row.lastFollowTime) ? 'overdue-time' : ''">
+                <span :class="isOverdueFollow(row.lastFollowTime) ? 'overdue-time' : ''">
                   {{ formatDateTime(row.lastFollowTime) || '未跟进' }}
                   <el-tag
-                    v-if="isOverdue(row.lastFollowTime)"
+                    v-if="isOverdueFollow(row.lastFollowTime)"
                     type="danger"
                     size="small"
                     style="margin-left: 8px"
@@ -516,6 +516,7 @@ import { useUserStore } from '@/store/user'
 import { getTargetProgress, createTarget, type TargetProgress } from '@/api/target'
 import { getPendingFollowUps, getFollowStatistics, type FollowStatistics } from '@/api/customer'
 import { getDashboardOverview } from '@/api/dashboard'
+import { formatDateTime, isOverdue } from '@/utils/date'
 import dayjs from 'dayjs'
 
 const router = useRouter()
@@ -768,18 +769,13 @@ const getIntentType = (intent: string): any => {
   return intentMap[intent] || ''
 }
 
-const formatDateTime = (date: string) => {
-  if (!date) return ''
-  return dayjs(date).format('YYYY-MM-DD HH:mm')
-}
-
 const formatDateRange = (startDate: string, endDate: string) => {
   if (!startDate || !endDate) return ''
   return `${dayjs(startDate).format('YYYY/MM/DD')} - ${dayjs(endDate).format('YYYY/MM/DD')}`
 }
 
 // 判断是否逾期（超过7天未跟进）
-const isOverdue = (lastFollowTime: string) => {
+const isOverdueFollow = (lastFollowTime: string) => {
   if (!lastFollowTime) return false
   const now = dayjs()
   const lastFollow = dayjs(lastFollowTime)

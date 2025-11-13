@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsNumber, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsNumber, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryCommissionDto {
@@ -9,10 +9,12 @@ export class QueryCommissionDto {
   @IsNumber()
   page?: number;
 
-  @ApiProperty({ description: '每页数量', required: false })
+  @ApiProperty({ description: '每页数量', required: false, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
-  @IsNumber()
+  @IsInt()
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @ApiProperty({ description: '员工ID', required: false })

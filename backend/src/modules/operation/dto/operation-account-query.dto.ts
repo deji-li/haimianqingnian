@@ -1,4 +1,4 @@
-import { IsOptional, IsEnum, IsInt, IsString } from 'class-validator';
+import { IsOptional, IsEnum, IsInt, IsString, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class OperationAccountQueryDto {
@@ -10,6 +10,8 @@ export class OperationAccountQueryDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: '每页数量必须是整数' })
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @IsOptional()

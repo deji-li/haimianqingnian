@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsInt, IsString, IsEnum, ValidateIf } from 'class-validator';
+import { IsOptional, IsInt, IsString, IsEnum, ValidateIf, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryOrderDto {
@@ -9,10 +9,12 @@ export class QueryOrderDto {
   @IsInt()
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '每页数量', example: 20 })
+  @ApiPropertyOptional({ description: '每页数量', example: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
+  @Min(1)
+  @Max(100)
   pageSize?: number = 20;
 
   @ApiPropertyOptional({

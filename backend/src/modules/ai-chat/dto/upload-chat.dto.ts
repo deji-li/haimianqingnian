@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsDateString, IsArray, ArrayMinSize, IsOptional, IsInt, Min } from 'class-validator';
+import { IsNotEmpty, IsString, IsDateString, IsArray, ArrayMinSize, IsOptional, IsInt, Min, Max } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 
@@ -28,11 +28,12 @@ export class QueryChatRecordsDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiProperty({ description: '每页数量', required: false, default: 20 })
+  @ApiProperty({ description: '每页数量', required: false, default: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20;
 
   @ApiProperty({ description: '客户ID', required: false })

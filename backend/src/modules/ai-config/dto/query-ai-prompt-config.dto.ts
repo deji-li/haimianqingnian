@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsOptional, IsString, IsEnum, IsInt, Min } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsInt, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class QueryAiPromptConfigDto {
@@ -29,10 +29,11 @@ export class QueryAiPromptConfigDto {
   @Min(1)
   page?: number = 1;
 
-  @ApiPropertyOptional({ description: '每页数量', example: 20 })
+  @ApiPropertyOptional({ description: '每页数量', example: 20, maximum: 100 })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(100)
   limit?: number = 20;
 }
