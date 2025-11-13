@@ -690,11 +690,16 @@ export class CustomerService {
       this.logger.log(`客户${customerId}: AI标签创建完成`);
 
       // 7. 创建聊天记录分析
+      // 查询客户信息以获取salesId和wechatId
+      const customerInfo = await this.customerRepository.findOne({
+        where: { id: customerId },
+      });
+
       const aiChatRecord = this.aiChatRecordRepository.create({
         customerId,
-        userId: customer.salesId, // 使用客户的销售ID
+        userId: customerInfo.salesId, // 使用客户的销售ID
         chatDate: new Date(),
-        wechatId: customer.wechatId,
+        wechatId: customerInfo.wechatId,
         images: [], // AI智能创建时图片已保存在跟进记录中
         ocrText: chatText,
         aiAnalysisResult: analysisResult,
@@ -702,7 +707,7 @@ export class CustomerService {
         riskLevel: analysisResult.riskLevel,
         intentionScore: analysisResult.intentionScore,
         estimatedValue: analysisResult.estimatedValue,
-        decisionMakerRole: analysisResult.decisionMakerRole,
+        decisionMakerRole: analysisResult.customerProfile?.decisionMakerRole || null,
         ocrStatus: '已完成',
         analysisStatus: '已完成',
       });
