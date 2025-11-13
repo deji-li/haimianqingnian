@@ -120,11 +120,13 @@
           <template #default="{ row }">
             <el-tag
               :type="
-                row.customerIntent === '高'
+                row.customerIntent === '高意向' || row.customerIntent === '高'
                   ? 'success'
-                  : row.customerIntent === '中'
+                  : row.customerIntent === '中意向' || row.customerIntent === '中'
                     ? 'warning'
-                    : 'info'
+                    : row.customerIntent === '低意向' || row.customerIntent === '低'
+                      ? 'info'
+                      : 'danger'
               "
             >
               {{ row.customerIntent }}
