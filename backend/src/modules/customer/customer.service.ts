@@ -690,29 +690,43 @@ export class CustomerService {
       this.logger.log(`客户${customerId}: AI标签创建完成`);
 
       // 7. 创建聊天记录分析
-      // 查询客户信息以获取salesId和wechatId
-      const customerInfo = await this.customerRepository.findOne({
-        where: { id: customerId },
-      });
+      try {
+        // 查询客户信息以获取salesId和wechatId
+        this.logger.log(`客户${customerId}: 开始创建聊天记录分析...`);
+        const customerInfo = await this.customerRepository.findOne({
+          where: { id: customerId },
+        });
 
-      const aiChatRecord = this.aiChatRecordRepository.create({
-        customerId,
-        userId: customerInfo.salesId, // 使用客户的销售ID
-        chatDate: new Date(),
-        wechatId: customerInfo.wechatId,
-        images: [], // AI智能创建时图片已保存在跟进记录中
-        ocrText: chatText,
-        aiAnalysisResult: analysisResult,
-        qualityLevel: analysisResult.qualityLevel,
-        riskLevel: analysisResult.riskLevel,
-        intentionScore: analysisResult.intentionScore,
-        estimatedValue: analysisResult.estimatedValue,
-        decisionMakerRole: analysisResult.customerProfile?.decisionMakerRole || null,
-        ocrStatus: '已完成',
-        analysisStatus: '已完成',
-      });
-      const savedChatRecord = await this.aiChatRecordRepository.save(aiChatRecord);
-      this.logger.log(`客户${customerId}: 创建聊天记录分析ID=${savedChatRecord.id}`);
+        if (!customerInfo) {
+          throw new Error(`客户${customerId}不存在`);
+        }
+
+        this.logger.log(`客户${customerId}: 查询到客户信息，salesId=${customerInfo.salesId}, wechatId=${customerInfo.wechatId}`);
+
+        const aiChatRecord = this.aiChatRecordRepository.create({
+          customerId,
+          userId: customerInfo.salesId, // 使用客户的销售ID
+          chatDate: new Date(),
+          wechatId: customerInfo.wechatId,
+          images: [], // AI智能创建时图片已保存在跟进记录中
+          ocrText: chatText,
+          aiAnalysisResult: analysisResult,
+          qualityLevel: analysisResult.qualityLevel,
+          riskLevel: analysisResult.riskLevel,
+          intentionScore: analysisResult.intentionScore,
+          estimatedValue: analysisResult.estimatedValue,
+          decisionMakerRole: analysisResult.customerProfile?.decisionMakerRole || null,
+          ocrStatus: '已完成',
+          analysisStatus: '已完成',
+        });
+
+        this.logger.log(`客户${customerId}: 准备保存聊天记录分析...`);
+        const savedChatRecord = await this.aiChatRecordRepository.save(aiChatRecord);
+        this.logger.log(`客户${customerId}: 创建聊天记录分析ID=${savedChatRecord.id}`);
+      } catch (chatRecordError) {
+        this.logger.error(`客户${customerId}: 创建聊天记录分析失败: ${chatRecordError.message}`, chatRecordError.stack);
+        // 不影响整体流程，继续执行
+      }
 
       // 8. 清理临时文件
       this.cleanupTempFiles(imagePaths);
