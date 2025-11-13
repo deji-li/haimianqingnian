@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './entities/index';
 import { DeepseekAnalysisService, AiAnalysisResult } from '../../common/services/ai/deepseek-analysis.service';
 import { Customer } from '../customer/entities/customer.entity';
+import { AiConfigService } from '../ai-config/ai-config.service';
 
 @Injectable()
 export class AiToolsService {
@@ -21,6 +22,7 @@ export class AiToolsService {
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
     private readonly deepseekService: DeepseekAnalysisService,
+    private readonly aiConfigService: AiConfigService,
   ) {}
 
   /**
@@ -242,7 +244,12 @@ export class AiToolsService {
       const conversation = training.conversation || [];
       conversation.push({ role: 'user', message: userMessage });
 
-      const prompt = `你正在扮演一个教育培训的潜在客户，场景是"${training.scenario}"。
+      // 从数据库获取提示词配置
+      const scenarioKey = 'ai_training_conversation';
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+
+      let systemPrompt = '你是一个教育培训的潜在客户，用于帮助销售人员进行销售话术练习。';
+      let userPrompt = `你正在扮演一个教育培训的潜在客户，场景是"${training.scenario}"。
 之前的对话：
 ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message}`).join('\n')}
 
@@ -252,10 +259,26 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 3. 50字以内
 4. 直接输出客户的话，不要"客户："前缀`;
 
+      if (promptConfig) {
+        systemPrompt = promptConfig.systemPrompt || systemPrompt;
+        if (promptConfig.promptContent) {
+          const conversationHistory = conversation.map((c, i) =>
+            `${i % 2 === 0 ? '销售' : '客户'}：${c.message}`
+          ).join('\n');
+
+          userPrompt = promptConfig.promptContent
+            .replace(/\{\{scenario\}\}/g, training.scenario)
+            .replace(/\{\{conversationHistory\}\}/g, conversationHistory);
+        }
+      }
+
       const aiReply = await this.deepseekService.callAI(
-        '你是一个教育培训的潜在客户',
-        prompt,
-        { temperature: 0.8, maxTokens: 200 },
+        systemPrompt,
+        userPrompt,
+        {
+          temperature: promptConfig?.temperature ?? 0.8,
+          maxTokens: promptConfig?.maxTokens ?? 200
+        },
       );
       conversation.push({ role: 'assistant', message: aiReply });
 
@@ -340,69 +363,143 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
         // 暂时简化处理
       }
 
-      // 构建AI生成prompt
-      const contentTypeMap = {
-        '朋友圈文案': {
-          instruction: '生成一条适合发朋友圈的营销文案',
-          tips: '要求：简洁有力，引发共鸣，包含适当emoji，不要太硬广',
-        },
-        '微信群发文案': {
-          instruction: '生成一条微信群发营销文案',
-          tips: '要求：个性化称呼，直击痛点，明确行动号召',
-        },
-        '抖音营销文案': {
-          instruction: '生成一条抖音短视频营销文案',
-          tips: '要求：前3秒吸睛，节奏紧凑，包含热门话题，引导互动',
-        },
-        '小红书营销文案': {
-          instruction: '生成一条小红书营销文案',
-          tips: '要求：真实感受，干货分享，适当种草，包含emoji和标签',
-        },
-        '短视频拍摄脚本': {
-          instruction: '生成一个短视频拍摄脚本',
-          tips: '要求：包含场景、台词、镜头、时长，总时长30-60秒',
-        },
-        '公众号推文': {
-          instruction: '生成一篇公众号推文',
-          tips: '要求：标题吸睛，内容有价值，排版清晰，引导关注转发',
-        },
-      };
+      // 从数据库获取提示词配置
+      const scenarioKey = 'marketing_content_generate';
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
 
-      const typeConfig = contentTypeMap[contentType] || contentTypeMap['朋友圈文案'];
+      let systemPrompt = '你是一个专业的教育培训行业营销文案专家，擅长创作各类营销内容，包括朋友圈文案、短视频脚本、公众号推文等。';
+      let userPrompt = '';
 
-      let prompt = `${typeConfig.instruction}\n\n`;
+      if (promptConfig && promptConfig.promptContent) {
+        // 使用数据库配置
+        systemPrompt = promptConfig.systemPrompt || systemPrompt;
 
-      if (painPoints.length > 0) {
-        prompt += `客户痛点：\n${painPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n`;
+        // 构建内容
+        const contentTypeMap = {
+          '朋友圈文案': {
+            instruction: '生成一条适合发朋友圈的营销文案',
+            tips: '要求：简洁有力，引发共鸣，包含适当emoji，不要太硬广',
+          },
+          '微信群发文案': {
+            instruction: '生成一条微信群发营销文案',
+            tips: '要求：个性化称呼，直击痛点，明确行动号召',
+          },
+          '抖音营销文案': {
+            instruction: '生成一条抖音短视频营销文案',
+            tips: '要求：前3秒吸睛，节奏紧凑，包含热门话题，引导互动',
+          },
+          '小红书营销文案': {
+            instruction: '生成一条小红书营销文案',
+            tips: '要求：真实感受，干货分享，适当种草，包含emoji和标签',
+          },
+          '短视频拍摄脚本': {
+            instruction: '生成一个短视频拍摄脚本',
+            tips: '要求：包含场景、台词、镜头、时长，总时长30-60秒',
+          },
+          '公众号推文': {
+            instruction: '生成一篇公众号推文',
+            tips: '要求：标题吸睛，内容有价值，排版清晰，引导关注转发',
+          },
+        };
+
+        const typeConfig = contentTypeMap[contentType] || contentTypeMap['朋友圈文案'];
+
+        let painPointsText = '';
+        if (painPoints.length > 0) {
+          painPointsText = `客户痛点：\n${painPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n`;
+        }
+
+        let needsText = '';
+        if (needs.length > 0) {
+          needsText = `客户需求：\n${needs.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n`;
+        }
+
+        let interestsText = '';
+        if (interests.length > 0) {
+          interestsText = `客户兴趣点：\n${interests.map((int, i) => `${i + 1}. ${int}`).join('\n')}\n`;
+        }
+
+        let purposeText = purpose ? `发布目的：${purpose}\n` : '';
+        let styleText = style ? `风格要求：${style}\n` : '';
+        let wordCountText = wordCount ? `字数要求：${wordCount}\n` : '';
+
+        userPrompt = promptConfig.promptContent
+          .replace(/\{\{instruction\}\}/g, typeConfig.instruction)
+          .replace(/\{\{painPoints\}\}/g, painPointsText)
+          .replace(/\{\{needs\}\}/g, needsText)
+          .replace(/\{\{interests\}\}/g, interestsText)
+          .replace(/\{\{purpose\}\}/g, purposeText)
+          .replace(/\{\{style\}\}/g, styleText)
+          .replace(/\{\{wordCount\}\}/g, wordCountText)
+          .replace(/\{\{tips\}\}/g, typeConfig.tips);
+      } else {
+        // 使用默认配置
+        const contentTypeMap = {
+          '朋友圈文案': {
+            instruction: '生成一条适合发朋友圈的营销文案',
+            tips: '要求：简洁有力，引发共鸣，包含适当emoji，不要太硬广',
+          },
+          '微信群发文案': {
+            instruction: '生成一条微信群发营销文案',
+            tips: '要求：个性化称呼，直击痛点，明确行动号召',
+          },
+          '抖音营销文案': {
+            instruction: '生成一条抖音短视频营销文案',
+            tips: '要求：前3秒吸睛，节奏紧凑，包含热门话题，引导互动',
+          },
+          '小红书营销文案': {
+            instruction: '生成一条小红书营销文案',
+            tips: '要求：真实感受，干货分享，适当种草，包含emoji和标签',
+          },
+          '短视频拍摄脚本': {
+            instruction: '生成一个短视频拍摄脚本',
+            tips: '要求：包含场景、台词、镜头、时长，总时长30-60秒',
+          },
+          '公众号推文': {
+            instruction: '生成一篇公众号推文',
+            tips: '要求：标题吸睛，内容有价值，排版清晰，引导关注转发',
+          },
+        };
+
+        const typeConfig = contentTypeMap[contentType] || contentTypeMap['朋友圈文案'];
+
+        userPrompt = `${typeConfig.instruction}\n\n`;
+
+        if (painPoints.length > 0) {
+          userPrompt += `客户痛点：\n${painPoints.map((p, i) => `${i + 1}. ${p}`).join('\n')}\n\n`;
+        }
+
+        if (needs.length > 0) {
+          userPrompt += `客户需求：\n${needs.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
+        }
+
+        if (interests.length > 0) {
+          userPrompt += `客户兴趣点：\n${interests.map((int, i) => `${i + 1}. ${int}`).join('\n')}\n\n`;
+        }
+
+        if (purpose) {
+          userPrompt += `发布目的：${purpose}\n`;
+        }
+
+        if (style) {
+          userPrompt += `风格要求：${style}\n`;
+        }
+
+        if (wordCount) {
+          userPrompt += `字数要求：${wordCount}\n`;
+        }
+
+        userPrompt += `\n${typeConfig.tips}\n\n直接输出文案内容，不要其他说明。`;
       }
-
-      if (needs.length > 0) {
-        prompt += `客户需求：\n${needs.map((n, i) => `${i + 1}. ${n}`).join('\n')}\n\n`;
-      }
-
-      if (interests.length > 0) {
-        prompt += `客户兴趣点：\n${interests.map((int, i) => `${i + 1}. ${int}`).join('\n')}\n\n`;
-      }
-
-      if (purpose) {
-        prompt += `发布目的：${purpose}\n`;
-      }
-
-      if (style) {
-        prompt += `风格要求：${style}\n`;
-      }
-
-      if (wordCount) {
-        prompt += `字数要求：${wordCount}\n`;
-      }
-
-      prompt += `\n${typeConfig.tips}\n\n直接输出文案内容，不要其他说明。`;
 
       // 调用DeepSeek API生成
       const content = await this.deepseekService.callAI(
-        '你是一个专业的教育培训行业营销文案专家',
-        prompt,
-        { temperature: 0.8, maxTokens: 2000 },
+        systemPrompt,
+        userPrompt,
+        {
+          temperature: promptConfig?.temperature ?? 0.8,
+          maxTokens: promptConfig?.maxTokens ?? 2000
+        },
       );
 
       this.logger.log(`生成${contentType}成功`);
@@ -698,7 +795,12 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
    */
   private async diagnoseProblems(keyMetrics: any): Promise<string[]> {
     try {
-      const prompt = `作为CRM分析专家，请诊断以下数据中存在的问题：
+      // 从数据库获取提示词配置
+      const scenarioKey = 'crm_problem_diagnosis';
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+
+      let systemPrompt = '你是一个专业的CRM数据分析专家，擅长从关键指标中识别业务问题和改进机会。';
+      let userPrompt = `作为CRM分析专家，请诊断以下数据中存在的问题：
 
 关键指标：
 - 转化率：${(keyMetrics.conversionRate * 100).toFixed(1)}%
@@ -707,10 +809,25 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 
 请以JSON数组格式输出问题，例如：["问题1", "问题2"]`;
 
+      if (promptConfig) {
+        systemPrompt = promptConfig.systemPrompt || systemPrompt;
+        if (promptConfig.promptContent) {
+          const metricsText = `- 转化率：${(keyMetrics.conversionRate * 100).toFixed(1)}%
+- 平均响应时间：${keyMetrics.avgResponseTime}小时
+- 高质量线索比例：${((keyMetrics.highQualityLeads / keyMetrics.newCustomers) * 100).toFixed(1)}%`;
+
+          userPrompt = promptConfig.promptContent
+            .replace(/\{\{keyMetrics\}\}/g, metricsText);
+        }
+      }
+
       const content = await this.deepseekService.callAI(
-        '你是一个专业的CRM数据分析专家',
-        prompt,
-        { temperature: 0.7, maxTokens: 1000 },
+        systemPrompt,
+        userPrompt,
+        {
+          temperature: promptConfig?.temperature ?? 0.7,
+          maxTokens: promptConfig?.maxTokens ?? 1000
+        },
       );
 
       try {
@@ -729,17 +846,34 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
    */
   private async generateRecommendations(keyMetrics: any, problems: string[]): Promise<string[]> {
     try {
-      const prompt = `基于以下问题，请给出具体的改进建议：
+      // 从数据库获取提示词配置
+      const scenarioKey = 'crm_improvement_recommendation';
+      const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');
+
+      let systemPrompt = '你是一个专业的CRM顾问，擅长根据诊断出的问题提供具体可执行的改进方案。';
+      let userPrompt = `基于以下问题，请给出具体的改进建议：
 
 问题：
 ${problems.map((p, i) => `${i + 1}. ${p}`).join('\n')}
 
 请以JSON数组格式输出建议，例如：["建议1", "建议2"]`;
 
+      if (promptConfig) {
+        systemPrompt = promptConfig.systemPrompt || systemPrompt;
+        if (promptConfig.promptContent) {
+          const problemsText = problems.map((p, i) => `${i + 1}. ${p}`).join('\n');
+          userPrompt = promptConfig.promptContent
+            .replace(/\{\{problems\}\}/g, problemsText);
+        }
+      }
+
       const content = await this.deepseekService.callAI(
-        '你是一个专业的CRM顾问',
-        prompt,
-        { temperature: 0.7, maxTokens: 1000 },
+        systemPrompt,
+        userPrompt,
+        {
+          temperature: promptConfig?.temperature ?? 0.7,
+          maxTokens: promptConfig?.maxTokens ?? 1000
+        },
       );
 
       try {
