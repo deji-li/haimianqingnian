@@ -43,20 +43,6 @@
           <span>目标管理</span>
         </el-menu-item>
 
-        <el-sub-menu index="/system">
-          <template #title>
-            <el-icon><Setting /></el-icon>
-            <span>系统管理</span>
-          </template>
-          <el-menu-item index="/system/user">用户管理</el-menu-item>
-          <el-menu-item index="/system/department">部门管理</el-menu-item>
-          <el-menu-item index="/system/campus">校区管理</el-menu-item>
-          <el-menu-item index="/system/dictionary">字典管理</el-menu-item>
-          <el-menu-item index="/system/role">角色权限</el-menu-item>
-          <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
-          <el-menu-item index="/system/ai-config">AI配置</el-menu-item>
-        </el-sub-menu>
-
         <el-sub-menu index="/sales-tools">
           <template #title>
             <el-icon><MagicStick /></el-icon>
@@ -87,6 +73,20 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>数据大屏</span>
         </el-menu-item>
+
+        <el-sub-menu index="/system">
+          <template #title>
+            <el-icon><Setting /></el-icon>
+            <span>系统管理</span>
+          </template>
+          <el-menu-item index="/system/user">用户管理</el-menu-item>
+          <el-menu-item index="/system/department">部门管理</el-menu-item>
+          <el-menu-item index="/system/campus">校区管理</el-menu-item>
+          <el-menu-item index="/system/dictionary">字典管理</el-menu-item>
+          <el-menu-item index="/system/role">角色权限</el-menu-item>
+          <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
+          <el-menu-item index="/system/ai-config">AI配置</el-menu-item>
+        </el-sub-menu>
       </el-menu>
     </el-aside>
 

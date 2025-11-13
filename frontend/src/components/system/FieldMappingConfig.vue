@@ -1,35 +1,42 @@
 <template>
   <div class="field-mapping-config">
-    <div class="header">
-      <div class="info">
-        <h3>AI字段映射配置</h3>
-        <p>配置AI识别结果如何自动填充到客户字段，可以添加/删除/启用/禁用任意字段</p>
-      </div>
-      <el-button type="primary" @click="showAddDialog = true">
-        <el-icon><Plus /></el-icon>
-        添加字段映射
-      </el-button>
-    </div>
+    <!-- 配置说明 -->
+    <el-card class="info-card" shadow="never">
+      <el-alert
+        type="info"
+        :closable="false"
+        show-icon
+      >
+        <template #title>
+          <span style="font-weight: 600">配置说明</span>
+        </template>
+        <ul style="margin: 8px 0; padding-left: 20px; font-size: 14px">
+          <li><strong>AI字段路径</strong>：AI分析结果中的字段路径，如 customerProfile.wechatNickname</li>
+          <li><strong>数据库字段</strong>：要填充到数据库的字段名，如 wechatNickname</li>
+          <li><strong>启用状态</strong>：关闭后该字段不会被AI自动填充</li>
+          <li><strong>覆盖模式</strong>：开启后，即使字段已有值也会被AI结果覆盖</li>
+        </ul>
+      </el-alert>
+    </el-card>
 
-    <el-alert
-      type="info"
-      :closable="false"
-      style="margin-bottom: 20px"
-    >
-      <template #title>
-        <div style="display: flex; align-items: center; gap: 8px">
-          <el-icon><InfoFilled /></el-icon>
-          <span>配置说明</span>
+    <!-- 操作栏 -->
+    <el-card class="action-card" shadow="never">
+      <div class="card-header">
+        <div>
+          <span style="font-weight: 600; font-size: 14px">字段映射列表</span>
+          <span style="color: #909399; font-size: 13px; margin-left: 12px">
+            共 {{ fieldMappings.length }} 个字段，{{ fieldMappings.filter(f => f.enabled).length }} 个已启用
+          </span>
         </div>
-      </template>
-      <ul style="margin: 8px 0; padding-left: 20px">
-        <li><strong>AI字段路径</strong>：AI分析结果中的字段路径，如 customerProfile.wechatNickname</li>
-        <li><strong>数据库字段</strong>：要填充到数据库的字段名，如 wechatNickname</li>
-        <li><strong>启用状态</strong>：关闭后该字段不会被AI自动填充</li>
-        <li><strong>覆盖模式</strong>：开启后，即使字段已有值也会被AI结果覆盖</li>
-      </ul>
-    </el-alert>
+        <el-button type="primary" @click="showAddDialog = true" size="default">
+          <el-icon><Plus /></el-icon>
+          添加字段映射
+        </el-button>
+      </div>
+    </el-card>
 
+    <!-- 字段列表 -->
+    <el-card class="table-card" shadow="never">
     <el-table
       :data="fieldMappings"
       v-loading="loading"
@@ -91,17 +98,19 @@
       </el-table-column>
     </el-table>
 
-    <div class="footer-actions">
-      <el-button
-        type="success"
-        :loading="saving"
-        @click="saveAllMappings"
-      >
-        保存所有配置
-      </el-button>
-      <el-button @click="loadFieldMappings">刷新</el-button>
-      <span class="hint">修改后需要点击"保存所有配置"才会生效</span>
-    </div>
+      <div class="footer-actions">
+        <el-button
+          type="success"
+          :loading="saving"
+          @click="saveAllMappings"
+          size="default"
+        >
+          保存所有配置
+        </el-button>
+        <el-button @click="loadFieldMappings" size="default">刷新</el-button>
+        <span class="hint">修改后需要点击"保存所有配置"才会生效</span>
+      </div>
+    </el-card>
 
     <!-- 添加/编辑字段对话框 -->
     <el-dialog
@@ -292,28 +301,30 @@ onMounted(() => {
 
 <style lang="scss" scoped>
 .field-mapping-config {
-  .header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
+  .info-card {
+    margin-bottom: 16px;
+  }
 
-    .info {
-      h3 {
-        margin: 0 0 8px 0;
-        color: #303133;
-      }
+  .action-card {
+    margin-bottom: 16px;
 
-      p {
-        margin: 0;
-        color: #909399;
-        font-size: 14px;
-      }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  }
+
+  .table-card {
+    :deep(.el-card__body) {
+      padding: 20px;
     }
   }
 
   .footer-actions {
     margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #ebeef5;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -321,6 +332,7 @@ onMounted(() => {
     .hint {
       color: #909399;
       font-size: 13px;
+      margin-left: 8px;
     }
   }
 
