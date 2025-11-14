@@ -1,10 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Between } from 'typeorm';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './entities/index';
 import { DeepseekAnalysisService, AiAnalysisResult } from '../../common/services/ai/deepseek-analysis.service';
 import { Customer } from '../customer/entities/customer.entity';
 import { AiConfigService } from '../ai-config/ai-config.service';
+import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
+import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
+import { User } from '../user/entities/user.entity';
 
 @Injectable()
 export class AiToolsService {
@@ -21,6 +24,12 @@ export class AiToolsService {
     private readonly reportRepository: Repository<AiReport>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
+    @InjectRepository(AiChatRecord)
+    private readonly chatRecordRepository: Repository<AiChatRecord>,
+    @InjectRepository(AiKnowledgeBase)
+    private readonly knowledgeRepository: Repository<AiKnowledgeBase>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
     private readonly deepseekService: DeepseekAnalysisService,
     private readonly aiConfigService: AiConfigService,
   ) {}
@@ -572,73 +581,267 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
    * 获取用户AI使用统计
    */
   private async getUserAiUsageStats(startDate?: string, endDate?: string, userId?: number, departmentId?: number) {
-    // TODO: 实现真实的统计逻辑
-    // 这里返回模拟数据
-    return [
-      {
-        userId: 1,
-        userName: '张三',
-        aiAnalysisCount: 25,
-        aiTagsCount: 120,
-        scriptUsageCount: 45,
-        knowledgeSearchCount: 30,
-        totalUsageCount: 220,
-        highQualityLeadsCount: 8,
-        conversionRate: 0.32,
-      },
-      {
-        userId: 2,
-        userName: '李四',
-        aiAnalysisCount: 18,
-        aiTagsCount: 90,
-        scriptUsageCount: 32,
-        knowledgeSearchCount: 22,
-        totalUsageCount: 162,
-        highQualityLeadsCount: 5,
-        conversionRate: 0.28,
-      },
-    ];
+    try {
+      // 构建日期条件
+      const dateCondition = this.buildDateCondition(startDate, endDate);
+
+      // 获取所有活跃用户
+      const usersQuery = this.userRepository.createQueryBuilder('u');
+      if (userId) {
+        usersQuery.where('u.id = :userId', { userId });
+      }
+      if (departmentId) {
+        usersQuery.andWhere('u.department_id = :departmentId', { departmentId });
+      }
+      const users = await usersQuery.getMany();
+
+      const userStats = [];
+
+      for (const user of users) {
+        // 1. AI聊天分析次数
+        const chatRecordQuery = this.chatRecordRepository
+          .createQueryBuilder('cr')
+          .where('cr.user_id = :uid', { uid: user.id });
+        if (dateCondition) {
+          chatRecordQuery.andWhere(dateCondition);
+        }
+        const aiAnalysisCount = await chatRecordQuery.getCount();
+
+        // 2. 高质量线索数（A级客户）
+        const highQualityQuery = this.chatRecordRepository
+          .createQueryBuilder('cr')
+          .where('cr.user_id = :uid', { uid: user.id })
+          .andWhere('cr.quality_level = :level', { level: 'A' });
+        if (dateCondition) {
+          highQualityQuery.andWhere(dateCondition);
+        }
+        const highQualityLeadsCount = await highQualityQuery.getCount();
+
+        // 3. 话术使用次数
+        const scriptUsageCount = await this.scriptRepository
+          .createQueryBuilder('s')
+          .select('SUM(s.usage_count)', 'total')
+          .getRawOne()
+          .then(r => parseInt(r?.total || '0'));
+
+        // 4. 知识库搜索次数（简化统计：统计知识库条目数作为搜索次数的代理）
+        const knowledgeSearchCount = await this.knowledgeRepository.count();
+
+        // 5. 培训陪练次数
+        const trainingQuery = this.trainingRepository
+          .createQueryBuilder('t')
+          .where('t.user_id = :uid', { uid: user.id });
+        if (dateCondition) {
+          trainingQuery.andWhere(dateCondition);
+        }
+        const trainingCount = await trainingQuery.getCount();
+
+        // 6. AI标签数（从chatRecord的painPoints和interestPoints统计）
+        const tagsResult = await this.chatRecordRepository
+          .createQueryBuilder('cr')
+          .select('cr.pain_points', 'painPoints')
+          .addSelect('cr.interest_points', 'interestPoints')
+          .where('cr.user_id = :uid', { uid: user.id })
+          .getRawMany();
+
+        const allTags = new Set();
+        tagsResult.forEach(r => {
+          if (r.painPoints) {
+            try {
+              const points = typeof r.painPoints === 'string' ? JSON.parse(r.painPoints) : r.painPoints;
+              points.forEach((p: string) => allTags.add(p));
+            } catch (e) { }
+          }
+          if (r.interestPoints) {
+            try {
+              const points = typeof r.interestPoints === 'string' ? JSON.parse(r.interestPoints) : r.interestPoints;
+              points.forEach((p: string) => allTags.add(p));
+            } catch (e) { }
+          }
+        });
+        const aiTagsCount = allTags.size;
+
+        // 总使用次数
+        const totalUsageCount = aiAnalysisCount + scriptUsageCount + trainingCount;
+
+        // 转化率（高质量线索 / 总分析次数）
+        const conversionRate = aiAnalysisCount > 0 ? highQualityLeadsCount / aiAnalysisCount : 0;
+
+        userStats.push({
+          userId: user.id,
+          userName: user.realName || user.username,
+          aiAnalysisCount,
+          aiTagsCount,
+          scriptUsageCount,
+          knowledgeSearchCount,
+          trainingCount,
+          totalUsageCount,
+          highQualityLeadsCount,
+          conversionRate,
+        });
+      }
+
+      // 按总使用次数排序
+      return userStats.sort((a, b) => b.totalUsageCount - a.totalUsageCount);
+    } catch (error) {
+      this.logger.error(`获取用户AI使用统计失败: ${error.message}`);
+      return [];
+    }
+  }
+
+  /**
+   * 构建日期条件
+   */
+  private buildDateCondition(startDate?: string, endDate?: string): string | null {
+    if (startDate && endDate) {
+      return `create_time BETWEEN '${startDate}' AND '${endDate}'`;
+    }
+    return null;
   }
 
   /**
    * 获取客户质量分布
    */
   private async getCustomerQualityDistribution(userId?: number, departmentId?: number) {
-    // TODO: 从ai_chat_records表统计质量等级分布
-    return {
-      A: 12,
-      B: 28,
-      C: 35,
-      D: 15,
-    };
+    try {
+      const qb = this.chatRecordRepository
+        .createQueryBuilder('cr')
+        .select('cr.quality_level', 'level')
+        .addSelect('COUNT(*)', 'count')
+        .where('cr.quality_level IS NOT NULL')
+        .groupBy('cr.quality_level');
+
+      if (userId) {
+        qb.andWhere('cr.user_id = :userId', { userId });
+      }
+
+      const results = await qb.getRawMany();
+
+      const distribution = { A: 0, B: 0, C: 0, D: 0 };
+      results.forEach(r => {
+        if (r.level in distribution) {
+          distribution[r.level] = parseInt(r.count);
+        }
+      });
+
+      return distribution;
+    } catch (error) {
+      this.logger.error(`获取客户质量分布失败: ${error.message}`);
+      return { A: 0, B: 0, C: 0, D: 0 };
+    }
   }
 
   /**
    * 获取AI功能使用统计
    */
   private async getAiFeatureUsageStats(startDate?: string, endDate?: string, userId?: number, departmentId?: number) {
-    // TODO: 统计各AI功能使用次数
-    return {
-      chatAnalysis: 45,
-      scriptGeneration: 78,
-      knowledgeSearch: 56,
-      training: 23,
-      riskAlert: 12,
-      marketing: 34,
-    };
+    try {
+      const dateCondition = this.buildDateCondition(startDate, endDate);
+
+      // 1. 聊天分析次数
+      const chatAnalysisQuery = this.chatRecordRepository.createQueryBuilder('cr');
+      if (userId) chatAnalysisQuery.andWhere('cr.user_id = :userId', { userId });
+      if (dateCondition) chatAnalysisQuery.andWhere(dateCondition);
+      const chatAnalysis = await chatAnalysisQuery.getCount();
+
+      // 2. 话术生成次数
+      const scriptQuery = this.scriptRepository.createQueryBuilder('s');
+      if (dateCondition) scriptQuery.andWhere(dateCondition);
+      const scriptGeneration = await scriptQuery.getCount();
+
+      // 3. 知识库搜索（以条目数量为代理）
+      const knowledgeSearch = await this.knowledgeRepository.count();
+
+      // 4. AI培训次数
+      const trainingQuery = this.trainingRepository.createQueryBuilder('t');
+      if (userId) trainingQuery.andWhere('t.user_id = :userId', { userId });
+      if (dateCondition) trainingQuery.andWhere(dateCondition);
+      const training = await trainingQuery.getCount();
+
+      // 5. 风险预警次数
+      const riskQuery = this.riskAlertRepository.createQueryBuilder('r');
+      if (userId) riskQuery.andWhere('r.assigned_to = :userId', { userId });
+      if (dateCondition) riskQuery.andWhere(dateCondition);
+      const riskAlert = await riskQuery.getCount();
+
+      // 6. 营销文案生成（模拟数据，实际应该从ai_marketing_content表统计）
+      const marketing = 0; // TODO: 从营销文案表统计
+
+      return {
+        chatAnalysis,
+        scriptGeneration,
+        knowledgeSearch,
+        training,
+        riskAlert,
+        marketing,
+      };
+    } catch (error) {
+      this.logger.error(`获取AI功能使用统计失败: ${error.message}`);
+      return {
+        chatAnalysis: 0,
+        scriptGeneration: 0,
+        knowledgeSearch: 0,
+        training: 0,
+        riskAlert: 0,
+        marketing: 0,
+      };
+    }
   }
 
   /**
    * 获取转化漏斗数据
    */
   private async getConversionFunnel(startDate?: string, endDate?: string, userId?: number, departmentId?: number) {
-    // TODO: 统计线索->客户->意向->成交的转化数据
-    return {
-      leads: 100,
-      customers: 65,
-      intents: 38,
-      deals: 15,
-    };
+    try {
+      // 从客户生命周期阶段统计
+      const customerQuery = this.customerRepository.createQueryBuilder('c');
+
+      if (userId) {
+        customerQuery.andWhere('c.sales_id = :userId', { userId });
+      }
+      if (departmentId) {
+        customerQuery.andWhere('c.department_id = :departmentId', { departmentId });
+      }
+      if (startDate && endDate) {
+        customerQuery.andWhere('c.create_time BETWEEN :startDate AND :endDate', { startDate, endDate });
+      }
+
+      // 统计各阶段客户数
+      const [
+        leads,      // 线索（未分级+待跟进）
+        customers,  // 客户（意向客户）
+        intents,    // 有意向（高意向+试听中）
+        deals,      // 已成交
+      ] = await Promise.all([
+        customerQuery.clone().andWhere('c.lifecycle_stage IN (:...stages)', {
+          stages: ['未分级', '待跟进']
+        }).getCount(),
+        customerQuery.clone().andWhere('c.lifecycle_stage = :stage', {
+          stage: '意向客户'
+        }).getCount(),
+        customerQuery.clone().andWhere('c.lifecycle_stage IN (:...stages)', {
+          stages: ['高意向', '试听中']
+        }).getCount(),
+        customerQuery.clone().andWhere('c.lifecycle_stage = :stage', {
+          stage: '已成交'
+        }).getCount(),
+      ]);
+
+      return {
+        leads: leads || 0,
+        customers: customers || 0,
+        intents: intents || 0,
+        deals: deals || 0,
+      };
+    } catch (error) {
+      this.logger.error(`获取转化漏斗数据失败: ${error.message}`);
+      return {
+        leads: 0,
+        customers: 0,
+        intents: 0,
+        deals: 0,
+      };
+    }
   }
 
   /**
@@ -742,15 +945,104 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
    * 收集关键指标
    */
   private async collectKeyMetrics(report: AiReport) {
-    // TODO: 实现真实的数据统计
+    try {
+      const { reportPeriod, targetType, targetId } = report;
+
+      // 解析报告周期
+      const { startDate, endDate } = this.parseReportPeriod(reportPeriod);
+
+      // 构建查询条件
+      const customerQuery = this.customerRepository.createQueryBuilder('c');
+      const chatRecordQuery = this.chatRecordRepository.createQueryBuilder('cr');
+
+      if (targetType === '个人' && targetId) {
+        customerQuery.andWhere('c.sales_id = :userId', { userId: targetId });
+        chatRecordQuery.andWhere('cr.user_id = :userId', { userId: targetId });
+      }
+
+      // 1. 总客户数
+      const totalCustomers = await customerQuery.clone().getCount();
+
+      // 2. 新增客户数
+      const newCustomers = await customerQuery.clone()
+        .andWhere('c.create_time BETWEEN :startDate AND :endDate', { startDate, endDate })
+        .getCount();
+
+      // 3. 高质量线索（A级）
+      const highQualityLeads = await chatRecordQuery.clone()
+        .andWhere('cr.quality_level = :level', { level: 'A' })
+        .andWhere('cr.create_time BETWEEN :startDate AND :endDate', { startDate, endDate })
+        .getCount();
+
+      // 4. 转化率（已成交 / 新增客户）
+      const dealsCount = await customerQuery.clone()
+        .andWhere('c.lifecycle_stage = :stage', { stage: '已成交' })
+        .andWhere('c.create_time BETWEEN :startDate AND :endDate', { startDate, endDate })
+        .getCount();
+      const conversionRate = newCustomers > 0 ? dealsCount / newCustomers : 0;
+
+      // 5. 平均响应时间（模拟数据）
+      const avgResponseTime = 2.5;
+
+      // 6. AI使用次数
+      const aiUsageCount = await chatRecordQuery.clone()
+        .andWhere('cr.create_time BETWEEN :startDate AND :endDate', { startDate, endDate })
+        .getCount();
+
+      // 7. 客户满意度（模拟数据）
+      const customerSatisfaction = 4.5;
+
+      return {
+        totalCustomers,
+        newCustomers,
+        highQualityLeads,
+        conversionRate,
+        avgResponseTime,
+        aiUsageCount,
+        customerSatisfaction,
+      };
+    } catch (error) {
+      this.logger.error(`收集关键指标失败: ${error.message}`);
+      return {
+        totalCustomers: 0,
+        newCustomers: 0,
+        highQualityLeads: 0,
+        conversionRate: 0,
+        avgResponseTime: 0,
+        aiUsageCount: 0,
+        customerSatisfaction: 0,
+      };
+    }
+  }
+
+  /**
+   * 解析报告周期
+   */
+  private parseReportPeriod(period: string): { startDate: string; endDate: string } {
+    const now = new Date();
+    let startDate: Date;
+    let endDate: Date = now;
+
+    if (period.includes('W')) {
+      // 周报：2025-W01
+      const weekNum = parseInt(period.split('W')[1]);
+      startDate = new Date(now.getFullYear(), 0, 1 + (weekNum - 1) * 7);
+      endDate = new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000);
+    } else if (period.includes('Q')) {
+      // 季报：2025-Q1
+      const quarter = parseInt(period.split('Q')[1]);
+      startDate = new Date(now.getFullYear(), (quarter - 1) * 3, 1);
+      endDate = new Date(now.getFullYear(), quarter * 3, 0);
+    } else {
+      // 月报：2025-01
+      const [year, month] = period.split('-');
+      startDate = new Date(parseInt(year), parseInt(month) - 1, 1);
+      endDate = new Date(parseInt(year), parseInt(month), 0);
+    }
+
     return {
-      totalCustomers: 150,
-      newCustomers: 25,
-      highQualityLeads: 12,
-      conversionRate: 0.32,
-      avgResponseTime: 2.5,
-      aiUsageCount: 245,
-      customerSatisfaction: 4.5,
+      startDate: startDate.toISOString().split('T')[0],
+      endDate: endDate.toISOString().split('T')[0],
     };
   }
 
