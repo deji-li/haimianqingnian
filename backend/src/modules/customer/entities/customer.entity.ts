@@ -118,6 +118,15 @@ export class Customer {
   @Column({ name: 'ai_profile', type: 'json', nullable: true, comment: 'AI分析的客户画像（需求、痛点、兴趣等）' })
   aiProfile: any;
 
+  @Column({ name: 'pain_points', type: 'json', nullable: true, comment: '客户痛点（从所有聊天记录中聚合提取）' })
+  painPoints: string[];
+
+  @Column({ name: 'interest_points', type: 'json', nullable: true, comment: '客户兴趣点（从所有聊天记录中聚合提取）' })
+  interestPoints: string[];
+
+  @Column({ name: 'need_keywords', type: 'json', nullable: true, comment: '需求关键词列表' })
+  needKeywords: string[];
+
   @Column({ name: 'last_ai_analysis_time', type: 'datetime', nullable: true, comment: '最后一次AI分析时间' })
   lastAiAnalysisTime: Date;
 

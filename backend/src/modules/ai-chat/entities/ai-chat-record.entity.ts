@@ -35,14 +35,42 @@ export class AiChatRecord {
   @Column({ name: 'wechat_id', length: 100, nullable: true })
   wechatId: string;
 
+  @Column({
+    name: 'upload_type',
+    type: 'enum',
+    enum: ['screenshot', 'text', 'file'],
+    default: 'screenshot',
+    comment: '上传类型：screenshot-截图, text-直接文本, file-文件上传',
+  })
+  uploadType: string;
+
   @Column({ type: 'json', nullable: true, comment: '聊天截图URL数组' })
   images: string[];
+
+  @Column({ name: 'raw_text', type: 'text', nullable: true, comment: '原始聊天文本（文本上传时使用）' })
+  rawText: string;
+
+  @Column({ name: 'file_path', length: 500, nullable: true, comment: '上传文件路径（文件上传时使用）' })
+  filePath: string;
 
   @Column({ name: 'ocr_text', type: 'text', nullable: true })
   ocrText: string;
 
   @Column({ name: 'ai_analysis_result', type: 'json', nullable: true })
   aiAnalysisResult: any;
+
+  // AI提取的关键信息
+  @Column({ name: 'pain_points', type: 'json', nullable: true, comment: '客户痛点列表' })
+  painPoints: string[];
+
+  @Column({ name: 'interest_points', type: 'json', nullable: true, comment: '客户兴趣点列表' })
+  interestPoints: string[];
+
+  @Column({ name: 'needs_summary', type: 'text', nullable: true, comment: '需求摘要' })
+  needsSummary: string;
+
+  @Column({ name: 'objections', type: 'json', nullable: true, comment: '客户异议点列表' })
+  objections: string[];
 
   // 核心分析字段
   @Column({
