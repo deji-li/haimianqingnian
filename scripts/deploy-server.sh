@@ -38,7 +38,9 @@ EOSQL
 echo ""
 echo "[3/6] 🎨 构建前端..."
 cd /root/crm/frontend
-npm install
+# 先安装依赖（忽略scripts避免husky错误）
+npm install --ignore-scripts
+# 再执行构建
 npm run build
 echo "✅ 前端构建完成 -> dist/"
 
