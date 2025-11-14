@@ -231,6 +231,133 @@ export function getMarketingHistory(contentType?: string) {
   })
 }
 
+// ==================== AI营销场景 ====================
+// 获取所有营销场景配置
+export function getMarketingScenarios(params?: { category?: string; isActive?: boolean }) {
+  return request({
+    url: '/ai-marketing/scenarios',
+    method: 'get',
+    params
+  })
+}
+
+// 获取场景分类列表
+export function getScenarioCategories() {
+  return request({
+    url: '/ai-marketing/scenarios/categories',
+    method: 'get'
+  })
+}
+
+// 获取单个场景配置
+export function getMarketingScenario(scenarioKey: string) {
+  return request({
+    url: `/ai-marketing/scenarios/${scenarioKey}`,
+    method: 'get'
+  })
+}
+
+// 执行营销场景分析
+export function executeMarketingScenario(data: {
+  scenarioKey: string
+  variables: Record<string, any>
+  customerId?: number
+}) {
+  return request({
+    url: '/ai-marketing/execute',
+    method: 'post',
+    data
+  })
+}
+
+// 批量执行多个场景
+export function batchExecuteScenarios(data: {
+  scenarioKeys: string[]
+  sharedVariables: Record<string, any>
+  customerId?: number
+}) {
+  return request({
+    url: '/ai-marketing/batch-execute',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：痛点分析
+export function analyzePainPoints(data: {
+  chatContent: string
+  customerProfile?: any
+}) {
+  return request({
+    url: '/ai-marketing/quick/pain-points',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：兴趣点挖掘
+export function mineInterestPoints(data: { chatContent: string }) {
+  return request({
+    url: '/ai-marketing/quick/interest-points',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：需求定位
+export function positionNeeds(data: {
+  chatContent: string
+  painPoints: string[]
+  interestPoints: string[]
+}) {
+  return request({
+    url: '/ai-marketing/quick/need-positioning',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：话术推荐
+export function recommendScripts(data: {
+  painPoints: string[]
+  interestPoints: string[]
+  conversationStage: string
+  decisionRole: string
+}) {
+  return request({
+    url: '/ai-marketing/quick/script-recommendation',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：异议处理
+export function handleObjections(data: {
+  chatContent: string
+  objections: string[]
+}) {
+  return request({
+    url: '/ai-marketing/quick/objection-handling',
+    method: 'post',
+    data
+  })
+}
+
+// 快速方法：成交时机判断
+export function assessClosingTiming(data: {
+  chatContent: string
+  intentionScore: number
+  resolvedPainPoints: string[]
+  unresolvedPainPoints: string[]
+  communicationRounds: number
+}) {
+  return request({
+    url: '/ai-marketing/quick/closing-timing',
+    method: 'post',
+    data
+  })
+}
+
 // ==================== AI人效分析 ====================
 export function getAiEfficiencyAnalytics(params: any) {
   return request({

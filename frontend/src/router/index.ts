@@ -192,6 +192,15 @@ const routes: RouteRecordRaw[] = [
               permissions: ['ai:tag:view'],
             },
           },
+          {
+            path: 'marketing-scenarios',
+            name: 'MarketingScenarios',
+            component: () => import('@/views/ai/MarketingScenarios.vue'),
+            meta: {
+              title: 'AI营销场景',
+              permissions: ['ai-tools:use'],
+            },
+          },
         ],
       },
 
