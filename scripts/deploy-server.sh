@@ -17,7 +17,7 @@ git pull origin master
 # 2. 初始化业务配置（如果配置表为空）
 echo ""
 echo "[2/6] 🗄️  初始化业务配置..."
-docker exec -i crm-mysql mysql -uroot -p7821630lideji crm << 'EOSQL'
+docker exec -i crm-mysql mysql -uroot -p7821630lideji education_crm << 'EOSQL'
 -- 检查并初始化业务配置
 INSERT INTO business_config (config_key, config_value, config_category, description) VALUES
 ('order_sync.enabled', 'true', 'business_rules', '是否启用订单自动同步'),
@@ -71,7 +71,7 @@ docker-compose logs --tail=20 backend
 
 echo ""
 echo "📋 业务配置检查："
-docker exec -i crm-mysql mysql -uroot -p7821630lideji crm -e "SELECT config_key, config_category, description FROM business_config LIMIT 10;" 2>/dev/null || echo "配置查询完成"
+docker exec -i crm-mysql mysql -uroot -p7821630lideji education_crm -e "SELECT config_key, config_category, description FROM business_config LIMIT 10;" 2>/dev/null || echo "配置查询完成"
 
 echo ""
 echo "========================================="
