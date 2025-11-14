@@ -193,7 +193,8 @@ export class OrderSyncService {
     if (!campus && options.autoCreateCampus) {
       campus = this.campusRepository.create({
         campusName: haimianOrder.store_name,
-        city: haimianOrder.store_name, // 城市名就是校区名
+        campusCode: `AUTO_${Date.now()}`, // 自动生成校区编码
+        address: haimianOrder.store_name, // 将店铺名作为地址
         status: 1, // 启用
       });
       await this.campusRepository.save(campus);
