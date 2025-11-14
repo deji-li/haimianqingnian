@@ -554,7 +554,7 @@ export class AiChatService {
   }
 
   /**
-   * 解析文件内容（支持txt、html、csv等格式）
+   * 解析文件内容（支持txt、html、csv、json、docx等格式）
    */
   private async parseFileContent(filePath: string): Promise<string> {
     if (!filePath) {
@@ -563,6 +563,9 @@ export class AiChatService {
 
     const fs = require('fs').promises;
     const path = require('path');
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
 
     // 检查文件是否存在
     try {
@@ -615,6 +618,49 @@ export class AiChatService {
           const jsonContent = await fs.readFile(filePath, 'utf-8');
           const jsonData = JSON.parse(jsonContent);
           return JSON.stringify(jsonData, null, 2);
+
+        case '.docx':
+          // 使用Python脚本解析Word文档
+          this.logger.log(`解析Word文档: ${filePath}`);
+
+          // 获取Python脚本路径
+          const scriptPath = path.join(process.cwd(), 'scripts', 'parse_docx.py');
+
+          // 检查Python脚本是否存在
+          try {
+            await fs.access(scriptPath);
+          } catch (error) {
+            throw new Error('Word文档解析脚本不存在，请确保scripts/parse_docx.py文件存在');
+          }
+
+          // 执行Python脚本
+          try {
+            // 使用绝对路径避免路径问题
+            const absoluteFilePath = path.resolve(filePath);
+            const command = `python "${scriptPath}" "${absoluteFilePath}"`;
+
+            const { stdout, stderr } = await execPromise(command, {
+              encoding: 'utf-8',
+              maxBuffer: 10 * 1024 * 1024, // 10MB buffer
+            });
+
+            if (stderr && stderr.includes('ERROR')) {
+              throw new Error(stderr);
+            }
+
+            if (stdout.startsWith('ERROR:')) {
+              throw new Error(stdout.substring(7)); // 移除"ERROR: "前缀
+            }
+
+            if (!stdout || stdout.trim().length === 0) {
+              throw new Error('Word文档内容为空或解析失败');
+            }
+
+            return stdout.trim();
+          } catch (error) {
+            this.logger.error(`Python脚本执行失败: ${error.message}`);
+            throw new Error(`Word文档解析失败: ${error.message}`);
+          }
 
         default:
           // 尝试作为文本文件读取

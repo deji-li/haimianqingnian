@@ -167,7 +167,7 @@
           <div class="form-tip">
             <span v-if="uploadForm.uploadType === 'screenshot'">适合微信截图，AI自动识别文字</span>
             <span v-else-if="uploadForm.uploadType === 'text'">适合已整理的文本内容，无需OCR</span>
-            <span v-else>支持txt、html、csv、json等文件格式</span>
+            <span v-else>支持txt、html、csv、json、docx(Word文档)等文件格式</span>
           </div>
         </el-form-item>
 
@@ -204,7 +204,7 @@
             action="#"
             :auto-upload="false"
             :limit="1"
-            accept=".txt,.html,.htm,.csv,.json"
+            accept=".txt,.html,.htm,.csv,.json,.docx"
             :on-change="handleFileChange"
           >
             <el-button type="primary">
@@ -212,7 +212,7 @@
               选择文件
             </el-button>
           </el-upload>
-          <div class="form-tip">支持txt、html、csv、json格式，最大10MB</div>
+          <div class="form-tip">支持txt、html、csv、json、docx(Word文档)格式，最大10MB</div>
         </el-form-item>
       </el-form>
 
