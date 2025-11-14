@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore"
   },
   "dependencies": {
-    "@crm/shared": "workspace:*",
+    "@crm/shared": "file:../shared",
     "@element-plus/icons-vue": "^2.3.1",
     "@vueuse/core": "^10.7.1",
     "axios": "^1.6.5",
