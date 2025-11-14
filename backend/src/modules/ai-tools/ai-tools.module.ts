@@ -7,6 +7,7 @@ import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './entities/in
 import { Customer } from '../customer/entities/customer.entity';
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
 import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
+import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity';
 import { User } from '../user/entities/user.entity';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiConfigModule } from '../ai-config/ai-config.module';
@@ -21,6 +22,7 @@ import { AiConfigModule } from '../ai-config/ai-config.module';
       Customer,
       AiChatRecord,
       AiKnowledgeBase,
+      AiMarketingContent,
       User,
     ]),
     ConfigModule,

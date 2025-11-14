@@ -7,6 +7,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { AiConfigService } from '../ai-config/ai-config.service';
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
 import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
+import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity';
 import { User } from '../user/entities/user.entity';
 
 @Injectable()
@@ -28,6 +29,8 @@ export class AiToolsService {
     private readonly chatRecordRepository: Repository<AiChatRecord>,
     @InjectRepository(AiKnowledgeBase)
     private readonly knowledgeRepository: Repository<AiKnowledgeBase>,
+    @InjectRepository(AiMarketingContent)
+    private readonly marketingContentRepository: Repository<AiMarketingContent>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
     private readonly deepseekService: DeepseekAnalysisService,
@@ -764,8 +767,11 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       if (dateCondition) riskQuery.andWhere(dateCondition);
       const riskAlert = await riskQuery.getCount();
 
-      // 6. 营销文案生成（模拟数据，实际应该从ai_marketing_content表统计）
-      const marketing = 0; // TODO: 从营销文案表统计
+      // 6. 营销文案生成（从ai_marketing_content表统计）
+      const marketingQuery = this.marketingContentRepository.createQueryBuilder('m');
+      if (userId) marketingQuery.andWhere('m.user_id = :userId', { userId });
+      if (dateCondition) marketingQuery.andWhere(dateCondition);
+      const marketing = await marketingQuery.getCount();
 
       return {
         chatAnalysis,

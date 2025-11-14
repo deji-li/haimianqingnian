@@ -25,6 +25,7 @@ import { AiTagsService } from '../ai-tags/ai-tags.service';
 import { BusinessConfigService } from '../business-config/business-config.service';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as XLSX from 'xlsx';
 
 @Injectable()
 export class CustomerService {
@@ -926,5 +927,150 @@ export class CustomerService {
     }
 
     return tags;
+  }
+
+  /**
+   * 导出客户数据为Excel
+   */
+  async exportToExcel(queryDto: QueryCustomerDto, dataScope: any): Promise<Buffer> {
+    try {
+      // 获取客户列表数据（不分页，获取所有符合条件的数据）
+      const customers = await this.findAllForExport(queryDto, dataScope);
+
+      // 准备Excel数据
+      const excelData = customers.map((customer, index) => ({
+        '序号': index + 1,
+        '客户姓名': customer.realName || '',
+        '微信昵称': customer.wechatNickname || '',
+        '微信号': customer.wechatId || '',
+        '手机号': customer.phone || '',
+        '性别': customer.gender || '',
+        '年龄': customer.age || '',
+        '生命周期': customer.lifecycleStage || '',
+        '客户意向': customer.customerIntent || '',
+        '意向产品': customer.intentProduct || '',
+        '客户来源': customer.source || '',
+        '客户标签': Array.isArray(customer.tags) ? customer.tags.join(', ') : '',
+        '预计成交金额': customer.estimatedAmount || '',
+        '下次跟进时间': customer.nextFollowTime ? new Date(customer.nextFollowTime).toLocaleString('zh-CN') : '',
+        '备注': customer.remark || '',
+        '销售人员': customer.sales?.realName || '',
+        '所属部门': customer.department?.departmentName || '',
+        '所属校区': customer.campus?.campusName || '',
+        '创建时间': customer.createTime ? new Date(customer.createTime).toLocaleString('zh-CN') : '',
+        '更新时间': customer.updateTime ? new Date(customer.updateTime).toLocaleString('zh-CN') : '',
+      }));
+
+      // 创建工作簿
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, '客户数据');
+
+      // 设置列宽
+      const columnWidths = [
+        { wch: 6 },   // 序号
+        { wch: 12 },  // 客户姓名
+        { wch: 15 },  // 微信昵称
+        { wch: 15 },  // 微信号
+        { wch: 12 },  // 手机号
+        { wch: 6 },   // 性别
+        { wch: 6 },   // 年龄
+        { wch: 12 },  // 生命周期
+        { wch: 10 },  // 客户意向
+        { wch: 15 },  // 意向产品
+        { wch: 10 },  // 客户来源
+        { wch: 25 },  // 客户标签
+        { wch: 12 },  // 预计成交金额
+        { wch: 18 },  // 下次跟进时间
+        { wch: 30 },  // 备注
+        { wch: 10 },  // 销售人员
+        { wch: 12 },  // 所属部门
+        { wch: 12 },  // 所属校区
+        { wch: 18 },  // 创建时间
+        { wch: 18 },  // 更新时间
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      // 生成Buffer
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      this.logger.log(`导出客户数据成功，共${excelData.length}条记录`);
+
+      return buffer;
+    } catch (error) {
+      this.logger.error(`导出客户数据失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取所有客户数据用于导出（不分页）
+   */
+  private async findAllForExport(queryDto: QueryCustomerDto, dataScope: any): Promise<Customer[]> {
+    const queryBuilder = this.customerRepository
+      .createQueryBuilder('customer')
+      .leftJoinAndSelect('customer.sales', 'sales')
+      .leftJoinAndSelect('customer.department', 'department')
+      .leftJoinAndSelect('customer.campus', 'campus')
+      .orderBy('customer.createTime', 'DESC');
+
+    // 应用筛选条件（复用findAll的筛选逻辑）
+    if (queryDto.keyword) {
+      queryBuilder.andWhere(
+        '(customer.realName LIKE :keyword OR customer.wechatNickname LIKE :keyword OR customer.phone LIKE :keyword OR customer.wechatId LIKE :keyword)',
+        { keyword: `%${queryDto.keyword}%` },
+      );
+    }
+
+    if (queryDto.lifecycleStage) {
+      queryBuilder.andWhere('customer.lifecycleStage = :lifecycleStage', {
+        lifecycleStage: queryDto.lifecycleStage,
+      });
+    }
+
+    if (queryDto.customerIntent) {
+      queryBuilder.andWhere('customer.customerIntent = :customerIntent', {
+        customerIntent: queryDto.customerIntent,
+      });
+    }
+
+    if (queryDto.source) {
+      queryBuilder.andWhere('customer.source = :source', {
+        source: queryDto.source,
+      });
+    }
+
+    if (queryDto.salesId) {
+      queryBuilder.andWhere('customer.salesId = :salesId', {
+        salesId: queryDto.salesId,
+      });
+    }
+
+    if (queryDto.campusId) {
+      queryBuilder.andWhere('customer.campusId = :campusId', {
+        campusId: queryDto.campusId,
+      });
+    }
+
+    // 数据权限过滤
+    if (dataScope) {
+      if (dataScope.salesIds && dataScope.salesIds.length > 0) {
+        queryBuilder.andWhere('customer.salesId IN (:...salesIds)', {
+          salesIds: dataScope.salesIds,
+        });
+      }
+      if (dataScope.departmentIds && dataScope.departmentIds.length > 0) {
+        queryBuilder.andWhere('customer.departmentId IN (:...departmentIds)', {
+          departmentIds: dataScope.departmentIds,
+        });
+      }
+      if (dataScope.campusIds && dataScope.campusIds.length > 0) {
+        queryBuilder.andWhere('customer.campusId IN (:...campusIds)', {
+          campusIds: dataScope.campusIds,
+        });
+      }
+    }
+
+    return queryBuilder.getMany();
   }
 }

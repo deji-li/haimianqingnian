@@ -355,6 +355,7 @@ import {
   updateCustomer,
   deleteCustomer,
   batchUpdateCustomer,
+  exportCustomersToExcel,
   type Customer,
   type CustomerQuery,
   type CreateCustomerParams,
@@ -492,10 +493,30 @@ const handleDownloadTemplate = () => {
 // 导出客户
 const handleExport = async () => {
   try {
-    ElMessage.info('导出功能开发中...')
-    // TODO: 实现导出功能
-  } catch (error) {
-    ElMessage.error('导出失败')
+    ElMessage.loading({ message: '正在导出，请稍候...', duration: 0 })
+
+    const params = { ...queryParams }
+    // 删除分页参数，导出所有符合筛选条件的数据
+    delete params.page
+    delete params.pageSize
+
+    const blob = await exportCustomersToExcel(params)
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `客户数据_${new Date().getTime()}.xlsx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    ElMessage.closeAll()
+    ElMessage.success('导出成功')
+  } catch (error: any) {
+    ElMessage.closeAll()
+    ElMessage.error(error.message || '导出失败')
   }
 }
 

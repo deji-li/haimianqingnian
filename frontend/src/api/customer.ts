@@ -162,3 +162,13 @@ export function smartCreateCustomer(data: SmartCreateCustomerParams) {
     data,
   })
 }
+
+// 导出客户数据为Excel
+export function exportCustomersToExcel(params: CustomerQuery) {
+  return request<Blob>({
+    url: '/customer/export/excel',
+    method: 'get',
+    params,
+    responseType: 'blob',
+  })
+}

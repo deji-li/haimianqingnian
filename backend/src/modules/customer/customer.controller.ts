@@ -9,7 +9,10 @@ import {
   Query,
   UseGuards,
   Request,
+  Res,
+  StreamableFile,
 } from '@nestjs/common';
+import { Response } from 'express';
 import {
   ApiTags,
   ApiOperation,
@@ -134,5 +137,19 @@ export class CustomerController {
   @ApiOperation({ summary: '获取跟进统计数据' })
   async getFollowStatistics(@Request() req) {
     return this.customerService.getFollowStatistics(req.dataScope || {});
+  }
+
+  @Get('export/excel')
+  @ApiOperation({ summary: '导出客户数据为Excel' })
+  @RequirePermissions('customer:export')
+  async exportToExcel(@Query() queryDto: QueryCustomerDto, @Request() req, @Res() res: Response) {
+    const buffer = await this.customerService.exportToExcel(queryDto, req.dataScope);
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="customers_${new Date().getTime()}.xlsx"`,
+    });
+
+    res.send(buffer);
   }
 }
