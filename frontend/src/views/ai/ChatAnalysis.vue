@@ -133,7 +133,7 @@
     </el-card>
 
     <!-- 上传对话框 -->
-    <el-dialog v-model="showUploadDialog" title="上传聊天记录" width="600px">
+    <el-dialog v-model="showUploadDialog" title="上传聊天记录" width="700px">
       <el-form :model="uploadForm" :rules="uploadRules" ref="uploadFormRef" label-width="100px">
         <el-form-item label="客户微信号" prop="wechatId">
           <el-input v-model="uploadForm.wechatId" placeholder="请输入客户微信号" />
@@ -147,7 +147,32 @@
             value-format="YYYY-MM-DD"
           />
         </el-form-item>
-        <el-form-item label="聊天截图" prop="images">
+
+        <!-- 上传类型选择 -->
+        <el-form-item label="上传方式" prop="uploadType">
+          <el-radio-group v-model="uploadForm.uploadType">
+            <el-radio-button value="screenshot">
+              <el-icon><Picture /></el-icon>
+              截图OCR
+            </el-radio-button>
+            <el-radio-button value="text">
+              <el-icon><Document /></el-icon>
+              直接文本
+            </el-radio-button>
+            <el-radio-button value="file">
+              <el-icon><Folder /></el-icon>
+              文件上传
+            </el-radio-button>
+          </el-radio-group>
+          <div class="form-tip">
+            <span v-if="uploadForm.uploadType === 'screenshot'">适合微信截图，AI自动识别文字</span>
+            <span v-else-if="uploadForm.uploadType === 'text'">适合已整理的文本内容，无需OCR</span>
+            <span v-else>支持txt、html、csv、json等文件格式</span>
+          </div>
+        </el-form-item>
+
+        <!-- 截图上传 -->
+        <el-form-item label="聊天截图" prop="images" v-if="uploadForm.uploadType === 'screenshot'">
           <el-upload
             v-model:file-list="uploadForm.images"
             action="#"
@@ -159,6 +184,35 @@
             <el-icon><Plus /></el-icon>
           </el-upload>
           <div class="form-tip">最多上传20张截图，支持jpg/png格式</div>
+        </el-form-item>
+
+        <!-- 文本输入 -->
+        <el-form-item label="聊天内容" prop="rawText" v-else-if="uploadForm.uploadType === 'text'">
+          <el-input
+            v-model="uploadForm.rawText"
+            type="textarea"
+            :rows="10"
+            placeholder="请粘贴或输入聊天记录文本内容..."
+          />
+          <div class="form-tip">直接粘贴聊天文本，支持多行，无需OCR识别</div>
+        </el-form-item>
+
+        <!-- 文件上传 -->
+        <el-form-item label="聊天文件" prop="file" v-else-if="uploadForm.uploadType === 'file'">
+          <el-upload
+            v-model:file-list="uploadForm.fileList"
+            action="#"
+            :auto-upload="false"
+            :limit="1"
+            accept=".txt,.html,.htm,.csv,.json"
+            :on-change="handleFileChange"
+          >
+            <el-button type="primary">
+              <el-icon><Upload /></el-icon>
+              选择文件
+            </el-button>
+          </el-upload>
+          <div class="form-tip">支持txt、html、csv、json格式，最大10MB</div>
         </el-form-item>
       </el-form>
 
@@ -239,7 +293,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Upload, Plus } from '@element-plus/icons-vue'
+import { Upload, Plus, Picture, Document, Folder } from '@element-plus/icons-vue'
 import {
   uploadFile,
   uploadChatRecord,
@@ -278,13 +332,18 @@ const queryForm = reactive({
 const uploadForm = reactive({
   wechatId: '',
   chatDate: '',
-  images: []
+  uploadType: 'screenshot',
+  images: [],
+  rawText: '',
+  filePath: '',
+  fileList: [],
+  file: null as File | null
 })
 
 const uploadRules = {
   wechatId: [{ required: true, message: '请输入客户微信号', trigger: 'blur' }],
   chatDate: [{ required: true, message: '请选择聊天日期', trigger: 'change' }],
-  images: [{ required: true, message: '请上传聊天截图', trigger: 'change' }]
+  uploadType: [{ required: true, message: '请选择上传方式', trigger: 'change' }]
 }
 
 const getQualityType = (level: string) => {
@@ -329,35 +388,73 @@ const resetQuery = () => {
   loadData()
 }
 
+// 文件选择事件处理
+const handleFileChange = (file: any) => {
+  uploadForm.file = file.raw
+}
+
 const handleUpload = async () => {
   if (!uploadFormRef.value) return
+
+  // 根据上传类型进行额外验证
+  if (uploadForm.uploadType === 'screenshot' && uploadForm.images.length === 0) {
+    ElMessage.warning('请上传聊天截图')
+    return
+  }
+  if (uploadForm.uploadType === 'text' && !uploadForm.rawText) {
+    ElMessage.warning('请输入聊天内容')
+    return
+  }
+  if (uploadForm.uploadType === 'file' && !uploadForm.file) {
+    ElMessage.warning('请选择文件')
+    return
+  }
 
   await uploadFormRef.value.validate(async (valid: boolean) => {
     if (!valid) return
 
     uploading.value = true
     try {
-      // 1. 先上传图片到服务器
-      const imageUrls: string[] = []
-      for (const fileObj of uploadForm.images) {
-        const uploadRes = await uploadFile(fileObj.raw, 'ai_chat')
-        // 使用完整的服务器URL
-        const fullUrl = window.location.origin + uploadRes.url
-        imageUrls.push(fullUrl)
+      let requestData: any = {
+        wechatId: uploadForm.wechatId,
+        chatDate: uploadForm.chatDate,
+        uploadType: uploadForm.uploadType
+      }
+
+      // 根据上传类型处理数据
+      if (uploadForm.uploadType === 'screenshot') {
+        // 1. 上传图片到服务器
+        const imageUrls: string[] = []
+        for (const fileObj of uploadForm.images) {
+          const uploadRes = await uploadFile(fileObj.raw, 'ai_chat')
+          // 使用完整的服务器URL
+          const fullUrl = window.location.origin + uploadRes.url
+          imageUrls.push(fullUrl)
+        }
+        requestData.images = imageUrls
+      } else if (uploadForm.uploadType === 'text') {
+        // 直接使用文本内容
+        requestData.rawText = uploadForm.rawText
+      } else if (uploadForm.uploadType === 'file') {
+        // 上传文件到服务器
+        const uploadRes = await uploadFile(uploadForm.file!, 'ai_chat')
+        requestData.filePath = uploadRes.path // 保存服务器端的文件路径
       }
 
       // 2. 调用AI分析接口
-      await uploadChatRecord({
-        wechatId: uploadForm.wechatId,
-        chatDate: uploadForm.chatDate,
-        images: imageUrls
-      })
+      await uploadChatRecord(requestData)
 
       ElMessage.success('上传成功，AI正在分析中...')
       showUploadDialog.value = false
+      // 重置表单
       uploadForm.wechatId = ''
       uploadForm.chatDate = ''
+      uploadForm.uploadType = 'screenshot'
       uploadForm.images = []
+      uploadForm.rawText = ''
+      uploadForm.filePath = ''
+      uploadForm.fileList = []
+      uploadForm.file = null
       loadData()
       loadStatistics()
     } catch (error: any) {
