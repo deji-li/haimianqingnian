@@ -9,6 +9,7 @@ import { AiCacheService } from '../../common/services/ai/ai-cache.service';
 import { Customer } from '../customer/entities/customer.entity';
 import { AiTagsService } from '../ai-tags/ai-tags.service';
 import { AiToolsService } from '../ai-tools/ai-tools.service';
+import { AiMarketingService } from '../ai-marketing/ai-marketing.service';
 
 @Injectable()
 export class AiChatService {
@@ -24,6 +25,7 @@ export class AiChatService {
     private readonly aiCacheService: AiCacheService,
     private readonly aiTagsService: AiTagsService,
     private readonly aiToolsService: AiToolsService,
+    private readonly aiMarketingService: AiMarketingService,
   ) {}
 
   /**
@@ -136,7 +138,48 @@ export class AiChatService {
         await this.aiCacheService.setAnalysisCache(ocrText, analysisResult, 3600); // 缓存1小时
       }
 
-      // 4. 保存分析结果
+      // 4. 提取痛点和兴趣点（新增）
+      let painPointsResult = null;
+      let interestPointsResult = null;
+      let extractedPainPoints: string[] = [];
+      let extractedInterestPoints: string[] = [];
+
+      try {
+        // 4.1 提取痛点
+        painPointsResult = await this.aiMarketingService.analyzePainPoints(
+          ocrText,
+          {
+            wechatNickname: customer.wechatNickname,
+            customerIntent: customer.customerIntent,
+            studentGrade: customer.studentGrade,
+          },
+        );
+
+        if (painPointsResult?.result?.pain_points) {
+          extractedPainPoints = painPointsResult.result.pain_points.map(
+            (p: any) => p.point || p,
+          );
+        }
+
+        // 4.2 提取兴趣点
+        interestPointsResult = await this.aiMarketingService.mineInterestPoints(ocrText);
+
+        if (interestPointsResult?.result?.explicit_interests) {
+          extractedInterestPoints = [
+            ...interestPointsResult.result.explicit_interests,
+            ...(interestPointsResult.result.implicit_interests || []),
+          ];
+        }
+
+        this.logger.log(
+          `提取痛点 ${extractedPainPoints.length} 个，兴趣点 ${extractedInterestPoints.length} 个`,
+        );
+      } catch (error) {
+        this.logger.warn(`提取痛点/兴趣点失败: ${error.message}`);
+        // 不影响主流程，继续执行
+      }
+
+      // 5. 保存分析结果
       await this.aiChatRecordRepository.update(recordId, {
         aiAnalysisResult: analysisResult,
         qualityLevel: analysisResult.qualityLevel,
@@ -144,16 +187,22 @@ export class AiChatService {
         intentionScore: analysisResult.intentionScore,
         estimatedValue: analysisResult.estimatedValue,
         decisionMakerRole: analysisResult.customerProfile?.decisionMakerRole,
+        painPoints: extractedPainPoints.length > 0 ? extractedPainPoints : null,
+        interestPoints: extractedInterestPoints.length > 0 ? extractedInterestPoints : null,
+        needsSummary: interestPointsResult?.result?.core_interests?.join('、') || null,
         analysisStatus: '已完成',
       });
 
-      // 5. 更新客户意向等级（基于AI评分）
+      // 6. 更新客户意向等级（基于AI评分）
       await this.updateCustomerIntent(customer.id, analysisResult);
 
-      // 6. 自动打标签
+      // 7. 聚合痛点和兴趣点到客户档案（新增）
+      await this.aggregateCustomerInsights(customer.id);
+
+      // 8. 自动打标签
       await this.aiTagsService.autoTagFromAnalysis(customer.id, analysisResult, recordId);
 
-      // 7. 风险预警
+      // 9. 风险预警
       await this.aiToolsService.createRiskAlert(customer.id, analysisResult, recordId);
 
       this.logger.log(`AI分析完成，记录ID: ${recordId}`);
@@ -239,6 +288,135 @@ export class AiChatService {
     } catch (error) {
       this.logger.error(`更新客户画像失败: ${error.message}`);
     }
+  }
+
+  /**
+   * 聚合客户的痛点和兴趣点到客户档案
+   */
+  private async aggregateCustomerInsights(customerId: number) {
+    try {
+      // 1. 获取该客户所有已完成分析的聊天记录
+      const records = await this.aiChatRecordRepository.find({
+        where: {
+          customerId,
+          analysisStatus: '已完成',
+        },
+        order: { chatDate: 'DESC' },
+      });
+
+      if (records.length === 0) {
+        this.logger.log(`客户${customerId}暂无已完成的分析记录，跳过聚合`);
+        return;
+      }
+
+      // 2. 聚合所有痛点和兴趣点
+      const allPainPoints: string[] = [];
+      const allInterestPoints: string[] = [];
+      const painPointFrequency = new Map<string, number>();
+      const interestPointFrequency = new Map<string, number>();
+
+      for (const record of records) {
+        // 聚合痛点
+        if (record.painPoints && Array.isArray(record.painPoints)) {
+          for (const point of record.painPoints) {
+            allPainPoints.push(point);
+            painPointFrequency.set(point, (painPointFrequency.get(point) || 0) + 1);
+          }
+        }
+
+        // 聚合兴趣点
+        if (record.interestPoints && Array.isArray(record.interestPoints)) {
+          for (const point of record.interestPoints) {
+            allInterestPoints.push(point);
+            interestPointFrequency.set(point, (interestPointFrequency.get(point) || 0) + 1);
+          }
+        }
+      }
+
+      // 3. 去重并按出现频率排序
+      const uniquePainPoints = [...new Set(allPainPoints)]
+        .map((point) => ({
+          point,
+          frequency: painPointFrequency.get(point) || 1,
+        }))
+        .sort((a, b) => b.frequency - a.frequency)
+        .map((item) => item.point);
+
+      const uniqueInterestPoints = [...new Set(allInterestPoints)]
+        .map((point) => ({
+          point,
+          frequency: interestPointFrequency.get(point) || 1,
+        }))
+        .sort((a, b) => b.frequency - a.frequency)
+        .map((item) => item.point);
+
+      // 4. 提取关键词（从痛点和兴趣点中提取核心词汇）
+      const needKeywords = this.extractKeywords(uniquePainPoints, uniqueInterestPoints);
+
+      // 5. 更新客户档案
+      await this.customerRepository.update(customerId, {
+        painPoints: uniquePainPoints.length > 0 ? uniquePainPoints : null,
+        interestPoints: uniqueInterestPoints.length > 0 ? uniqueInterestPoints : null,
+        needKeywords: needKeywords.length > 0 ? needKeywords : null,
+      });
+
+      this.logger.log(
+        `客户洞察已聚合: ID=${customerId}, 痛点=${uniquePainPoints.length}个, ` +
+        `兴趣点=${uniqueInterestPoints.length}个, 关键词=${needKeywords.length}个`,
+      );
+    } catch (error) {
+      this.logger.error(`聚合客户洞察失败: ${error.message}`, error.stack);
+    }
+  }
+
+  /**
+   * 从痛点和兴趣点中提取关键词
+   */
+  private extractKeywords(painPoints: string[], interestPoints: string[]): string[] {
+    const keywords = new Set<string>();
+
+    // 定义教育行业相关的关键词模式
+    const keywordPatterns = [
+      // 学习相关
+      /学习|成绩|分数|考试|作业|课程|辅导|补习/g,
+      // 能力相关
+      /注意力|专注|理解|记忆|思维|能力|水平/g,
+      // 科目相关
+      /数学|语文|英语|物理|化学|生物|历史|地理/g,
+      // 问题相关
+      /困难|问题|不足|薄弱|差|弱/g,
+      // 目标相关
+      /提升|提高|改善|进步|突破|冲刺/g,
+      // 质量相关
+      /效果|质量|师资|方法|体系|服务/g,
+    ];
+
+    const allTexts = [...painPoints, ...interestPoints];
+
+    for (const text of allTexts) {
+      // 使用正则提取关键词
+      for (const pattern of keywordPatterns) {
+        const matches = text.match(pattern);
+        if (matches) {
+          matches.forEach((match) => keywords.add(match));
+        }
+      }
+
+      // 提取常见的教育关键短语（2-4个字）
+      const phrases = text.match(/[\u4e00-\u9fa5]{2,4}/g);
+      if (phrases) {
+        // 过滤掉过于通用的词汇
+        const stopWords = ['这个', '那个', '什么', '怎么', '如何', '可以', '需要', '希望'];
+        phrases.forEach((phrase) => {
+          if (!stopWords.includes(phrase) && phrase.length >= 2) {
+            keywords.add(phrase);
+          }
+        });
+      }
+    }
+
+    // 返回前20个最相关的关键词
+    return Array.from(keywords).slice(0, 20);
   }
 
   /**
