@@ -131,8 +131,13 @@
           <div class="variables-section" v-if="configExists">
             <el-divider />
             <div class="section-header">
-              <h4>变量配置列表</h4>
-              <p class="desc">共 {{ variables.length }} 个变量，{{ variables.filter((v: any) => v.isActive).length }} 个已启用</p>
+              <div class="header-left">
+                <h4>变量配置列表</h4>
+                <p class="desc">共 {{ variables.length }} 个变量，{{ variables.filter((v: any) => v.isActive).length }} 个已启用</p>
+              </div>
+              <el-button type="primary" size="default" @click="openAddVariableDialog">
+                添加变量
+              </el-button>
             </div>
 
             <el-table :data="variables" style="width: 100%" v-loading="loadingVariables">
@@ -229,6 +234,122 @@
         <el-button type="primary" @click="createScenario">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- 变量对话框 -->
+    <el-dialog
+      v-model="showVariableDialog"
+      :title="variableFormMode === 'add' ? '添加变量' : '编辑变量'"
+      width="700px"
+    >
+      <el-form :model="variableForm" label-width="120px">
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="变量标识" required>
+              <el-input
+                v-model="variableForm.variableKey"
+                placeholder="如：chatText"
+                :disabled="variableFormMode === 'edit'"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="变量名称" required>
+              <el-input v-model="variableForm.variableName" placeholder="如：聊天记录" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="变量说明">
+          <el-input
+            v-model="variableForm.variableDescription"
+            type="textarea"
+            :rows="3"
+            placeholder="描述该变量的作用和含义"
+          />
+        </el-form-item>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="数据类型">
+              <el-select v-model="variableForm.dataType" style="width: 100%">
+                <el-option label="文本" value="text" />
+                <el-option label="数字" value="number" />
+                <el-option label="布尔" value="boolean" />
+                <el-option label="日期" value="date" />
+                <el-option label="JSON" value="json" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="变量分类">
+              <el-select v-model="variableForm.category" style="width: 100%">
+                <el-option label="必填字段" value="必填字段" />
+                <el-option label="可选字段" value="可选字段" />
+                <el-option label="客户信息" value="客户信息" />
+                <el-option label="系统自动" value="系统自动" />
+                <el-option label="业务信息" value="业务信息" />
+                <el-option label="训练设置" value="训练设置" />
+                <el-option label="内容要素" value="内容要素" />
+                <el-option label="风格设置" value="风格设置" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="默认值">
+              <el-input v-model="variableForm.defaultValue" placeholder="可选" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="显示顺序">
+              <el-input-number
+                v-model="variableForm.displayOrder"
+                :min="0"
+                style="width: 100%"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-form-item label="示例值">
+          <el-input
+            v-model="variableForm.exampleValue"
+            type="textarea"
+            :rows="2"
+            placeholder="可选"
+          />
+        </el-form-item>
+
+        <el-form-item label="验证规则">
+          <el-input
+            v-model="variableForm.validationRule"
+            placeholder="正则表达式或其他验证规则（可选）"
+          />
+        </el-form-item>
+
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="是否必填">
+              <el-switch v-model="variableForm.isRequired" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item label="是否启用">
+              <el-switch v-model="variableForm.isActive" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="showVariableDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveVariable" :loading="savingVariable">
+          {{ variableFormMode === 'add' ? '添加' : '保存' }}
+        </el-button>
+      </template>
+    </el-dialog>
         </el-tab-pane>
       </el-tabs>
     </el-card>
@@ -273,6 +394,25 @@ const configExists = ref(false)
 // 变量列表
 const variables = ref<any[]>([])
 const loadingVariables = ref(false)
+const showVariableDialog = ref(false)
+const variableFormMode = ref<'add' | 'edit'>('add')
+const variableForm = ref({
+  id: null as number | null,
+  promptConfigId: null as number | null,
+  scenarioKey: '',
+  variableKey: '',
+  variableName: '',
+  variableDescription: '',
+  dataType: 'text',
+  isRequired: false,
+  isActive: true,
+  defaultValue: '',
+  exampleValue: '',
+  validationRule: '',
+  displayOrder: 0,
+  category: '可选字段',
+})
+const savingVariable = ref(false)
 
 // 加载状态
 const loading = ref(false)
@@ -412,33 +552,112 @@ function getCategoryType(category: string) {
 // 更新变量启用状态
 async function updateVariableStatus(variable: any) {
   try {
-    // TODO: 调用API更新变量状态
+    await request.put(`/ai-config/variables/${variable.id}/status`, {
+      isActive: variable.isActive,
+    })
     ElMessage.success('更新成功')
   } catch (error: any) {
-    ElMessage.error('更新失败')
+    ElMessage.error(error.response?.data?.message || '更新失败')
     // 恢复原状态
     variable.isActive = !variable.isActive
   }
 }
 
+// 打开添加变量对话框
+function openAddVariableDialog() {
+  if (!currentConfigId.value || !selectedScenario.value) {
+    ElMessage.warning('请先选择一个场景')
+    return
+  }
+
+  variableFormMode.value = 'add'
+  resetVariableForm()
+  variableForm.value.promptConfigId = currentConfigId.value
+  variableForm.value.scenarioKey = selectedScenario.value.scenarioKey
+  // 设置默认的显示顺序为当前变量数+1
+  variableForm.value.displayOrder = variables.value.length + 1
+  showVariableDialog.value = true
+}
+
 // 编辑变量
 function editVariable(variable: any) {
-  ElMessage.info('变量编辑功能开发中...')
-  // TODO: 打开编辑对话框
+  variableFormMode.value = 'edit'
+  variableForm.value = {
+    id: variable.id,
+    promptConfigId: variable.promptConfigId,
+    scenarioKey: variable.scenarioKey,
+    variableKey: variable.variableKey,
+    variableName: variable.variableName,
+    variableDescription: variable.variableDescription || '',
+    dataType: variable.dataType || 'text',
+    isRequired: variable.isRequired || false,
+    isActive: variable.isActive ?? true,
+    defaultValue: variable.defaultValue || '',
+    exampleValue: variable.exampleValue || '',
+    validationRule: variable.validationRule || '',
+    displayOrder: variable.displayOrder || 0,
+    category: variable.category || '可选字段',
+  }
+  showVariableDialog.value = true
+}
+
+// 保存变量
+async function saveVariable() {
+  savingVariable.value = true
+  try {
+    if (variableFormMode.value === 'add') {
+      await request.post('/ai-config/variables', variableForm.value)
+      ElMessage.success('添加成功')
+    } else {
+      await request.put(`/ai-config/variables/${variableForm.value.id}`, variableForm.value)
+      ElMessage.success('更新成功')
+    }
+    showVariableDialog.value = false
+    loadVariables()
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.message || '操作失败')
+  } finally {
+    savingVariable.value = false
+  }
+}
+
+// 重置变量表单
+function resetVariableForm() {
+  variableForm.value = {
+    id: null,
+    promptConfigId: null,
+    scenarioKey: '',
+    variableKey: '',
+    variableName: '',
+    variableDescription: '',
+    dataType: 'text',
+    isRequired: false,
+    isActive: true,
+    defaultValue: '',
+    exampleValue: '',
+    validationRule: '',
+    displayOrder: 0,
+    category: '可选字段',
+  }
 }
 
 // 删除变量
 async function deleteVariable(variable: any) {
+  if (variable.isRequired) {
+    ElMessage.warning('必填变量不允许删除')
+    return
+  }
+
   await ElMessageBox.confirm(`确定删除变量"${variable.variableName}"吗？`, '提示', {
     type: 'warning',
   })
 
   try {
-    // TODO: 调用API删除变量
+    await request.delete(`/ai-config/variables/${variable.id}`)
     ElMessage.success('删除成功')
     loadVariables()
   } catch (error: any) {
-    ElMessage.error('删除失败')
+    ElMessage.error(error.response?.data?.message || '删除失败')
   }
 }
 
@@ -621,18 +840,23 @@ onMounted(() => {
         margin-top: 32px;
 
         .section-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
           margin-bottom: 16px;
 
-          h4 {
-            margin: 0 0 4px 0;
-            font-size: 16px;
-            color: #303133;
-          }
+          .header-left {
+            h4 {
+              margin: 0 0 4px 0;
+              font-size: 16px;
+              color: #303133;
+            }
 
-          .desc {
-            margin: 0;
-            font-size: 13px;
-            color: #909399;
+            .desc {
+              margin: 0;
+              font-size: 13px;
+              color: #909399;
+            }
           }
         }
 

@@ -232,4 +232,119 @@ export class AiConfigService {
 
     return map;
   }
+
+  /**
+   * 创建变量
+   */
+  async createVariable(createDto: any): Promise<any> {
+    try {
+      // 检查是否已存在相同的变量key
+      const existing = await this.aiPromptVariableRepository.findOne({
+        where: {
+          promptConfigId: createDto.promptConfigId,
+          variableKey: createDto.variableKey,
+        },
+      });
+
+      if (existing) {
+        throw new ConflictException(
+          `变量 ${createDto.variableKey} 已存在于该配置中`,
+        );
+      }
+
+      const variable = this.aiPromptVariableRepository.create(createDto);
+      return await this.aiPromptVariableRepository.save(variable);
+    } catch (error) {
+      this.logger.error(`创建变量失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新变量
+   */
+  async updateVariable(id: number, updateDto: any): Promise<any> {
+    try {
+      const variable = await this.aiPromptVariableRepository.findOne({
+        where: { id },
+      });
+
+      if (!variable) {
+        throw new NotFoundException(`ID为${id}的变量不存在`);
+      }
+
+      // 如果修改了variableKey，检查唯一性
+      if (updateDto.variableKey && updateDto.variableKey !== variable.variableKey) {
+        const existing = await this.aiPromptVariableRepository.findOne({
+          where: {
+            promptConfigId: variable.promptConfigId,
+            variableKey: updateDto.variableKey,
+          },
+        });
+
+        if (existing && existing.id !== id) {
+          throw new ConflictException(
+            `变量 ${updateDto.variableKey} 已存在于该配置中`,
+          );
+        }
+      }
+
+      const updatedVariable = this.aiPromptVariableRepository.merge(variable, updateDto);
+      return await this.aiPromptVariableRepository.save(updatedVariable);
+    } catch (error) {
+      this.logger.error(`更新变量失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 删除变量
+   */
+  async removeVariable(id: number): Promise<void> {
+    try {
+      const variable = await this.aiPromptVariableRepository.findOne({
+        where: { id },
+      });
+
+      if (!variable) {
+        throw new NotFoundException(`ID为${id}的变量不存在`);
+      }
+
+      // 必填变量不允许删除
+      if (variable.isRequired) {
+        throw new ConflictException('必填变量不允许删除');
+      }
+
+      await this.aiPromptVariableRepository.delete(id);
+    } catch (error) {
+      this.logger.error(`删除变量失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新变量状态
+   */
+  async updateVariableStatus(id: number, isActive: boolean): Promise<any> {
+    try {
+      const variable = await this.aiPromptVariableRepository.findOne({
+        where: { id },
+      });
+
+      if (!variable) {
+        throw new NotFoundException(`ID为${id}的变量不存在`);
+      }
+
+      // 必填变量不允许禁用
+      if (variable.isRequired && !isActive) {
+        throw new ConflictException('必填变量不允许禁用');
+      }
+
+      variable.isActive = isActive;
+      return await this.aiPromptVariableRepository.save(variable);
+    } catch (error) {
+      this.logger.error(`更新变量状态失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 }

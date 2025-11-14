@@ -98,4 +98,42 @@ export class AiConfigController {
     await this.aiConfigService.remove(id);
     return { message: '删除成功' };
   }
+
+  @Post('variables')
+  @ApiOperation({ summary: '创建变量' })
+  @RequirePermissions('system:ai-config')
+  async createVariable(@Body() createDto: any) {
+    return this.aiConfigService.createVariable(createDto);
+  }
+
+  @Put('variables/:id')
+  @ApiOperation({ summary: '更新变量' })
+  @ApiParam({ name: 'id', description: '变量ID' })
+  @RequirePermissions('system:ai-config')
+  async updateVariable(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateDto: any,
+  ) {
+    return this.aiConfigService.updateVariable(id, updateDto);
+  }
+
+  @Delete('variables/:id')
+  @ApiOperation({ summary: '删除变量' })
+  @ApiParam({ name: 'id', description: '变量ID' })
+  @RequirePermissions('system:ai-config')
+  async removeVariable(@Param('id', ParseIntPipe) id: number) {
+    await this.aiConfigService.removeVariable(id);
+    return { message: '删除成功' };
+  }
+
+  @Put('variables/:id/status')
+  @ApiOperation({ summary: '更新变量状态' })
+  @ApiParam({ name: 'id', description: '变量ID' })
+  @RequirePermissions('system:ai-config')
+  async updateVariableStatus(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('isActive') isActive: boolean,
+  ) {
+    return this.aiConfigService.updateVariableStatus(id, isActive);
+  }
 }
