@@ -7,7 +7,7 @@
           <p class="subtitle">AI大模型已帮您搜寻客户痛点的痛点，需求与兴趣点，基于这些帮您智造营销文案，瞬间唤起兴趣点，深度激发兴趣，让客户主动想您</p>
         </div>
         <div>
-          <el-button @click="showHistory = true">
+          <el-button @click="goToLibrary">
             <el-icon><DocumentCopy /></el-icon>
             文案库
           </el-button>
@@ -179,16 +179,12 @@
     <el-dialog v-model="showHistoryDialog" title="历史记录" width="800px">
       <el-empty description="暂无历史记录" />
     </el-dialog>
-
-    <!-- 文案库对话框 -->
-    <el-dialog v-model="showHistory" title="文案库" width="800px">
-      <el-empty description="暂无文案库记录" />
-    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
   MagicStick,
@@ -203,14 +199,15 @@ import {
   Refresh,
   FolderAdd,
 } from '@element-plus/icons-vue'
-import { generateMarketingContent } from '@/api/ai'
+import { generateMarketingContent, saveMarketingContent } from '@/api/ai'
+
+const router = useRouter()
 
 const selectedScene = ref('朋友圈文案')
 const activeTab = ref('painPoints')
 const generating = ref(false)
 const generatedContent = ref('')
 const showHistoryDialog = ref(false)
-const showHistory = ref(false)
 
 const scenes = [
   {
@@ -313,9 +310,31 @@ const regenerate = () => {
   handleGenerate()
 }
 
-const saveToLibrary = () => {
-  ElMessage.success('已保存到文案库')
-  // TODO: 实现保存到文案库功能
+const goToLibrary = () => {
+  router.push('/sales-tools/marketing-content-library')
+}
+
+const saveToLibrary = async () => {
+  if (!generatedContent.value) {
+    ElMessage.warning('请先生成文案')
+    return
+  }
+
+  try {
+    await saveMarketingContent({
+      contentType: selectedScene.value,
+      title: `${selectedScene.value} - ${new Date().toLocaleDateString()}`,
+      content: generatedContent.value,
+      painPoints: selectedPainPoints.value.map((p: any) => p.content),
+      interestPoints: selectedInterests.value.map((i: any) => i.content),
+      purpose: configForm.purpose,
+      style: configForm.style,
+      wordCount: configForm.wordCount,
+    })
+    ElMessage.success('已保存到文案库')
+  } catch (error: any) {
+    ElMessage.error(error.message || '保存失败')
+  }
 }
 </script>
 

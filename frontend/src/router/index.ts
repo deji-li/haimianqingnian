@@ -201,6 +201,15 @@ const routes: RouteRecordRaw[] = [
               permissions: ['ai-tools:use'],
             },
           },
+          {
+            path: 'marketing-content-library',
+            name: 'MarketingContentLibrary',
+            component: () => import('@/views/ai/MarketingContentLibrary.vue'),
+            meta: {
+              title: '营销文案库',
+              permissions: ['ai-marketing:use'],
+            },
+          },
         ],
       },
 

@@ -231,6 +231,114 @@ export function getMarketingHistory(contentType?: string) {
   })
 }
 
+// ==================== AI营销文案库 ====================
+// 保存文案到文案库
+export function saveMarketingContent(data: {
+  contentType: string
+  title: string
+  content: string
+  painPoints?: string[]
+  interestPoints?: string[]
+  generationParams?: any
+  purpose?: string
+  style?: string
+  wordCount?: string
+  tags?: string[]
+  category?: string
+  remark?: string
+}) {
+  return request({
+    url: '/ai-marketing/content',
+    method: 'post',
+    data
+  })
+}
+
+// 获取文案列表
+export function getMarketingContentList(params: {
+  page?: number
+  limit?: number
+  contentType?: string
+  isFavorite?: number
+  category?: string
+  keyword?: string
+}) {
+  return request({
+    url: '/ai-marketing/content',
+    method: 'get',
+    params
+  })
+}
+
+// 获取文案统计
+export function getMarketingContentStatistics() {
+  return request({
+    url: '/ai-marketing/content/statistics',
+    method: 'get'
+  })
+}
+
+// 获取所有分类
+export function getMarketingContentCategories() {
+  return request({
+    url: '/ai-marketing/content/categories',
+    method: 'get'
+  })
+}
+
+// 获取单个文案详情
+export function getMarketingContentDetail(id: number) {
+  return request({
+    url: `/ai-marketing/content/${id}`,
+    method: 'get'
+  })
+}
+
+// 更新文案
+export function updateMarketingContent(id: number, data: {
+  title?: string
+  content?: string
+  tags?: string[]
+  category?: string
+  remark?: string
+}) {
+  return request({
+    url: `/ai-marketing/content/${id}`,
+    method: 'put',
+    data
+  })
+}
+
+// 删除文案
+export function deleteMarketingContent(id: number) {
+  return request({
+    url: `/ai-marketing/content/${id}`,
+    method: 'delete'
+  })
+}
+
+// 切换收藏状态
+export function toggleMarketingContentFavorite(id: number) {
+  return request({
+    url: `/ai-marketing/content/${id}/favorite`,
+    method: 'post'
+  })
+}
+
+// 记录使用
+export function recordMarketingContentUsage(id: number, data?: {
+  usageChannel?: string
+  usageResult?: string
+  customerId?: number
+  usageRemark?: string
+}) {
+  return request({
+    url: `/ai-marketing/content/${id}/usage`,
+    method: 'post',
+    data: data || {}
+  })
+}
+
 // ==================== AI营销场景 ====================
 // 获取所有营销场景配置
 export function getMarketingScenarios(params?: { category?: string; isActive?: boolean }) {

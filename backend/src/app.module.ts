@@ -59,6 +59,7 @@ import { AiPromptVariable } from './modules/ai-config/entities/ai-prompt-variabl
 import { BusinessConfig } from './modules/business-config/entities/business-config.entity';
 import { OrderSyncLog } from './modules/order-sync/entities/order-sync-log.entity';
 import { AiMarketingScenario } from './modules/ai-marketing/entities/ai-marketing-scenario.entity';
+import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing-content.entity';
 
 @Module({
   imports: [
@@ -114,6 +115,7 @@ import { AiMarketingScenario } from './modules/ai-marketing/entities/ai-marketin
           BusinessConfig,
           OrderSyncLog,
           AiMarketingScenario,
+          AiMarketingContent,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
