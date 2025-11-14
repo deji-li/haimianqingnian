@@ -20,28 +20,28 @@
 
     <!-- 顶部统计卡片 -->
     <el-row :gutter="16" class="stats-row">
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card>
           <el-statistic title="AI分析总次数" :value="stats.totalAnalysis || 0">
             <template #suffix>次</template>
           </el-statistic>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card>
           <el-statistic title="高质量线索" :value="stats.highQualityLeads || 0">
             <template #suffix>个</template>
           </el-statistic>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card>
           <el-statistic title="平均转化率" :value="(stats.avgConversionRate * 100) || 0" :precision="2">
             <template #suffix>%</template>
           </el-statistic>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card>
           <el-statistic title="待处理风险" :value="stats.pendingRisks || 0">
             <template #suffix>个</template>
@@ -883,6 +883,229 @@ onMounted(() => {
         font-weight: bold;
         color: #333;
         line-height: 1;
+      }
+    }
+  }
+
+  // ==================== 响应式设计 ====================
+
+  // 平板设备 (768px - 1024px)
+  @media (max-width: 1024px) {
+    .header-card {
+      .header-content {
+        flex-direction: column;
+        gap: 16px;
+
+        .el-date-picker {
+          max-width: 100%;
+        }
+      }
+    }
+
+    .stats-row {
+      .el-col {
+        margin-bottom: 12px;
+      }
+    }
+
+    .chart-card {
+      height: 350px;
+    }
+  }
+
+  // 移动设备 (< 768px)
+  @media (max-width: 768px) {
+    .header-card {
+      .header-content {
+        h2 {
+          font-size: 20px;
+        }
+
+        .subtitle {
+          font-size: 13px;
+        }
+      }
+    }
+
+    .stats-row {
+      :deep(.el-col) {
+        flex: 0 0 50%;
+        max-width: 50%;
+        margin-bottom: 12px;
+      }
+
+      .el-statistic {
+        :deep(.el-statistic__head) {
+          font-size: 13px;
+        }
+
+        :deep(.el-statistic__content) {
+          font-size: 22px;
+        }
+      }
+    }
+
+    .chart-card {
+      height: 280px;
+      margin-bottom: 12px;
+    }
+
+    .risk-stats-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+
+      .risk-stat {
+        padding: 16px;
+
+        .risk-icon {
+          width: 48px;
+          height: 48px;
+        }
+
+        .risk-content {
+          .risk-label {
+            font-size: 13px;
+          }
+
+          .risk-value {
+            font-size: 26px;
+          }
+        }
+      }
+    }
+
+    .user-table-card {
+      :deep(.el-table) {
+        font-size: 13px;
+
+        .el-table__header th:nth-child(3),
+        .el-table__body td:nth-child(3),
+        .el-table__header th:nth-child(4),
+        .el-table__body td:nth-child(4),
+        .el-table__header th:nth-child(5),
+        .el-table__body td:nth-child(5) {
+          display: none; // 隐藏部分列
+        }
+
+        .el-table__header th,
+        .el-table__body td {
+          padding: 8px 4px;
+        }
+      }
+    }
+  }
+
+  // 小屏手机 (< 480px)
+  @media (max-width: 480px) {
+    .header-card {
+      :deep(.el-card__body) {
+        padding: 16px 12px;
+      }
+
+      .header-content {
+        h2 {
+          font-size: 18px;
+        }
+
+        .subtitle {
+          font-size: 12px;
+        }
+      }
+    }
+
+    .stats-row {
+      :deep(.el-col) {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 10px;
+      }
+
+      .el-card {
+        :deep(.el-card__body) {
+          padding: 16px 12px;
+        }
+      }
+
+      .el-statistic {
+        :deep(.el-statistic__head) {
+          font-size: 12px;
+        }
+
+        :deep(.el-statistic__content) {
+          font-size: 20px;
+        }
+      }
+    }
+
+    .chart-card {
+      height: 250px;
+
+      :deep(.el-card__body) {
+        padding: 12px;
+      }
+
+      :deep(.el-card__header) {
+        padding: 12px;
+
+        .card-title {
+          font-size: 14px;
+        }
+      }
+    }
+
+    .risk-stats-grid {
+      gap: 10px;
+
+      .risk-stat {
+        padding: 12px;
+
+        .risk-icon {
+          width: 40px;
+          height: 40px;
+          margin-right: 12px;
+
+          :deep(.el-icon) {
+            font-size: 20px;
+          }
+        }
+
+        .risk-content {
+          .risk-label {
+            font-size: 12px;
+            margin-bottom: 4px;
+          }
+
+          .risk-value {
+            font-size: 22px;
+          }
+        }
+      }
+    }
+
+    .user-table-card {
+      :deep(.el-card__body) {
+        padding: 12px;
+      }
+
+      :deep(.el-table) {
+        font-size: 12px;
+
+        .el-table__header th:nth-child(2),
+        .el-table__body td:nth-child(2) {
+          display: none; // 进一步隐藏列
+        }
+
+        .cell {
+          padding-left: 4px;
+          padding-right: 4px;
+        }
+
+        .el-tag {
+          font-size: 10px;
+          padding: 0 4px;
+          height: 18px;
+          line-height: 18px;
+        }
       }
     }
   }

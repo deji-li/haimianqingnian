@@ -1412,5 +1412,290 @@ onMounted(() => {
       overflow: hidden;
     }
   }
+
+  // ==================== 响应式设计 ====================
+
+  // 平板设备 (768px - 1024px)
+  @media (max-width: 1024px) {
+    .search-card {
+      :deep(.el-form) {
+        .el-form-item {
+          margin-right: 12px;
+          margin-bottom: 12px;
+        }
+
+        .el-input,
+        .el-select {
+          width: 180px !important;
+        }
+      }
+    }
+
+    .action-row {
+      .left-actions {
+        .el-button {
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    .advanced-filter {
+      :deep(.el-row) {
+        .el-col {
+          margin-bottom: 12px;
+        }
+      }
+    }
+  }
+
+  // 移动设备 (< 768px)
+  @media (max-width: 768px) {
+    .search-card {
+      :deep(.el-form) {
+        &.el-form--inline {
+          .el-form-item {
+            display: block;
+            margin-right: 0;
+            margin-bottom: 12px;
+
+            .el-form-item__label {
+              display: block;
+              text-align: left;
+              float: none;
+              margin-bottom: 4px;
+            }
+
+            .el-form-item__content {
+              margin-left: 0 !important;
+            }
+          }
+
+          .el-input,
+          .el-select {
+            width: 100% !important;
+          }
+        }
+      }
+    }
+
+    .advanced-filter {
+      padding: 16px;
+
+      :deep(.el-form) {
+        label-width: 80px;
+
+        .el-row .el-col {
+          flex: 0 0 100%;
+          max-width: 100%;
+        }
+
+        .el-date-editor {
+          width: 100%;
+        }
+
+        .el-checkbox,
+        .el-radio {
+          display: block;
+          margin-bottom: 8px;
+        }
+      }
+    }
+
+    .action-card {
+      .action-row {
+        flex-direction: column;
+        gap: 12px;
+
+        .left-actions {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+
+          .el-button {
+            margin: 0;
+            padding: 8px 12px;
+            font-size: 13px;
+
+            span {
+              display: none; // 隐藏按钮文字，仅显示图标
+            }
+
+            &::after {
+              content: attr(aria-label);
+              font-size: 11px;
+            }
+          }
+        }
+
+        .batch-actions {
+          width: 100%;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+
+          .el-tag {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .el-button {
+            width: 100%;
+          }
+        }
+      }
+    }
+
+    // 表格优化：隐藏部分列
+    :deep(.el-table) {
+      font-size: 13px;
+
+      .el-table__header th:nth-child(2),
+      .el-table__body td:nth-child(2),
+      .el-table__header th:nth-child(4),
+      .el-table__body td:nth-child(4),
+      .el-table__header th:nth-child(6),
+      .el-table__body td:nth-child(6) {
+        display: none; // 隐藏ID、微信号、真实姓名列
+      }
+
+      .el-table__header th,
+      .el-table__body td {
+        padding: 8px 0;
+      }
+
+      .cell {
+        padding-left: 8px;
+        padding-right: 8px;
+      }
+    }
+
+    .pagination-container {
+      justify-content: center;
+      padding: 12px 0;
+
+      :deep(.el-pagination) {
+        .el-pagination__sizes,
+        .el-pagination__jump {
+          display: none; // 隐藏页面大小选择和跳转
+        }
+
+        .btn-prev,
+        .btn-next {
+          padding: 0 8px;
+        }
+
+        .el-pager li {
+          min-width: 28px;
+          height: 28px;
+          line-height: 28px;
+          font-size: 13px;
+        }
+      }
+    }
+  }
+
+  // 小屏手机 (< 480px)
+  @media (max-width: 480px) {
+    .search-card,
+    .action-card {
+      :deep(.el-card__body) {
+        padding: 12px;
+      }
+    }
+
+    .advanced-filter {
+      padding: 12px;
+
+      :deep(.el-form) {
+        .el-form-item__label {
+          font-size: 13px;
+        }
+
+        .el-button {
+          font-size: 12px;
+          padding: 6px 10px;
+        }
+      }
+    }
+
+    .action-card .action-row .left-actions {
+      grid-template-columns: 1fr; // 单列布局
+
+      .el-button {
+        padding: 10px 12px;
+
+        span {
+          display: inline; // 显示按钮文字
+        }
+
+        &::after {
+          content: none;
+        }
+      }
+    }
+
+    // 表格进一步简化
+    :deep(.el-table) {
+      font-size: 12px;
+
+      .el-table__header th:nth-child(3),
+      .el-table__body td:nth-child(3) {
+        display: none; // 还隐藏微信昵称，只保留手机号和意向
+      }
+
+      .el-table__header th,
+      .el-table__body td {
+        padding: 6px 0;
+      }
+
+      .cell {
+        padding-left: 4px;
+        padding-right: 4px;
+      }
+
+      .el-tag {
+        font-size: 11px;
+        padding: 0 6px;
+        height: 20px;
+        line-height: 20px;
+      }
+
+      .el-button {
+        font-size: 11px;
+        padding: 4px 8px;
+      }
+    }
+
+    .pagination-container :deep(.el-pagination) {
+      .el-pager {
+        li {
+          min-width: 24px;
+          height: 24px;
+          line-height: 24px;
+          font-size: 12px;
+          margin: 0 2px;
+
+          &:not(.is-active):not(:hover) {
+            display: none; // 仅显示当前页和相邻页
+          }
+
+          &:nth-child(2),
+          &:last-child {
+            display: inline-block !important; // 始终显示首页和末页
+          }
+        }
+      }
+
+      .btn-prev,
+      .btn-next {
+        min-width: 24px;
+        height: 24px;
+        line-height: 24px;
+        padding: 0 6px;
+        font-size: 12px;
+      }
+    }
+  }
 }
 </style>
