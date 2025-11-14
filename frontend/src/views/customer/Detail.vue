@@ -250,6 +250,137 @@
       </div>
     </el-card>
 
+    <!-- 客户洞察（痛点、兴趣点、需求关键词） -->
+    <el-card class="insights-card" shadow="never" v-if="customerInfo">
+      <template #header>
+        <div class="card-header">
+          <span class="title">
+            <el-icon style="vertical-align: middle; margin-right: 4px"><TrendCharts /></el-icon>
+            客户洞察
+          </span>
+          <el-text size="small" type="info">基于聊天记录AI分析聚合</el-text>
+        </div>
+      </template>
+
+      <el-row :gutter="20">
+        <!-- 痛点 -->
+        <el-col :span="8">
+          <div class="insight-section">
+            <h4 class="insight-title">
+              <el-icon color="#E6A23C"><WarningFilled /></el-icon>
+              客户痛点
+            </h4>
+            <div v-if="customerInfo.painPoints && customerInfo.painPoints.length > 0" class="insight-content">
+              <el-space direction="vertical" :fill="true" style="width: 100%">
+                <el-tag
+                  v-for="(point, index) in customerInfo.painPoints"
+                  :key="index"
+                  type="warning"
+                  effect="plain"
+                  size="default"
+                  style="width: 100%; justify-content: flex-start"
+                >
+                  <el-icon style="margin-right: 4px"><Warning /></el-icon>
+                  {{ point }}
+                </el-tag>
+              </el-space>
+            </div>
+            <el-empty v-else description="暂无痛点数据" :image-size="60" />
+            <div class="insight-tip">
+              <el-icon><InfoFilled /></el-icon>
+              AI从多次沟通中自动提取，按出现频率排序
+            </div>
+          </div>
+        </el-col>
+
+        <!-- 兴趣点 -->
+        <el-col :span="8">
+          <div class="insight-section">
+            <h4 class="insight-title">
+              <el-icon color="#67C23A"><StarFilled /></el-icon>
+              兴趣点
+            </h4>
+            <div v-if="customerInfo.interestPoints && customerInfo.interestPoints.length > 0" class="insight-content">
+              <el-space direction="vertical" :fill="true" style="width: 100%">
+                <el-tag
+                  v-for="(point, index) in customerInfo.interestPoints"
+                  :key="index"
+                  type="success"
+                  effect="plain"
+                  size="default"
+                  style="width: 100%; justify-content: flex-start"
+                >
+                  <el-icon style="margin-right: 4px"><Star /></el-icon>
+                  {{ point }}
+                </el-tag>
+              </el-space>
+            </div>
+            <el-empty v-else description="暂无兴趣点数据" :image-size="60" />
+            <div class="insight-tip">
+              <el-icon><InfoFilled /></el-icon>
+              包括明确表达和隐含的兴趣
+            </div>
+          </div>
+        </el-col>
+
+        <!-- 需求关键词 -->
+        <el-col :span="8">
+          <div class="insight-section">
+            <h4 class="insight-title">
+              <el-icon color="#409EFF"><Key /></el-icon>
+              需求关键词
+            </h4>
+            <div v-if="customerInfo.needKeywords && customerInfo.needKeywords.length > 0" class="insight-content">
+              <el-space wrap>
+                <el-tag
+                  v-for="(keyword, index) in customerInfo.needKeywords"
+                  :key="index"
+                  type="primary"
+                  effect="light"
+                  size="default"
+                >
+                  {{ keyword }}
+                </el-tag>
+              </el-space>
+            </div>
+            <el-empty v-else description="暂无关键词" :image-size="60" />
+            <div class="insight-tip">
+              <el-icon><InfoFilled /></el-icon>
+              从痛点和兴趣点中智能提取
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+
+      <!-- 营销建议 -->
+      <el-divider />
+      <div class="marketing-suggestions" v-if="hasInsightsData">
+        <h4 class="section-title">
+          <el-icon><Compass /></el-icon>
+          营销建议
+        </h4>
+        <el-alert
+          type="info"
+          :closable="false"
+          show-icon
+        >
+          <template #default>
+            <div class="suggestions-content">
+              <p v-if="customerInfo.painPoints && customerInfo.painPoints.length > 0">
+                <strong>针对痛点：</strong>重点强调我们的解决方案如何解决"{{ customerInfo.painPoints[0] }}"等问题
+              </p>
+              <p v-if="customerInfo.interestPoints && customerInfo.interestPoints.length > 0">
+                <strong>利用兴趣点：</strong>可以从"{{ customerInfo.interestPoints[0] }}"切入，建立信任
+              </p>
+              <p v-if="customerInfo.needKeywords && customerInfo.needKeywords.length > 0">
+                <strong>话术关键词：</strong>沟通时多使用 {{ customerInfo.needKeywords.slice(0, 5).join('、') }} 等词汇
+              </p>
+            </div>
+          </template>
+        </el-alert>
+      </div>
+    </el-card>
+
     <!-- 跟进记录 -->
     <el-card class="follow-card" shadow="never">
       <template #header>
@@ -563,7 +694,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
 import {
@@ -577,6 +708,13 @@ import {
   Star,
   QuestionFilled,
   Reading,
+  TrendCharts,
+  WarningFilled,
+  Warning,
+  StarFilled,
+  Key,
+  InfoFilled,
+  Compass,
 } from '@element-plus/icons-vue'
 import { useRecentStore } from '@/store/recent'
 import {
@@ -665,6 +803,16 @@ const stageFormData = reactive({
 const stageFormRules: FormRules = {
   stage: [{ required: true, message: '请选择新阶段', trigger: 'change' }],
 }
+
+// 计算属性：是否有洞察数据
+const hasInsightsData = computed(() => {
+  if (!customerInfo.value) return false
+  return (
+    (customerInfo.value.painPoints && customerInfo.value.painPoints.length > 0) ||
+    (customerInfo.value.interestPoints && customerInfo.value.interestPoints.length > 0) ||
+    (customerInfo.value.needKeywords && customerInfo.value.needKeywords.length > 0)
+  )
+})
 
 // 获取客户详情
 const fetchCustomerInfo = async () => {
@@ -1191,6 +1339,68 @@ onMounted(async () => {
         font-weight: 500;
         color: #303133;
         margin: 0 0 12px 0;
+      }
+    }
+  }
+
+  .insights-card {
+    margin-bottom: 16px;
+
+    .insight-section {
+      padding: 16px;
+      background: #f5f7fa;
+      border-radius: 8px;
+      min-height: 280px;
+
+      .insight-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: #303133;
+        margin: 0 0 16px 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .insight-content {
+        min-height: 160px;
+        margin-bottom: 12px;
+      }
+
+      .insight-tip {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #909399;
+        margin-top: 12px;
+      }
+    }
+
+    .marketing-suggestions {
+      margin-top: 16px;
+
+      .section-title {
+        font-size: 14px;
+        font-weight: 500;
+        color: #303133;
+        margin: 0 0 12px 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .suggestions-content {
+        p {
+          margin: 8px 0;
+          line-height: 1.8;
+          font-size: 14px;
+
+          strong {
+            color: #409eff;
+            margin-right: 8px;
+          }
+        }
       }
     }
   }
