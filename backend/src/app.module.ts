@@ -53,6 +53,7 @@ import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-ba
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
+import { AiPromptVariable } from './modules/ai-config/entities/ai-prompt-variable.entity';
 import { BusinessConfig } from './modules/business-config/entities/business-config.entity';
 
 @Module({
@@ -105,6 +106,7 @@ import { BusinessConfig } from './modules/business-config/entities/business-conf
           AiReport,
           AiPromptConfig,
           AiApiKey,
+          AiPromptVariable,
           BusinessConfig,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
