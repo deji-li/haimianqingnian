@@ -14,8 +14,8 @@ ON DUPLICATE KEY UPDATE
 
 -- 字段映射配置
 INSERT INTO `business_config` (`config_key`, `config_value`, `config_category`, `description`) VALUES
-('field_mapping.order_status', '{"1":"待支付","2":"已支付","3":"已完成","4":"已取消"}', 'field_mapping', '订单状态映射'),
-('field_mapping.payment_method', '{"1":"微信支付","2":"支付宝","3":"银行卡","4":"现金"}', 'field_mapping', '支付方式映射')
+('field_mapping.order_status', JSON_OBJECT('1', '待支付', '2', '已支付', '3', '已完成', '4', '已取消'), 'field_mapping', '订单状态映射'),
+('field_mapping.payment_method', JSON_OBJECT('1', '微信支付', '2', '支付宝', '3', '银行卡', '4', '现金'), 'field_mapping', '支付方式映射')
 ON DUPLICATE KEY UPDATE
   `config_value` = VALUES(`config_value`),
   `description` = VALUES(`description`);
