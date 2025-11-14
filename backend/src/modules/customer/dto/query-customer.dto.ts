@@ -53,6 +53,22 @@ export class QueryCustomerDto {
   @IsInt()
   operatorId?: number;
 
+  @ApiPropertyOptional({ description: '生命周期阶段' })
+  @IsOptional()
+  @IsString()
+  lifecycleStage?: string;
+
+  @ApiPropertyOptional({ description: '客户来源' })
+  @IsOptional()
+  @IsString()
+  source?: string;
+
+  @ApiPropertyOptional({ description: '校区ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  campusId?: number;
+
   @ApiPropertyOptional({ description: '创建时间开始（YYYY-MM-DD）' })
   @IsOptional()
   @IsString()

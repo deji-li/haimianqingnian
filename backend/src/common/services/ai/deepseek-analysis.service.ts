@@ -573,4 +573,21 @@ export class DeepseekAnalysisService {
       return false;
     }
   }
+
+  /**
+   * 通用分析方法（用于AI营销等场景）
+   */
+  async analyze(
+    userPrompt: string,
+    systemPrompt: string,
+    options?: {
+      temperature?: number;
+      max_tokens?: number;
+    },
+  ): Promise<string> {
+    return this.callAI(systemPrompt, userPrompt, {
+      temperature: options?.temperature,
+      maxTokens: options?.max_tokens,
+    });
+  }
 }

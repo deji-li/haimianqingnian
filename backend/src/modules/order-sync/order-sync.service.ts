@@ -7,7 +7,7 @@ import { BusinessConfigService } from '../business-config/business-config.servic
 import { OrderSyncLog } from './entities/order-sync-log.entity';
 import { Order } from '../order/entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
-import { Campus } from '../campus/entities/campus.entity';
+import { Campus } from '../system/entities/campus.entity';
 import { HaimianOrder } from './interfaces/haimian-order.interface';
 import { SyncResultDto, SyncLogQueryDto } from './dto/sync-result.dto';
 

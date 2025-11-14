@@ -7,7 +7,7 @@ import { OrderSyncScheduler } from './order-sync.scheduler';
 import { OrderSyncLog } from './entities/order-sync-log.entity';
 import { Order } from '../order/entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
-import { Campus } from '../campus/entities/campus.entity';
+import { Campus } from '../system/entities/campus.entity';
 import { BusinessConfigModule } from '../business-config/business-config.module';
 
 @Module({

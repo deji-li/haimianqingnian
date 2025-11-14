@@ -5,8 +5,13 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { CustomerFollowRecord } from './customer-follow-record.entity';
+import { User } from '../../user/entities/user.entity';
+import { Department } from '../../system/entities/department.entity';
+import { Campus } from '../../system/entities/campus.entity';
 
 @Entity('customers')
 export class Customer {
@@ -24,6 +29,24 @@ export class Customer {
 
   @Column({ name: 'real_name', length: 50, nullable: true })
   realName: string;
+
+  @Column({ length: 10, nullable: true, comment: '性别' })
+  gender: string;
+
+  @Column({ type: 'int', nullable: true, comment: '年龄' })
+  age: number;
+
+  @Column({ name: 'intent_product', length: 100, nullable: true, comment: '意向产品' })
+  intentProduct: string;
+
+  @Column({ length: 100, nullable: true, comment: '客户来源' })
+  source: string;
+
+  @Column({ type: 'json', nullable: true, comment: '客户标签' })
+  tags: string[];
+
+  @Column({ name: 'estimated_amount', type: 'decimal', precision: 10, scale: 2, nullable: true, comment: '预计成交金额' })
+  estimatedAmount: number;
 
   @Column({ name: 'traffic_source', length: 50, nullable: true })
   trafficSource: string;
@@ -51,6 +74,12 @@ export class Customer {
 
   @Column({ name: 'sales_id' })
   salesId: number;
+
+  @Column({ name: 'department_id', nullable: true, comment: '部门ID' })
+  departmentId: number;
+
+  @Column({ name: 'campus_id', nullable: true, comment: '校区ID' })
+  campusId: number;
 
   @Column({ name: 'sales_wechat', length: 100, nullable: true })
   salesWechat: string;
@@ -157,6 +186,21 @@ export class Customer {
   // 关联跟进记录
   @OneToMany(() => CustomerFollowRecord, (record) => record.customer)
   followRecords: CustomerFollowRecord[];
+
+  // 关联销售
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'sales_id' })
+  sales?: User;
+
+  // 关联部门
+  @ManyToOne(() => Department, { nullable: true })
+  @JoinColumn({ name: 'department_id' })
+  department?: Department;
+
+  // 关联校区
+  @ManyToOne(() => Campus, { nullable: true })
+  @JoinColumn({ name: 'campus_id' })
+  campus?: Campus;
 
   // 虚拟字段（从关联表查询）
   operatorName?: string;
