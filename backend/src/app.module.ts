@@ -24,6 +24,7 @@ import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { BusinessConfigModule } from './modules/business-config/business-config.module';
+import { OrderSyncModule } from './modules/order-sync/order-sync.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -55,6 +56,7 @@ import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.en
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
 import { AiPromptVariable } from './modules/ai-config/entities/ai-prompt-variable.entity';
 import { BusinessConfig } from './modules/business-config/entities/business-config.entity';
+import { OrderSyncLog } from './modules/order-sync/entities/order-sync-log.entity';
 
 @Module({
   imports: [
@@ -108,6 +110,7 @@ import { BusinessConfig } from './modules/business-config/entities/business-conf
           AiApiKey,
           AiPromptVariable,
           BusinessConfig,
+          OrderSyncLog,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -146,6 +149,7 @@ import { BusinessConfig } from './modules/business-config/entities/business-conf
     StatsModule,
     AiConfigModule,
     BusinessConfigModule,
+    OrderSyncModule,
   ],
 })
 export class AppModule {}

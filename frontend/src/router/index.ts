@@ -100,12 +100,41 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'order',
         name: 'Order',
-        component: () => import('@/views/order/List.vue'),
+        redirect: '/order/list',
         meta: {
           title: '订单管理',
           icon: 'Document',
           permissions: ['order:view'],
         },
+        children: [
+          {
+            path: 'list',
+            name: 'OrderList',
+            component: () => import('@/views/order/List.vue'),
+            meta: {
+              title: '订单列表',
+              permissions: ['order:view'],
+            },
+          },
+          {
+            path: 'sync-config',
+            name: 'OrderSyncConfig',
+            component: () => import('@/views/order/SyncConfig.vue'),
+            meta: {
+              title: '订单同步',
+              permissions: ['order:sync'],
+            },
+          },
+          {
+            path: 'campus-ranking',
+            name: 'OrderCampusRanking',
+            component: () => import('@/views/order/CampusRanking.vue'),
+            meta: {
+              title: '校区排行榜',
+              permissions: ['order:view'],
+            },
+          },
+        ],
       },
 
       // ========== 销售工具（整合AI功能） ==========
@@ -285,6 +314,29 @@ const routes: RouteRecordRaw[] = [
           title: '目标管理',
           icon: 'Flag',
         },
+      },
+
+      // ========== 运营管理 ==========
+      {
+        path: 'operation',
+        name: 'Operation',
+        redirect: '/operation/daily-reports',
+        meta: {
+          title: '运营管理',
+          icon: 'DataLine',
+          permissions: ['operation:view'],
+        },
+        children: [
+          {
+            path: 'daily-reports',
+            name: 'OperationDailyReports',
+            component: () => import('@/views/operation/DailyReportList.vue'),
+            meta: {
+              title: '运营日报',
+              permissions: ['operation:report:view'],
+            },
+          },
+        ],
       },
 
       // ========== 系统管理 ==========

@@ -52,6 +52,17 @@ export class OrderController {
     return this.orderService.getStatistics(startDate, endDate, req.dataScope);
   }
 
+  @Get('campus-ranking')
+  @RequirePermissions('order:view')
+  @ApiOperation({ summary: '获取校区订单排行榜' })
+  getCampusRanking(
+    @Query('period') period: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.orderService.getCampusRanking(period, startDate, endDate);
+  }
+
   @Get('customer/:customerId')
   @RequirePermissions('order:view')
   @ApiOperation({ summary: '获取客户订单历史' })

@@ -70,7 +70,7 @@ export class Order {
   @Column({
     name: 'data_source',
     type: 'enum',
-    enum: ['手工录入', '小程序导入'],
+    enum: ['手工录入', '小程序导入', '海绵青年GO'],
     default: '手工录入',
   })
   dataSource: string;
@@ -93,6 +93,38 @@ export class Order {
 
   @Column({ name: 'commission_calculated_at', type: 'datetime', nullable: true })
   commissionCalculatedAt: Date;
+
+  // ========== 订单同步字段 ==========
+  @Column({ name: 'is_external', type: 'tinyint', default: 0, comment: '是否外部订单：0=否，1=是' })
+  isExternal: number;
+
+  @Column({ name: 'external_system', length: 50, nullable: true, comment: '来源系统标识（如：HAIMIAN）' })
+  externalSystem: string;
+
+  @Column({ name: 'external_status', type: 'int', nullable: true, comment: '海绵系统原始状态值（1-9）' })
+  externalStatus: number;
+
+  @Column({ name: 'external_refund', type: 'int', nullable: true, comment: '海绵退款标识：0=默认 1=申请退款 2=已退款 3=不予退款' })
+  externalRefund: number;
+
+  @Column({ name: 'external_refund_status', type: 'int', nullable: true, comment: '海绵退款状态：0=默认 1=通过 2=驳回' })
+  externalRefundStatus: number;
+
+  @Column({
+    name: 'sync_status',
+    type: 'enum',
+    enum: ['未同步', '已同步', '同步失败'],
+    default: '未同步',
+    comment: '同步状态',
+  })
+  syncStatus: string;
+
+  @Column({ name: 'last_sync_time', type: 'datetime', nullable: true, comment: '最后同步时间' })
+  lastSyncTime: Date;
+
+  @Column({ name: 'is_deleted', type: 'tinyint', default: 0, comment: '外部系统是否删除：0=否，1=是' })
+  isDeleted: number;
+  // ========== 订单同步字段结束 ==========
 
   @CreateDateColumn({ name: 'create_time' })
   createTime: Date;

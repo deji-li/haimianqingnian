@@ -134,6 +134,11 @@ export class Customer {
   aiProcessingError: string;
   // ========== AI分析字段结束 ==========
 
+  // ========== 订单同步字段 ==========
+  @Column({ name: 'external_order_ids', type: 'json', nullable: true, comment: '关联的外部订单ID列表，如["20227343","20228888"]' })
+  externalOrderIds: string[];
+  // ========== 订单同步字段结束 ==========
+
   @CreateDateColumn({ name: 'create_time' })
   createTime: Date;
 

@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(mysql:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)"
     ],
     "deny": [],
     "ask": []

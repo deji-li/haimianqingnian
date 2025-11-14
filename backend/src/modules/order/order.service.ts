@@ -440,4 +440,70 @@ export class OrderService {
       statusStats,
     };
   }
+
+  /**
+   * 获取校区订单排行榜
+   */
+  async getCampusRanking(period: string, startDate?: string, endDate?: string) {
+    // 计算日期范围
+    const now = new Date();
+    let rangeStart: Date;
+    let rangeEnd: Date = now;
+
+    if (startDate && endDate) {
+      // 使用自定义日期范围
+      rangeStart = new Date(startDate);
+      rangeEnd = new Date(endDate);
+    } else {
+      // 根据period计算日期范围
+      switch (period) {
+        case 'day':
+          rangeStart = new Date(now.setHours(0, 0, 0, 0));
+          break;
+        case 'week':
+          rangeStart = new Date(now);
+          rangeStart.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          rangeStart = new Date(now);
+          rangeStart.setMonth(now.getMonth() - 1);
+          break;
+        case 'year':
+          rangeStart = new Date(now);
+          rangeStart.setFullYear(now.getFullYear() - 1);
+          break;
+        default:
+          rangeStart = new Date(now);
+          rangeStart.setMonth(now.getMonth() - 1);
+      }
+    }
+
+    // 查询校区排行榜
+    const rankings = await this.orderRepository
+      .createQueryBuilder('order')
+      .leftJoin('campus', 'campus', 'campus.id = order.campus_id')
+      .select('campus.id', 'campusId')
+      .addSelect('campus.campus_name', 'campusName')
+      .addSelect('COUNT(order.id)', 'orderCount')
+      .addSelect('SUM(order.payment_amount)', 'totalAmount')
+      .addSelect('SUM(CASE WHEN order.is_new_student = 1 THEN 1 ELSE 0 END)', 'newStudentCount')
+      .where('order.payment_time BETWEEN :rangeStart AND :rangeEnd', {
+        rangeStart,
+        rangeEnd,
+      })
+      .andWhere('order.campus_id IS NOT NULL')
+      .groupBy('campus.id')
+      .orderBy('orderCount', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    return rankings.map((item, index) => ({
+      rank: index + 1,
+      campusId: item.campusId,
+      campusName: item.campusName,
+      orderCount: parseInt(item.orderCount),
+      totalAmount: parseFloat(item.totalAmount || 0),
+      newStudentCount: parseInt(item.newStudentCount),
+    }));
+  }
 }

@@ -84,3 +84,26 @@ export const getOrderStatistics = (startDate?: string, endDate?: string) => {
     params: { startDate, endDate },
   })
 }
+
+// 校区排行榜数据类型
+export interface CampusRanking {
+  rank: number
+  campusId: number
+  campusName: string
+  orderCount: number
+  totalAmount: number
+  newStudentCount: number
+}
+
+// 获取校区订单排行榜
+export const getCampusRanking = (params: {
+  period: string
+  startDate?: string
+  endDate?: string
+}) => {
+  return request<CampusRanking[]>({
+    url: '/order/campus-ranking',
+    method: 'get',
+    params,
+  })
+}
