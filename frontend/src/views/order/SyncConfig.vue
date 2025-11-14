@@ -471,7 +471,7 @@
 
             <h4>五、常见问题</h4>
             <el-collapse accordion>
-              <el-collapse-item title="Q1: 同步失败提示"未找到关联客户"怎么办？" name="1">
+              <el-collapse-item title="Q1: 同步失败提示&quot;未找到关联客户&quot;怎么办？" name="1">
                 <p>
                   这是因为客户档案中未绑定对应的外部订单号。请在"客户绑定"标签页中，
                   找到对应客户，编辑并添加外部订单号。
