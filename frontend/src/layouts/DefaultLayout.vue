@@ -77,6 +77,11 @@
           <span>数据大屏</span>
         </el-menu-item>
 
+        <el-menu-item index="/automation">
+          <el-icon><Operation /></el-icon>
+          <span>自动化工作流</span>
+        </el-menu-item>
+
         <el-sub-menu index="/system">
           <template #title>
             <el-icon><Setting /></el-icon>
@@ -89,6 +94,7 @@
           <el-menu-item index="/system/role">角色权限</el-menu-item>
           <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
           <el-menu-item index="/system/ai-config">AI配置</el-menu-item>
+          <el-menu-item index="/system/business-config">业务配置</el-menu-item>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -170,7 +176,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()

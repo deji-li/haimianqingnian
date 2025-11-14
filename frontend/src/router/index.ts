@@ -357,6 +357,18 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
+      // ========== 自动化管理 ==========
+      {
+        path: 'automation',
+        name: 'Automation',
+        component: () => import('@/views/automation/RuleManagement.vue'),
+        meta: {
+          title: '自动化工作流',
+          icon: 'Operation',
+          permissions: ['automation:view'],
+        },
+      },
+
       // ========== 系统管理 ==========
       {
         path: 'system',
@@ -422,6 +434,15 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: 'AI配置',
               permissions: ['system:ai-config'],
+            },
+          },
+          {
+            path: 'business-config',
+            name: 'SystemBusinessConfig',
+            component: () => import('@/views/system/BusinessConfig.vue'),
+            meta: {
+              title: '业务配置',
+              permissions: ['system:config'],
             },
           },
         ],
