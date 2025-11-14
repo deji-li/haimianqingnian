@@ -131,3 +131,16 @@ export const toggleUserStatus = (id: number) => {
     method: 'post',
   })
 }
+
+// 导出API对象（用于兼容旧代码）
+export const userApi = {
+  getUserList,
+  getUserDetail,
+  createUser,
+  updateUser,
+  deleteUser,
+  resetPassword,
+  changePassword,
+  updateProfile,
+  toggleUserStatus,
+}

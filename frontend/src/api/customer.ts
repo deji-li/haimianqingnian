@@ -205,3 +205,22 @@ export function importCustomersFromExcel(file: File) {
     },
   })
 }
+
+// 导出API对象（用于兼容旧代码）
+export const customerApi = {
+  getCustomerList,
+  getCustomerDetail,
+  createCustomer,
+  updateCustomer,
+  deleteCustomer,
+  batchUpdateCustomer,
+  searchCustomers,
+  getFollowRecords,
+  createFollowRecord,
+  getPendingFollowUps,
+  getFollowStatistics,
+  smartCreateCustomer,
+  exportCustomersToExcel,
+  downloadImportTemplate,
+  importCustomersFromExcel,
+}
