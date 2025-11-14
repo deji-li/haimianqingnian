@@ -162,6 +162,10 @@
             <el-row>
               <el-col :span="24" style="text-align: right;">
                 <el-button @click="handleResetAdvanced">清空高级筛选</el-button>
+                <el-button @click="handleSaveFilter">
+                  <el-icon><FolderAdd /></el-icon>
+                  保存筛选条件
+                </el-button>
                 <el-button type="primary" @click="handleSearch">应用筛选</el-button>
               </el-col>
             </el-row>
@@ -561,7 +565,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Download, Upload, Plus, Search, Refresh, MagicStick, Operation, Filter } from '@element-plus/icons-vue'
+import { Download, Upload, Plus, Search, Refresh, MagicStick, Operation, Filter, FolderAdd } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { downloadCustomerTemplate } from '@/utils/excel-template'
@@ -744,6 +748,50 @@ watch(dataCompletenessFilter, (val) => {
   queryParams.hasPhone = val.includes('hasPhone') ? true : undefined
   queryParams.hasRealName = val.includes('hasRealName') ? true : undefined
 })
+
+// 保存筛选条件到localStorage
+const handleSaveFilter = () => {
+  const filterData = {
+    keyword: queryParams.keyword,
+    customerIntent: queryParams.customerIntent,
+    trafficSource: queryParams.trafficSource,
+    operatorId: queryParams.operatorId,
+    createTimeRange: createTimeRange.value,
+    nextFollowTimeRange: nextFollowTimeRange.value,
+    dataCompletenessFilter: dataCompletenessFilter.value,
+    sortBy: queryParams.sortBy,
+    sortOrder: queryParams.sortOrder,
+  }
+  localStorage.setItem('customerFilterConditions', JSON.stringify(filterData))
+  ElMessage.success('筛选条件已保存')
+}
+
+// 从localStorage恢复筛选条件
+const restoreFilterConditions = () => {
+  const saved = localStorage.getItem('customerFilterConditions')
+  if (saved) {
+    try {
+      const filterData = JSON.parse(saved)
+      queryParams.keyword = filterData.keyword || ''
+      queryParams.customerIntent = filterData.customerIntent || ''
+      queryParams.trafficSource = filterData.trafficSource || ''
+      queryParams.operatorId = filterData.operatorId
+      queryParams.sortBy = filterData.sortBy || 'createTime'
+      queryParams.sortOrder = filterData.sortOrder || 'DESC'
+      createTimeRange.value = filterData.createTimeRange
+      nextFollowTimeRange.value = filterData.nextFollowTimeRange
+      dataCompletenessFilter.value = filterData.dataCompletenessFilter || []
+
+      // 如果有保存的高级筛选条件，自动展开高级筛选
+      if (filterData.operatorId || filterData.createTimeRange || filterData.nextFollowTimeRange ||
+          filterData.dataCompletenessFilter?.length > 0) {
+        showAdvancedFilter.value = true
+      }
+    } catch (error) {
+      console.error('恢复筛选条件失败:', error)
+    }
+  }
+}
 
 // 新增
 const handleAdd = () => {
@@ -1070,6 +1118,9 @@ onMounted(() => {
     if (route.query.salesName) {
       ElMessage.info(`已筛选销售：${route.query.salesName}`)
     }
+  } else {
+    // 如果没有URL参数，尝试恢复保存的筛选条件
+    restoreFilterConditions()
   }
 
   loadDictionaries()

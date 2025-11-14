@@ -26,6 +26,7 @@ import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { BusinessConfigModule } from './modules/business-config/business-config.module';
 import { OrderSyncModule } from './modules/order-sync/order-sync.module';
 import { AiMarketingModule } from './modules/ai-marketing/ai-marketing.module';
+import { AutomationModule } from './modules/automation/automation.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -60,6 +61,8 @@ import { BusinessConfig } from './modules/business-config/entities/business-conf
 import { OrderSyncLog } from './modules/order-sync/entities/order-sync-log.entity';
 import { AiMarketingScenario } from './modules/ai-marketing/entities/ai-marketing-scenario.entity';
 import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing-content.entity';
+import { AutomationRule } from './modules/automation/entities/automation-rule.entity';
+import { AutomationLog } from './modules/automation/entities/automation-log.entity';
 
 @Module({
   imports: [
@@ -116,6 +119,8 @@ import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing
           OrderSyncLog,
           AiMarketingScenario,
           AiMarketingContent,
+          AutomationRule,
+          AutomationLog,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -156,6 +161,7 @@ import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing
     BusinessConfigModule,
     OrderSyncModule,
     AiMarketingModule,
+    AutomationModule,
   ],
 })
 export class AppModule {}
