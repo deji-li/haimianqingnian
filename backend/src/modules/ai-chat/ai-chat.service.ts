@@ -30,11 +30,14 @@ export class AiChatService {
 
   /**
    * 上传并分析聊天记录
-   * 完整流程：上传 → OCR识别 → AI分析 → 自动打标签 → 风险检测
+   * 完整流程：上传 → OCR识别/文本提取 → AI分析 → 自动打标签 → 风险检测
+   * 支持三种上传方式：screenshot(截图OCR)、text(直接文本)、file(文件解析)
    */
   async uploadAndAnalyze(uploadDto: UploadChatDto, userId: number) {
     try {
-      this.logger.log(`销售${userId}上传聊天记录，微信号: ${uploadDto.wechatId}`);
+      this.logger.log(
+        `销售${userId}上传聊天记录，微信号: ${uploadDto.wechatId}, 类型: ${uploadDto.uploadType || 'screenshot'}`,
+      );
 
       // 1. 查找客户（通过微信号）
       const customer = await this.customerRepository.findOne({
@@ -46,13 +49,17 @@ export class AiChatService {
       }
 
       // 2. 创建聊天记录
+      const uploadType = uploadDto.uploadType || 'screenshot';
       const chatRecord = this.aiChatRecordRepository.create({
         customerId: customer.id,
         userId,
         wechatId: uploadDto.wechatId,
         chatDate: new Date(uploadDto.chatDate),
-        images: uploadDto.images,
-        ocrStatus: '待处理',
+        uploadType,
+        images: uploadDto.images || [],
+        rawText: uploadDto.rawText || null,
+        filePath: uploadDto.filePath || null,
+        ocrStatus: uploadType === 'screenshot' ? '待处理' : '无需OCR',
         analysisStatus: '待分析',
       });
 
@@ -76,46 +83,80 @@ export class AiChatService {
   }
 
   /**
-   * 异步处理OCR和AI分析
+   * 异步处理OCR/文本提取和AI分析
    */
   private async processOcrAndAnalysis(recordId: number, customer: Customer) {
     let record: AiChatRecord;
 
     try {
-      // 1. 更新OCR状态
-      await this.aiChatRecordRepository.update(recordId, {
-        ocrStatus: '处理中',
-      });
-
       record = await this.aiChatRecordRepository.findOne({
         where: { id: recordId },
       });
 
-      // 2. OCR识别（带缓存）
-      this.logger.log(`开始OCR识别，记录ID: ${recordId}`);
+      // 1. 根据上传类型获取文本内容
       let ocrText = '';
+      const uploadType = record.uploadType || 'screenshot';
 
-      // 检查缓存
-      const cacheKey = record.images.join('|');
-      const cachedOcr = await this.aiCacheService.getOcrCache(cacheKey);
+      if (uploadType === 'text') {
+        // 直接文本上传，无需OCR
+        this.logger.log(`使用直接文本，记录ID: ${recordId}`);
+        ocrText = record.rawText || '';
 
-      if (cachedOcr) {
-        ocrText = cachedOcr;
-        this.logger.log('使用OCR缓存结果');
+        await this.aiChatRecordRepository.update(recordId, {
+          ocrText,
+          ocrStatus: '无需OCR',
+          analysisStatus: '分析中',
+        });
+      } else if (uploadType === 'file') {
+        // 文件上传，解析文件内容
+        this.logger.log(`解析文件内容，记录ID: ${recordId}, 路径: ${record.filePath}`);
+
+        await this.aiChatRecordRepository.update(recordId, {
+          ocrStatus: '解析中',
+        });
+
+        try {
+          ocrText = await this.parseFileContent(record.filePath);
+
+          await this.aiChatRecordRepository.update(recordId, {
+            ocrText,
+            ocrStatus: '已完成',
+            analysisStatus: '分析中',
+          });
+        } catch (error) {
+          this.logger.error(`文件解析失败: ${error.message}`);
+          throw new Error(`文件解析失败: ${error.message}`);
+        }
       } else {
-        // 调用OCR服务
-        ocrText = await this.doubaoOcrService.extractTextFromImages(record.images);
+        // 截图上传，需要OCR识别
+        this.logger.log(`开始OCR识别，记录ID: ${recordId}`);
 
-        // 保存到缓存
-        await this.aiCacheService.setOcrCache(cacheKey, ocrText, 7200); // 缓存2小时
+        await this.aiChatRecordRepository.update(recordId, {
+          ocrStatus: '处理中',
+        });
+
+        // 检查缓存
+        const cacheKey = record.images.join('|');
+        const cachedOcr = await this.aiCacheService.getOcrCache(cacheKey);
+
+        if (cachedOcr) {
+          ocrText = cachedOcr;
+          this.logger.log('使用OCR缓存结果');
+        } else {
+          // 调用OCR服务
+          ocrText = await this.doubaoOcrService.extractTextFromImages(record.images);
+
+          // 保存到缓存
+          await this.aiCacheService.setOcrCache(cacheKey, ocrText, 7200); // 缓存2小时
+        }
+
+        // 更新OCR结果
+        await this.aiChatRecordRepository.update(recordId, {
+          ocrText,
+          ocrStatus: '已完成',
+          analysisStatus: '分析中',
+        });
       }
-
-      // 更新OCR结果
-      await this.aiChatRecordRepository.update(recordId, {
-        ocrText,
-        ocrStatus: '已完成',
-        analysisStatus: '分析中',
-      });
 
       // 3. AI分析（带缓存）
       this.logger.log(`开始AI分析，记录ID: ${recordId}`);
@@ -510,6 +551,80 @@ export class AiChatService {
     }
 
     return { message: '删除成功' };
+  }
+
+  /**
+   * 解析文件内容（支持txt、html、csv等格式）
+   */
+  private async parseFileContent(filePath: string): Promise<string> {
+    if (!filePath) {
+      throw new Error('文件路径为空');
+    }
+
+    const fs = require('fs').promises;
+    const path = require('path');
+
+    // 检查文件是否存在
+    try {
+      await fs.access(filePath);
+    } catch (error) {
+      throw new Error(`文件不存在: ${filePath}`);
+    }
+
+    // 获取文件扩展名
+    const ext = path.extname(filePath).toLowerCase();
+
+    try {
+      switch (ext) {
+        case '.txt':
+          // 直接读取文本文件
+          return await fs.readFile(filePath, 'utf-8');
+
+        case '.html':
+        case '.htm':
+          // 读取HTML文件并提取文本（简单的标签移除）
+          const htmlContent = await fs.readFile(filePath, 'utf-8');
+          // 移除HTML标签，保留文本内容
+          const textContent = htmlContent
+            .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '') // 移除script标签
+            .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '') // 移除style标签
+            .replace(/<[^>]+>/g, '') // 移除所有HTML标签
+            .replace(/&nbsp;/g, ' ') // 替换空格实体
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&')
+            .replace(/&quot;/g, '"')
+            .replace(/\s+/g, ' ') // 合并多个空格
+            .trim();
+          return textContent;
+
+        case '.csv':
+          // 读取CSV文件并格式化为文本
+          const csvContent = await fs.readFile(filePath, 'utf-8');
+          // 简单的CSV解析，按行分割并格式化
+          const lines = csvContent.split('\n').filter(line => line.trim());
+          return lines.map((line, index) => {
+            if (index === 0) {
+              return `表头: ${line}`;
+            }
+            return `第${index}行: ${line}`;
+          }).join('\n');
+
+        case '.json':
+          // 读取JSON文件并格式化
+          const jsonContent = await fs.readFile(filePath, 'utf-8');
+          const jsonData = JSON.parse(jsonContent);
+          return JSON.stringify(jsonData, null, 2);
+
+        default:
+          // 尝试作为文本文件读取
+          this.logger.warn(`未知文件类型: ${ext}，尝试作为文本读取`);
+          return await fs.readFile(filePath, 'utf-8');
+      }
+    } catch (error) {
+      this.logger.error(`文件解析错误: ${error.message}`);
+      throw new Error(`文件解析失败 (${ext}): ${error.message}`);
+    }
   }
 
   /**
