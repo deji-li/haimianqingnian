@@ -78,8 +78,12 @@
             <el-icon><Download /></el-icon>
             下载导入模板
           </el-button>
-          <el-button @click="handleExport" v-permission="'customer:export'">
+          <el-button type="warning" @click="handleImport" v-permission="'customer:import'">
             <el-icon><Upload /></el-icon>
+            批量导入
+          </el-button>
+          <el-button @click="handleExport" v-permission="'customer:export'">
+            <el-icon><Download /></el-icon>
             导出客户
           </el-button>
         </div>
@@ -337,6 +341,110 @@
       </template>
     </el-dialog>
 
+    <!-- 批量导入对话框 -->
+    <el-dialog
+      v-model="importDialogVisible"
+      title="批量导入客户"
+      width="600px"
+      @close="importFile = null; importResult = null"
+    >
+      <div v-if="!importResult">
+        <el-alert
+          title="导入说明"
+          type="info"
+          :closable="false"
+          style="margin-bottom: 20px"
+        >
+          <template #default>
+            <p>1. 请先下载导入模板，按照模板格式填写客户数据</p>
+            <p>2. 必填字段：客户姓名、微信号</p>
+            <p>3. 微信号必须唯一，重复的数据将被跳过</p>
+            <p>4. 支持Excel格式(.xlsx)</p>
+          </template>
+        </el-alert>
+
+        <el-upload
+          class="upload-container"
+          drag
+          :auto-upload="false"
+          :show-file-list="true"
+          :limit="1"
+          accept=".xlsx"
+          :on-change="(file) => handleFileChange(file.raw)"
+        >
+          <el-icon class="el-icon--upload"><Upload /></el-icon>
+          <div class="el-upload__text">
+            将Excel文件拖到此处，或<em>点击选择文件</em>
+          </div>
+          <template #tip>
+            <div class="el-upload__tip">
+              只支持.xlsx格式的Excel文件
+            </div>
+          </template>
+        </el-upload>
+      </div>
+
+      <div v-else class="import-result">
+        <el-result
+          :icon="importResult.success ? 'success' : 'warning'"
+          :title="importResult.message"
+        >
+          <template #sub-title>
+            <div class="result-stats">
+              <div class="stat-item success">
+                <span class="label">成功导入：</span>
+                <span class="value">{{ importResult.successCount }} 条</span>
+              </div>
+              <div class="stat-item error" v-if="importResult.errorCount > 0">
+                <span class="label">失败：</span>
+                <span class="value">{{ importResult.errorCount }} 条</span>
+              </div>
+              <div class="stat-item">
+                <span class="label">总计：</span>
+                <span class="value">{{ importResult.totalRows }} 条</span>
+              </div>
+            </div>
+          </template>
+          <template #extra>
+            <div v-if="importResult.errors && importResult.errors.length > 0">
+              <el-divider content-position="left">错误详情</el-divider>
+              <el-table
+                :data="importResult.errors"
+                style="width: 100%"
+                max-height="300"
+              >
+                <el-table-column prop="row" label="行号" width="80" />
+                <el-table-column prop="error" label="错误信息" />
+              </el-table>
+            </div>
+          </template>
+        </el-result>
+      </div>
+
+      <template #footer>
+        <div v-if="!importResult">
+          <el-button @click="importDialogVisible = false">取消</el-button>
+          <el-button
+            type="primary"
+            :loading="importing"
+            :disabled="!importFile"
+            @click="handleImportSubmit"
+          >
+            {{ importing ? '导入中...' : '开始导入' }}
+          </el-button>
+        </div>
+        <div v-else>
+          <el-button @click="importDialogVisible = false">关闭</el-button>
+          <el-button
+            type="primary"
+            @click="importFile = null; importResult = null"
+          >
+            继续导入
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
+
     <!-- AI智能创建客户 -->
     <SmartCreateCustomer ref="smartCreateRef" />
   </div>
@@ -356,6 +464,8 @@ import {
   deleteCustomer,
   batchUpdateCustomer,
   exportCustomersToExcel,
+  downloadImportTemplate,
+  importCustomersFromExcel,
   type Customer,
   type CustomerQuery,
   type CreateCustomerParams,
@@ -481,12 +591,66 @@ const handleSmartCreate = () => {
 }
 
 // 下载导入模板
-const handleDownloadTemplate = () => {
+const handleDownloadTemplate = async () => {
   try {
-    downloadCustomerTemplate()
+    const blob = await downloadImportTemplate()
+
+    // 创建下载链接
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = 'customer_import_template.xlsx'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
     ElMessage.success('模板下载成功')
-  } catch (error) {
-    ElMessage.error('模板下载失败')
+  } catch (error: any) {
+    ElMessage.error(error.message || '模板下载失败')
+  }
+}
+
+// 导入对话框
+const importDialogVisible = ref(false)
+const importFile = ref<File | null>(null)
+const importing = ref(false)
+const importResult = ref<any>(null)
+
+// 打开导入对话框
+const handleImport = () => {
+  importDialogVisible.value = true
+  importFile.value = null
+  importResult.value = null
+}
+
+// 文件选择
+const handleFileChange = (file: File) => {
+  importFile.value = file
+  importResult.value = null
+}
+
+// 执行导入
+const handleImportSubmit = async () => {
+  if (!importFile.value) {
+    ElMessage.warning('请选择要导入的Excel文件')
+    return
+  }
+
+  importing.value = true
+  try {
+    const result = await importCustomersFromExcel(importFile.value)
+    importResult.value = result
+
+    if (result.success) {
+      ElMessage.success(result.message)
+      // 刷新列表
+      fetchData()
+    }
+  } catch (error: any) {
+    ElMessage.error(error.message || '导入失败')
+  } finally {
+    importing.value = false
   }
 }
 
@@ -925,6 +1089,73 @@ onMounted(() => {
   .text-secondary {
     color: var(--xhs-text-secondary);
     font-size: 12px;
+  }
+
+  .upload-container {
+    :deep(.el-upload-dragger) {
+      border-radius: 12px;
+      border: 2px dashed #dcdfe6;
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--xhs-primary);
+        background: linear-gradient(135deg, rgba(255, 184, 0, 0.03) 0%, rgba(255, 201, 64, 0.02) 100%);
+      }
+    }
+
+    :deep(.el-icon--upload) {
+      color: var(--xhs-primary);
+      font-size: 48px;
+    }
+  }
+
+  .import-result {
+    .result-stats {
+      display: flex;
+      gap: 24px;
+      justify-content: center;
+      margin-top: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, rgba(255, 184, 0, 0.05) 0%, rgba(255, 201, 64, 0.03) 100%);
+      border-radius: 12px;
+
+      .stat-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+
+        .label {
+          font-size: 14px;
+          color: var(--xhs-text-secondary);
+        }
+
+        .value {
+          font-size: 24px;
+          font-weight: 600;
+          color: var(--xhs-text-primary);
+        }
+
+        &.success .value {
+          color: #67c23a;
+        }
+
+        &.error .value {
+          color: #f56c6c;
+        }
+      }
+    }
+
+    :deep(.el-result__title) {
+      color: var(--xhs-text-primary);
+      font-weight: 600;
+    }
+
+    :deep(.el-table) {
+      margin-top: 16px;
+      border-radius: 8px;
+      overflow: hidden;
+    }
   }
 }
 </style>

@@ -11,8 +11,11 @@ import {
   Request,
   Res,
   StreamableFile,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
 import { Response } from 'express';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -151,5 +154,30 @@ export class CustomerController {
     });
 
     res.send(buffer);
+  }
+
+  @Get('import/template')
+  @ApiOperation({ summary: '下载客户导入模板' })
+  @RequirePermissions('customer:import')
+  async downloadImportTemplate(@Res() res: Response) {
+    const buffer = await this.customerService.generateImportTemplate();
+
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="customer_import_template.xlsx"`,
+    });
+
+    res.send(buffer);
+  }
+
+  @Post('import/excel')
+  @ApiOperation({ summary: '批量导入客户数据' })
+  @RequirePermissions('customer:import')
+  @UseInterceptors(FileInterceptor('file'))
+  async importFromExcel(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() req,
+  ) {
+    return this.customerService.importFromExcel(file, req.user);
   }
 }

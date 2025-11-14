@@ -172,3 +172,36 @@ export function exportCustomersToExcel(params: CustomerQuery) {
     responseType: 'blob',
   })
 }
+
+// 下载客户导入模板
+export function downloadImportTemplate() {
+  return request<Blob>({
+    url: '/customer/import/template',
+    method: 'get',
+    responseType: 'blob',
+  })
+}
+
+// 批量导入客户
+export interface ImportResult {
+  success: boolean
+  message: string
+  successCount: number
+  errorCount: number
+  errors: Array<{ row: number; error: string }>
+  totalRows: number
+}
+
+export function importCustomersFromExcel(file: File) {
+  const formData = new FormData()
+  formData.append('file', file)
+
+  return request<ImportResult>({
+    url: '/customer/import/excel',
+    method: 'post',
+    data: formData,
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}

@@ -1073,4 +1073,222 @@ export class CustomerService {
 
     return queryBuilder.getMany();
   }
+
+  /**
+   * 生成客户导入模板
+   */
+  async generateImportTemplate(): Promise<Buffer> {
+    try {
+      // 定义模板列
+      const templateHeaders = [
+        '客户姓名*',
+        '微信昵称',
+        '微信号*',
+        '手机号',
+        '性别',
+        '年龄',
+        '生命周期阶段',
+        '客户意向',
+        '意向产品',
+        '客户来源',
+        '客户标签',
+        '预计成交金额',
+        '下次跟进时间',
+        '备注',
+      ];
+
+      // 添加说明行
+      const instructions = [
+        '张三',
+        '微信名',
+        'wechat123',
+        '13800138000',
+        '男',
+        '30',
+        '意向客户',
+        '高意向',
+        '少儿编程',
+        '线上推广',
+        '高意向,教育重视',
+        '15000',
+        '2025-01-20',
+        '通过朋友推荐',
+      ];
+
+      const remarks = [
+        '必填',
+        '可选',
+        '必填，唯一标识',
+        '可选',
+        '男/女',
+        '数字',
+        '未分级/待跟进/意向客户/高意向/试听中/已成交/已流失',
+        '无意向/低意向/中意向/高意向',
+        '可选',
+        '线上推广/线下活动/老客转介绍/其他',
+        '多个标签用逗号分隔',
+        '数字',
+        '格式：YYYY-MM-DD',
+        '可选',
+      ];
+
+      // 创建工作簿
+      const data = [templateHeaders, instructions, remarks];
+      const worksheet = XLSX.utils.aoa_to_sheet(data);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, '客户导入模板');
+
+      // 设置列宽
+      const columnWidths = [
+        { wch: 12 },  // 客户姓名
+        { wch: 12 },  // 微信昵称
+        { wch: 15 },  // 微信号
+        { wch: 12 },  // 手机号
+        { wch: 6 },   // 性别
+        { wch: 6 },   // 年龄
+        { wch: 15 },  // 生命周期阶段
+        { wch: 10 },  // 客户意向
+        { wch: 15 },  // 意向产品
+        { wch: 12 },  // 客户来源
+        { wch: 20 },  // 客户标签
+        { wch: 12 },  // 预计成交金额
+        { wch: 15 },  // 下次跟进时间
+        { wch: 20 },  // 备注
+      ];
+      worksheet['!cols'] = columnWidths;
+
+      // 设置第一行样式（表头）
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const address = XLSX.utils.encode_col(C) + '1';
+        if (!worksheet[address]) continue;
+        worksheet[address].s = {
+          font: { bold: true },
+          fill: { fgColor: { rgb: 'DDDDDD' } },
+        };
+      }
+
+      // 生成Buffer
+      const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+
+      this.logger.log('生成客户导入模板成功');
+
+      return buffer;
+    } catch (error) {
+      this.logger.error(`生成导入模板失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * 从Excel导入客户数据
+   */
+  async importFromExcel(file: Express.Multer.File, user: any) {
+    try {
+      if (!file) {
+        throw new BadRequestException('请上传Excel文件');
+      }
+
+      // 解析Excel文件
+      const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const data = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+
+      // 验证数据
+      if (data.length < 2) {
+        throw new BadRequestException('Excel文件没有数据');
+      }
+
+      const headers = data[0] as string[];
+      const rows = data.slice(1); // 跳过表头
+
+      // 验证表头
+      const requiredHeaders = ['客户姓名*', '微信号*'];
+      const missingHeaders = requiredHeaders.filter(
+        h => !headers.some(header => header && header.includes(h.replace('*', ''))),
+      );
+      if (missingHeaders.length > 0) {
+        throw new BadRequestException(`缺少必需列: ${missingHeaders.join(', ')}`);
+      }
+
+      // 解析数据
+      const customers = [];
+      const errors = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i] as any[];
+        const rowNum = i + 2; // Excel行号（从1开始，跳过表头）
+
+        // 跳过空行和示例行
+        if (!row || row.length === 0 || !row[0]) continue;
+        if (row[0] === '张三' || row[0] === '必填') continue; // 跳过示例和说明行
+
+        try {
+          const customerData: any = {
+            realName: row[0],
+            wechatNickname: row[1],
+            wechatId: row[2],
+            phone: row[3],
+            gender: row[4],
+            age: row[5] ? parseInt(row[5]) : null,
+            lifecycleStage: row[6] || '未分级',
+            customerIntent: row[7] || '无意向',
+            intentProduct: row[8],
+            source: row[9] || '其他',
+            tags: row[10] ? row[10].split(',').map((t: string) => t.trim()) : [],
+            estimatedAmount: row[11] ? parseFloat(row[11]) : null,
+            nextFollowTime: row[12] ? new Date(row[12]) : null,
+            remark: row[13],
+            salesId: user.userId,
+            departmentId: user.departmentId,
+            campusId: user.campusId,
+          };
+
+          // 验证必填字段
+          if (!customerData.realName) {
+            errors.push({ row: rowNum, error: '客户姓名不能为空' });
+            continue;
+          }
+          if (!customerData.wechatId) {
+            errors.push({ row: rowNum, error: '微信号不能为空' });
+            continue;
+          }
+
+          // 检查微信号是否已存在
+          const existing = await this.customerRepository.findOne({
+            where: { wechatId: customerData.wechatId },
+          });
+          if (existing) {
+            errors.push({ row: rowNum, error: `微信号${customerData.wechatId}已存在` });
+            continue;
+          }
+
+          customers.push(customerData);
+        } catch (error) {
+          errors.push({ row: rowNum, error: error.message });
+        }
+      }
+
+      // 批量创建客户
+      let successCount = 0;
+      if (customers.length > 0) {
+        const created = await this.customerRepository.save(customers);
+        successCount = created.length;
+        this.logger.log(`批量导入客户成功: ${successCount}条`);
+      }
+
+      return {
+        success: true,
+        message: `成功导入${successCount}条客户数据`,
+        successCount,
+        errorCount: errors.length,
+        errors: errors.slice(0, 100), // 最多返回100条错误
+        totalRows: rows.length,
+      };
+    } catch (error) {
+      this.logger.error(`导入客户失败: ${error.message}`);
+      throw error;
+    }
+  }
 }
