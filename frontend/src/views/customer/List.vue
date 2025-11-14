@@ -3,6 +3,7 @@
     <!-- 搜索栏 -->
     <el-card class="search-card" shadow="never">
       <el-form :model="queryParams" inline>
+        <!-- 基础筛选 -->
         <el-form-item label="搜索">
           <el-input
             v-model="queryParams.keyword"
@@ -58,8 +59,115 @@
             <el-icon><Refresh /></el-icon>
             重置
           </el-button>
+          <el-button @click="showAdvancedFilter = !showAdvancedFilter" link>
+            <el-icon><Operation /></el-icon>
+            {{ showAdvancedFilter ? '收起' : '高级筛选' }}
+          </el-button>
         </el-form-item>
       </el-form>
+
+      <!-- 高级筛选面板 -->
+      <el-collapse-transition>
+        <div v-show="showAdvancedFilter" class="advanced-filter">
+          <el-divider content-position="left">
+            <el-icon><Filter /></el-icon>
+            高级筛选条件
+          </el-divider>
+
+          <el-form :model="queryParams" label-width="100px">
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="运营人员">
+                  <el-select
+                    v-model="queryParams.operatorId"
+                    placeholder="请选择运营人员"
+                    clearable
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="user in operatorList"
+                      :key="user.id"
+                      :label="user.realName || user.username"
+                      :value="user.id"
+                    />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+
+              <el-col :span="8">
+                <el-form-item label="创建时间">
+                  <el-date-picker
+                    v-model="createTimeRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    value-format="YYYY-MM-DD"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+
+              <el-col :span="8">
+                <el-form-item label="回访时间">
+                  <el-date-picker
+                    v-model="nextFollowTimeRange"
+                    type="daterange"
+                    range-separator="至"
+                    start-placeholder="开始日期"
+                    end-placeholder="结束日期"
+                    value-format="YYYY-MM-DD"
+                    style="width: 100%"
+                  />
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row :gutter="20">
+              <el-col :span="8">
+                <el-form-item label="数据完整性">
+                  <el-checkbox-group v-model="dataCompletenessFilter">
+                    <el-checkbox label="hasPhone">有手机号</el-checkbox>
+                    <el-checkbox label="hasRealName">有真实姓名</el-checkbox>
+                  </el-checkbox-group>
+                </el-form-item>
+              </el-col>
+
+              <el-col :span="8">
+                <el-form-item label="排序字段">
+                  <el-select
+                    v-model="queryParams.sortBy"
+                    placeholder="请选择排序字段"
+                    clearable
+                    style="width: 100%"
+                  >
+                    <el-option label="创建时间" value="createTime" />
+                    <el-option label="更新时间" value="updateTime" />
+                    <el-option label="回访时间" value="nextFollowTime" />
+                    <el-option label="客户意向" value="customerIntent" />
+                  </el-select>
+                </el-form-item>
+              </el-col>
+
+              <el-col :span="8">
+                <el-form-item label="排序方向">
+                  <el-radio-group v-model="queryParams.sortOrder">
+                    <el-radio label="DESC">降序</el-radio>
+                    <el-radio label="ASC">升序</el-radio>
+                  </el-radio-group>
+                </el-form-item>
+              </el-col>
+            </el-row>
+
+            <el-row>
+              <el-col :span="24" style="text-align: right;">
+                <el-button @click="handleResetAdvanced">清空高级筛选</el-button>
+                <el-button type="primary" @click="handleSearch">应用筛选</el-button>
+              </el-col>
+            </el-row>
+          </el-form>
+        </div>
+      </el-collapse-transition>
     </el-card>
 
     <!-- 操作栏 -->
@@ -451,9 +559,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
-import { Download, Upload, Plus, Search, Refresh, MagicStick } from '@element-plus/icons-vue'
+import { Download, Upload, Plus, Search, Refresh, MagicStick, Operation, Filter } from '@element-plus/icons-vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { downloadCustomerTemplate } from '@/utils/excel-template'
@@ -491,7 +599,22 @@ const queryParams = reactive<CustomerQuery>({
   customerIntent: '',
   trafficSource: '',
   salesId: undefined,
+  operatorId: undefined,
+  createTimeStart: undefined,
+  createTimeEnd: undefined,
+  nextFollowTimeStart: undefined,
+  nextFollowTimeEnd: undefined,
+  hasPhone: undefined,
+  hasRealName: undefined,
+  sortBy: 'createTime',
+  sortOrder: 'DESC',
 })
+
+// 高级筛选状态
+const showAdvancedFilter = ref(false)
+const createTimeRange = ref<[string, string] | null>(null)
+const nextFollowTimeRange = ref<[string, string] | null>(null)
+const dataCompletenessFilter = ref<string[]>([])
 
 const dialogVisible = ref(false)
 const dialogTitle = ref('新增客户')
@@ -574,8 +697,53 @@ const handleReset = () => {
   queryParams.customerIntent = ''
   queryParams.trafficSource = ''
   queryParams.page = 1
+  handleResetAdvanced()
   fetchData()
 }
+
+// 清空高级筛选
+const handleResetAdvanced = () => {
+  queryParams.operatorId = undefined
+  queryParams.createTimeStart = undefined
+  queryParams.createTimeEnd = undefined
+  queryParams.nextFollowTimeStart = undefined
+  queryParams.nextFollowTimeEnd = undefined
+  queryParams.hasPhone = undefined
+  queryParams.hasRealName = undefined
+  queryParams.sortBy = 'createTime'
+  queryParams.sortOrder = 'DESC'
+  createTimeRange.value = null
+  nextFollowTimeRange.value = null
+  dataCompletenessFilter.value = []
+}
+
+// 监听创建时间范围变化
+watch(createTimeRange, (val) => {
+  if (val && val.length === 2) {
+    queryParams.createTimeStart = val[0]
+    queryParams.createTimeEnd = val[1]
+  } else {
+    queryParams.createTimeStart = undefined
+    queryParams.createTimeEnd = undefined
+  }
+})
+
+// 监听回访时间范围变化
+watch(nextFollowTimeRange, (val) => {
+  if (val && val.length === 2) {
+    queryParams.nextFollowTimeStart = val[0]
+    queryParams.nextFollowTimeEnd = val[1]
+  } else {
+    queryParams.nextFollowTimeStart = undefined
+    queryParams.nextFollowTimeEnd = undefined
+  }
+})
+
+// 监听数据完整性筛选变化
+watch(dataCompletenessFilter, (val) => {
+  queryParams.hasPhone = val.includes('hasPhone') ? true : undefined
+  queryParams.hasRealName = val.includes('hasRealName') ? true : undefined
+})
 
 // 新增
 const handleAdd = () => {
@@ -1089,6 +1257,42 @@ onMounted(() => {
   .text-secondary {
     color: var(--xhs-text-secondary);
     font-size: 12px;
+  }
+
+  .advanced-filter {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(255, 184, 0, 0.02) 0%, rgba(255, 201, 64, 0.01) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 184, 0, 0.1);
+
+    :deep(.el-divider__text) {
+      background: transparent;
+      color: var(--xhs-primary);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    :deep(.el-form-item__label) {
+      color: var(--xhs-text-primary);
+      font-weight: 500;
+    }
+
+    :deep(.el-checkbox) {
+      margin-right: 20px;
+    }
+
+    :deep(.el-radio) {
+      margin-right: 20px;
+    }
+
+    :deep(.el-date-editor) {
+      .el-range-separator {
+        color: var(--xhs-text-secondary);
+      }
+    }
   }
 
   .upload-container {
