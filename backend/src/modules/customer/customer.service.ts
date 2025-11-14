@@ -68,6 +68,15 @@ export class CustomerService {
       customerIntent,
       trafficSource,
       salesId,
+      operatorId,
+      createTimeStart,
+      createTimeEnd,
+      nextFollowTimeStart,
+      nextFollowTimeEnd,
+      hasPhone,
+      hasRealName,
+      sortBy = 'createTime',
+      sortOrder = 'DESC',
     } = queryDto;
 
     const queryBuilder = this.customerRepository
@@ -114,8 +123,61 @@ export class CustomerService {
       queryBuilder.andWhere('customer.sales_id = :salesId', { salesId });
     }
 
+    if (operatorId) {
+      queryBuilder.andWhere('customer.operator_id = :operatorId', { operatorId });
+    }
+
+    // 创建时间范围筛选
+    if (createTimeStart) {
+      queryBuilder.andWhere('customer.create_time >= :createTimeStart', {
+        createTimeStart: `${createTimeStart} 00:00:00`,
+      });
+    }
+    if (createTimeEnd) {
+      queryBuilder.andWhere('customer.create_time <= :createTimeEnd', {
+        createTimeEnd: `${createTimeEnd} 23:59:59`,
+      });
+    }
+
+    // 下次回访时间范围筛选
+    if (nextFollowTimeStart) {
+      queryBuilder.andWhere('customer.next_follow_time >= :nextFollowTimeStart', {
+        nextFollowTimeStart: `${nextFollowTimeStart} 00:00:00`,
+      });
+    }
+    if (nextFollowTimeEnd) {
+      queryBuilder.andWhere('customer.next_follow_time <= :nextFollowTimeEnd', {
+        nextFollowTimeEnd: `${nextFollowTimeEnd} 23:59:59`,
+      });
+    }
+
+    // 是否有手机号
+    if (hasPhone !== undefined) {
+      if (hasPhone) {
+        queryBuilder.andWhere('customer.phone IS NOT NULL AND customer.phone != ""');
+      } else {
+        queryBuilder.andWhere('(customer.phone IS NULL OR customer.phone = "")');
+      }
+    }
+
+    // 是否有真实姓名
+    if (hasRealName !== undefined) {
+      if (hasRealName) {
+        queryBuilder.andWhere('customer.real_name IS NOT NULL AND customer.real_name != ""');
+      } else {
+        queryBuilder.andWhere('(customer.real_name IS NULL OR customer.real_name = "")');
+      }
+    }
+
     // 排序
-    queryBuilder.orderBy('customer.create_time', 'DESC');
+    const sortFieldMap: Record<string, string> = {
+      createTime: 'customer.create_time',
+      updateTime: 'customer.update_time',
+      nextFollowTime: 'customer.next_follow_time',
+      customerIntent: 'customer.customer_intent',
+    };
+    const sortField = sortFieldMap[sortBy] || 'customer.create_time';
+    queryBuilder.orderBy(sortField, sortOrder);
 
     // 分页
     const total = await queryBuilder.getCount();

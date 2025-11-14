@@ -46,4 +46,48 @@ export class QueryCustomerDto {
   @Type(() => Number)
   @IsInt()
   salesId?: number;
+
+  @ApiPropertyOptional({ description: '运营人员ID' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  operatorId?: number;
+
+  @ApiPropertyOptional({ description: '创建时间开始（YYYY-MM-DD）' })
+  @IsOptional()
+  @IsString()
+  createTimeStart?: string;
+
+  @ApiPropertyOptional({ description: '创建时间结束（YYYY-MM-DD）' })
+  @IsOptional()
+  @IsString()
+  createTimeEnd?: string;
+
+  @ApiPropertyOptional({ description: '下次回访时间开始（YYYY-MM-DD）' })
+  @IsOptional()
+  @IsString()
+  nextFollowTimeStart?: string;
+
+  @ApiPropertyOptional({ description: '下次回访时间结束（YYYY-MM-DD）' })
+  @IsOptional()
+  @IsString()
+  nextFollowTimeEnd?: string;
+
+  @ApiPropertyOptional({ description: '是否有手机号（true/false）' })
+  @IsOptional()
+  hasPhone?: boolean;
+
+  @ApiPropertyOptional({ description: '是否有真实姓名（true/false）' })
+  @IsOptional()
+  hasRealName?: boolean;
+
+  @ApiPropertyOptional({ description: '排序字段', example: 'createTime' })
+  @IsOptional()
+  @IsString()
+  sortBy?: string;
+
+  @ApiPropertyOptional({ description: '排序方向', enum: ['ASC', 'DESC'], example: 'DESC' })
+  @IsOptional()
+  @IsString()
+  sortOrder?: 'ASC' | 'DESC';
 }

@@ -97,5 +97,15 @@ export interface CustomerQuery {
   customerIntent?: CustomerIntent
   qualityLevel?: QualityLevel
   salesId?: number
+  operatorId?: number
   keyword?: string
+  trafficSource?: string
+  createTimeStart?: string
+  createTimeEnd?: string
+  nextFollowTimeStart?: string
+  nextFollowTimeEnd?: string
+  hasPhone?: boolean
+  hasRealName?: boolean
+  sortBy?: 'createTime' | 'updateTime' | 'nextFollowTime' | 'customerIntent'
+  sortOrder?: 'ASC' | 'DESC'
 }
