@@ -37,12 +37,24 @@ EOSQL
 # 3. 构建前端
 echo ""
 echo "[3/6] 🎨 构建前端..."
-cd /root/crm/frontend
-# 先安装依赖（忽略scripts避免husky错误）
-npm install --ignore-scripts
-# 再执行构建
+cd /root/crm
+
+# 临时删除pnpm配置文件（避免npm/pnpm冲突）
+rm -f pnpm-lock.yaml pnpm-workspace.yaml
+
+cd frontend
+# 清理旧的node_modules（可能有pnpm残留）
+rm -rf node_modules package-lock.json
+
+# 重新安装依赖（忽略scripts避免husky错误）
+npm install --ignore-scripts --legacy-peer-deps
+# 执行构建
 npm run build
 echo "✅ 前端构建完成 -> dist/"
+
+# 恢复pnpm配置（下次可以拉取）
+cd /root/crm
+git checkout pnpm-lock.yaml pnpm-workspace.yaml 2>/dev/null || true
 
 # 4. 重启后端
 echo ""
