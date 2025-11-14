@@ -11,6 +11,7 @@ import { AiCacheService } from '../../common/services/ai/ai-cache.service';
 import { AiTagsModule } from '../ai-tags/ai-tags.module';
 import { AiToolsModule } from '../ai-tools/ai-tools.module';
 import { AiConfigModule } from '../ai-config/ai-config.module';
+import { AiMarketingModule } from '../ai-marketing/ai-marketing.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { AiConfigModule } from '../ai-config/ai-config.module';
     AiTagsModule,
     AiToolsModule,
     AiConfigModule,
+    AiMarketingModule,
   ],
   controllers: [AiChatController],
   providers: [
