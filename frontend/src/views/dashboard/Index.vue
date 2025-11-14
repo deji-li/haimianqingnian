@@ -31,7 +31,7 @@
 
     <!-- 本月数据（含环比） -->
     <el-row :gutter="16" style="margin-top: 20px;">
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -50,7 +50,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -69,7 +69,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -92,7 +92,7 @@
 
     <!-- 今日数据 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -103,7 +103,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -114,7 +114,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="8">
+      <el-col :xs="24" :sm="12" :md="8" :lg="8">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -129,7 +129,7 @@
 
     <!-- 总体数据 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -140,7 +140,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -151,7 +151,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -162,7 +162,7 @@
           </div>
         </el-card>
       </el-col>
-      <el-col :span="6">
+      <el-col :xs="24" :sm="12" :md="6" :lg="6">
         <el-card class="stat-card" shadow="hover">
           <div class="stat-content">
             <div class="stat-info">
@@ -177,48 +177,48 @@
 
     <!-- 图表 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">近7天销售额趋势</span>
             </div>
           </template>
-          <div ref="trendChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="trendChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">客户意向分布</span>
             </div>
           </template>
-          <div ref="intentChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="intentChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
 
     <!-- 订单状态 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">订单状态分布</span>
             </div>
           </template>
-          <div ref="statusChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="statusChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">新老学员占比</span>
             </div>
           </template>
-          <div ref="studentChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="studentChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -265,24 +265,24 @@
 
     <!-- 校区业绩对比 -->
     <el-row :gutter="16" style="margin-top: 16px;">
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">校区业绩对比（本月）</span>
             </div>
           </template>
-          <div ref="campusChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="campusChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
-      <el-col :span="12">
+      <el-col :xs="24" :sm="24" :md="12" :lg="12">
         <el-card shadow="never">
           <template #header>
             <div class="card-header">
               <span class="title">课程销售分析（本月）</span>
             </div>
           </template>
-          <div ref="courseChartRef" style="width: 100%; height: 300px"></div>
+          <div ref="courseChartRef" class="chart-container"></div>
         </el-card>
       </el-col>
     </el-row>
@@ -781,6 +781,12 @@ onUnmounted(() => {
 
 <style scoped lang="scss">
 .dashboard-container {
+  // 响应式图表容器
+  .chart-container {
+    width: 100%;
+    height: 300px;
+  }
+
   .welcome-card {
     h2 {
       font-size: 24px;
@@ -894,6 +900,210 @@ onUnmounted(() => {
   .overdue {
     color: #F56C6C;
     font-weight: 500;
+  }
+
+  // ==================== 响应式设计 ====================
+
+  // 平板设备 (768px - 1024px)
+  @media (max-width: 1024px) {
+    .welcome-card {
+      h2 {
+        font-size: 20px;
+      }
+
+      .info-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 16px;
+      }
+    }
+
+    .chart-container {
+      height: 280px;
+    }
+
+    .stat-card .stat-content {
+      .stat-icon {
+        font-size: 40px;
+      }
+
+      .stat-info .stat-value {
+        font-size: 22px;
+      }
+    }
+  }
+
+  // 移动设备 (< 768px)
+  @media (max-width: 768px) {
+    .welcome-card {
+      h2 {
+        font-size: 18px;
+      }
+
+      p {
+        font-size: 13px;
+      }
+
+      .info-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+
+        .info-item {
+          .icon {
+            font-size: 28px;
+          }
+
+          .label {
+            font-size: 11px;
+          }
+
+          .value {
+            font-size: 14px;
+          }
+        }
+      }
+    }
+
+    .chart-container {
+      height: 250px;
+    }
+
+    .stat-card {
+      margin-bottom: 12px;
+
+      .stat-content {
+        .stat-icon {
+          font-size: 36px;
+        }
+
+        .stat-info {
+          .stat-label {
+            font-size: 13px;
+          }
+
+          .stat-value {
+            font-size: 20px;
+
+            &.amount {
+              font-size: 18px;
+            }
+          }
+
+          .stat-compare {
+            font-size: 12px;
+
+            .compare-text {
+              font-size: 11px;
+            }
+          }
+        }
+      }
+    }
+
+    .card-header .title {
+      font-size: 14px;
+    }
+
+    // 表格优化：隐藏部分列
+    :deep(.el-table) {
+      font-size: 13px;
+
+      .el-table-column--selection,
+      .el-table__header th:nth-child(3),
+      .el-table__body td:nth-child(3),
+      .el-table__header th:nth-child(4),
+      .el-table__body td:nth-child(4) {
+        display: none; // 隐藏部门和校区列
+      }
+    }
+  }
+
+  // 小屏手机 (< 480px)
+  @media (max-width: 480px) {
+    .welcome-card {
+      h2 {
+        font-size: 16px;
+      }
+
+      p {
+        font-size: 12px;
+      }
+
+      .info-grid {
+        gap: 10px;
+
+        .info-item {
+          .icon {
+            font-size: 24px;
+          }
+
+          .label {
+            font-size: 10px;
+          }
+
+          .value {
+            font-size: 13px;
+          }
+        }
+      }
+    }
+
+    .chart-container {
+      height: 220px;
+    }
+
+    .stat-card {
+      .stat-content {
+        padding: 4px 0;
+
+        .stat-icon {
+          font-size: 32px;
+        }
+
+        .stat-info {
+          .stat-label {
+            font-size: 12px;
+            margin-bottom: 4px;
+          }
+
+          .stat-value {
+            font-size: 18px;
+
+            &.amount {
+              font-size: 16px;
+            }
+          }
+
+          .stat-compare {
+            font-size: 11px;
+            margin-top: 4px;
+
+            .compare-text {
+              font-size: 10px;
+            }
+          }
+        }
+      }
+    }
+
+    .card-header {
+      .title {
+        font-size: 13px;
+      }
+
+      :deep(.el-button) {
+        font-size: 12px;
+      }
+    }
+
+    // 表格进一步简化
+    :deep(.el-table) {
+      font-size: 12px;
+
+      .el-table__header th:nth-child(5),
+      .el-table__body td:nth-child(5) {
+        display: none; // 还隐藏订单数列
+      }
+    }
   }
 }
 </style>

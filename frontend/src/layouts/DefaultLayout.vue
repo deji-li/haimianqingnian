@@ -1,6 +1,9 @@
 <template>
   <el-container class="layout-container">
-    <el-aside width="200px" class="layout-aside">
+    <!-- 移动端遮罩层 -->
+    <div v-if="isMobileMenuOpen" class="mobile-mask" @click="toggleMobileMenu"></div>
+
+    <el-aside :width="asideWidth" :class="['layout-aside', { 'mobile-menu-open': isMobileMenuOpen }]">
       <div class="logo">
         <h2>海绵青年专用</h2>
       </div>
@@ -93,6 +96,8 @@
     <el-container>
       <el-header class="layout-header">
         <div class="header-left">
+          <!-- 移动端菜单切换按钮 -->
+          <el-button class="mobile-menu-toggle" :icon="Expand" circle @click="toggleMobileMenu" />
           <span class="breadcrumb">{{ pageTitle }}</span>
         </div>
         <div class="header-right">
@@ -165,7 +170,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()
@@ -175,6 +180,31 @@ const recentStore = useRecentStore()
 
 const activeMenu = computed(() => route.path)
 const pageTitle = computed(() => route.meta.title as string || '首页')
+
+// 移动端菜单状态
+const isMobileMenuOpen = ref(false)
+const isMobile = ref(false)
+
+// 侧边栏宽度（根据屏幕大小调整）
+const asideWidth = computed(() => {
+  if (isMobile.value) {
+    return isMobileMenuOpen.value ? '200px' : '0'
+  }
+  return '200px'
+})
+
+// 切换移动端菜单
+const toggleMobileMenu = () => {
+  isMobileMenuOpen.value = !isMobileMenuOpen.value
+}
+
+// 检测屏幕大小
+const checkScreenSize = () => {
+  isMobile.value = window.innerWidth < 768
+  if (!isMobile.value) {
+    isMobileMenuOpen.value = false
+  }
+}
 
 // 未读消息数量
 const unreadCount = ref(0)
@@ -199,6 +229,10 @@ const goToNotification = () => {
 const handleMenuSelect = (index: string) => {
   console.log('菜单选择:', index)
   router.push(index)
+  // 移动端选择菜单后自动关闭菜单
+  if (isMobile.value) {
+    isMobileMenuOpen.value = false
+  }
 }
 
 // 定时刷新未读数量（每30秒）
@@ -206,12 +240,18 @@ let timer: number | null = null
 onMounted(() => {
   fetchUnreadCount()
   timer = window.setInterval(fetchUnreadCount, 30000)
+
+  // 初始检测屏幕大小
+  checkScreenSize()
+  // 监听窗口大小变化
+  window.addEventListener('resize', checkScreenSize)
 })
 
 onUnmounted(() => {
   if (timer) {
     clearInterval(timer)
   }
+  window.removeEventListener('resize', checkScreenSize)
 })
 
 // 处理最近访问点击
@@ -245,9 +285,22 @@ const handleCommand = (command: string) => {
   height: 100vh;
 }
 
+// 移动端遮罩层
+.mobile-mask {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 998;
+}
+
 .layout-aside {
   background: #fff;
   border-right: 1px solid #e6e6e6;
+  transition: all 0.3s ease;
 
   .logo {
     display: flex;
@@ -278,6 +331,15 @@ const handleCommand = (command: string) => {
   border-bottom: 1px solid #e6e6e6;
 
   .header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    // 移动端菜单切换按钮（默认隐藏）
+    .mobile-menu-toggle {
+      display: none;
+    }
+
     .breadcrumb {
       font-size: 16px;
       font-weight: 500;
@@ -318,5 +380,123 @@ const handleCommand = (command: string) => {
 .layout-main {
   background: #f5f7fa;
   padding: 20px;
+}
+
+// ==================== 响应式设计 ====================
+
+// 平板设备 (768px - 1024px)
+@media (max-width: 1024px) {
+  .layout-main {
+    padding: 16px;
+  }
+
+  .layout-header {
+    padding: 0 16px;
+
+    .header-left .breadcrumb {
+      font-size: 15px;
+    }
+
+    .header-right {
+      gap: 12px;
+    }
+  }
+}
+
+// 移动设备 (< 768px)
+@media (max-width: 768px) {
+  .mobile-mask {
+    display: block;
+  }
+
+  .layout-aside {
+    position: fixed;
+    top: 0;
+    left: -200px;
+    bottom: 0;
+    z-index: 999;
+    overflow-y: auto;
+
+    &.mobile-menu-open {
+      left: 0;
+      box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .logo h2 {
+      font-size: 18px;
+    }
+  }
+
+  .layout-header {
+    padding: 0 12px;
+    height: 50px;
+
+    .header-left {
+      gap: 8px;
+
+      // 显示移动端菜单切换按钮
+      .mobile-menu-toggle {
+        display: inline-flex;
+      }
+
+      .breadcrumb {
+        font-size: 14px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+
+    .header-right {
+      gap: 8px;
+
+      // 隐藏最近访问按钮（移动端空间有限）
+      :deep(.el-dropdown:first-child) {
+        display: none;
+      }
+
+      .user-info {
+        padding: 6px 8px;
+
+        span {
+          display: none; // 移动端仅显示图标
+        }
+      }
+    }
+  }
+
+  .layout-main {
+    padding: 12px;
+  }
+}
+
+// 小屏手机 (< 480px)
+@media (max-width: 480px) {
+  .layout-header {
+    padding: 0 8px;
+
+    .header-left .breadcrumb {
+      max-width: 100px;
+      font-size: 13px;
+    }
+
+    .header-right {
+      gap: 4px;
+
+      .notification-badge :deep(.el-button) {
+        width: 32px;
+        height: 32px;
+      }
+
+      .user-info {
+        padding: 4px 6px;
+      }
+    }
+  }
+
+  .layout-main {
+    padding: 8px;
+  }
 }
 </style>
