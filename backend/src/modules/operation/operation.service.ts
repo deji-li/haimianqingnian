@@ -190,6 +190,7 @@ export class OperationService {
     const queryBuilder = this.dailyRecordRepository
       .createQueryBuilder('record')
       .leftJoinAndSelect('record.account', 'account')
+      .leftJoinAndSelect('account.campus', 'campus')
       .leftJoinAndSelect('record.operator', 'operator');
 
     if (startDate && endDate) {
@@ -215,27 +216,33 @@ export class OperationService {
       queryBuilder.andWhere('account.platform_type = :platformType', { platformType });
     }
 
-    if (city) {
-      queryBuilder.andWhere('account.city = :city', { city });
-    }
-
     queryBuilder.orderBy('record.report_date', 'DESC');
 
-    const [list, total] = await queryBuilder
-      .skip((page - 1) * pageSize)
-      .take(pageSize)
-      .getManyAndCount();
+    // 先查询所有数据
+    const allData = await queryBuilder.getMany();
 
-    // 添加虚拟字段
-    const formattedList = list.map((record) => ({
+    // 添加虚拟字段并提取城市
+    let formattedList = allData.map((record) => ({
       ...record,
       accountName: record.account?.accountName,
       operatorName: record.operator?.realName || record.operator?.username,
       platformType: record.account?.platformType,
+      city: this.extractCityFromCampus(record.account?.campus?.campusName || ''),
     }));
 
+    // 如果有城市过滤，在内存中过滤
+    if (city) {
+      formattedList = formattedList.filter((item) => item.city === city);
+    }
+
+    const total = formattedList.length;
+
+    // 分页
+    const startIndex = (page - 1) * pageSize;
+    const paginatedList = formattedList.slice(startIndex, startIndex + pageSize);
+
     return {
-      list: formattedList,
+      list: paginatedList,
       total,
       page,
       pageSize,
