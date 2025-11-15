@@ -472,8 +472,8 @@ const loadData = async () => {
     }
 
     const res = await operationApi.getDailyReportList(params);
-    tableData.value = res.data.list || [];
-    total.value = res.data.total || 0;
+    tableData.value = res.list || [];
+    total.value = res.total || 0;
 
     // 加载统计数据
     await loadStats();
@@ -497,7 +497,7 @@ const loadStats = async () => {
     }
 
     const res = await operationApi.getDailyReportStats(params);
-    Object.assign(stats, res.data);
+    Object.assign(stats, res);
   } catch (error) {
     console.error('加载统计数据失败', error);
   }
@@ -507,7 +507,7 @@ const loadStats = async () => {
 const loadAccounts = async () => {
   try {
     const res = await operationApi.getAccountList();
-    accountList.value = res.data.list || [];
+    accountList.value = res.list || [];
   } catch (error) {
     console.error('加载账号列表失败', error);
   }
@@ -517,7 +517,7 @@ const loadAccounts = async () => {
 const loadOperators = async () => {
   try {
     const res = await userApi.getList({ roleId: 5 }); // 假设roleId=5为运营角色
-    operatorList.value = res.data.list || [];
+    operatorList.value = res.list || [];
   } catch (error) {
     console.error('加载运营人员列表失败', error);
   }
