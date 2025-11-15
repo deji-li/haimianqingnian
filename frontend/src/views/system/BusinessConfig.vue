@@ -5,7 +5,7 @@
       <div class="header-content">
         <div>
           <h2>业务配置管理</h2>
-          <p class="subtitle">配置系统业务参数，如字段映射、默认值等</p>
+          <p class="subtitle">配置订单同步、默认值等业务参数（AI相关配置请到【AI工具→AI配置】中设置）</p>
         </div>
       </div>
     </el-card>
@@ -14,7 +14,6 @@
     <el-card shadow="never" class="filter-card">
       <el-radio-group v-model="filterCategory" @change="loadConfigs">
         <el-radio-button label="">全部</el-radio-button>
-        <el-radio-button label="field_mapping">字段映射</el-radio-button>
         <el-radio-button label="default_values">默认值</el-radio-button>
         <el-radio-button label="business_rules">业务规则</el-radio-button>
         <el-radio-button label="other">其他</el-radio-button>
@@ -187,7 +186,11 @@ const loadConfigs = async () => {
   loading.value = true
   try {
     const res = await getAllConfigs(filterCategory.value || undefined) as any
-    configs.value = res || []
+    // 过滤掉AI相关配置（这些配置在AI配置页面管理）
+    const aiConfigKeys = ['ai_field_mapping', 'ai_prompt_config', 'ai_model_config']
+    configs.value = (res || []).filter((config: BusinessConfig) =>
+      !aiConfigKeys.includes(config.configKey)
+    )
   } catch (error) {
     console.error('加载配置列表失败:', error)
     ElMessage.error('加载配置列表失败')
