@@ -134,6 +134,7 @@ export const toggleUserStatus = (id: number) => {
 
 // 导出API对象（用于兼容旧代码）
 export const userApi = {
+  getList: getUserList, // 别名
   getUserList,
   getUserDetail,
   createUser,
