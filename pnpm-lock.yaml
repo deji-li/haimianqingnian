@@ -184,7 +184,7 @@ importers:
   frontend:
     dependencies:
       '@crm/shared':
-        specifier: workspace:*
+        specifier: file:../shared
         version: link:../shared
       '@element-plus/icons-vue':
         specifier: ^2.3.1
