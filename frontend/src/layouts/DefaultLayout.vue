@@ -56,6 +56,8 @@
           <el-menu-item index="/sales-tools/tools">AI工具</el-menu-item>
           <el-menu-item index="/sales-tools/recovery">客户复苏</el-menu-item>
           <el-menu-item index="/sales-tools/tags">标签管理</el-menu-item>
+          <el-menu-item index="/sales-tools/marketing-scenarios">AI营销场景</el-menu-item>
+          <el-menu-item index="/sales-tools/marketing-content-library">营销文案库</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/analytics">
@@ -76,6 +78,14 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>数据大屏</span>
         </el-menu-item>
+
+        <el-sub-menu index="/operation">
+          <template #title>
+            <el-icon><DataLine /></el-icon>
+            <span>运营管理</span>
+          </template>
+          <el-menu-item index="/operation/daily-reports">运营日报</el-menu-item>
+        </el-sub-menu>
 
         <el-menu-item index="/automation">
           <el-icon><Operation /></el-icon>
