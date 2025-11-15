@@ -42,9 +42,10 @@ export class OperationController {
   @RequirePermissions('operation:account:view')
   async findAllAccounts(@Query() query: OperationAccountQueryDto, @Request() req) {
     // 如果不是主管或管理员，只能查看自己的账号
+    const permissions = req.user?.permissions || [];
     if (
-      !req.user.permissions.includes('operation:analytics:all') &&
-      !req.user.permissions.includes('admin:all')
+      !permissions.includes('operation:analytics:all') &&
+      !permissions.includes('admin:all')
     ) {
       query.operatorId = req.user.id;
     }
@@ -75,9 +76,10 @@ export class OperationController {
   @RequirePermissions('operation:report:create')
   async createDailyReport(@Body() dto: CreateDailyReportDto, @Request() req) {
     // 普通运营人员只能为自己创建日报
+    const permissions = req.user?.permissions || [];
     if (
-      !req.user.permissions.includes('operation:analytics:all') &&
-      !req.user.permissions.includes('admin:all')
+      !permissions.includes('operation:analytics:all') &&
+      !permissions.includes('admin:all')
     ) {
       dto.operatorId = req.user.id;
     }
@@ -88,9 +90,10 @@ export class OperationController {
   @RequirePermissions('operation:report:view')
   async findAllDailyReports(@Query() query: DailyReportQueryDto, @Request() req) {
     // 如果不是主管或管理员，只能查看自己的日报
+    const permissions = req.user?.permissions || [];
     if (
-      !req.user.permissions.includes('operation:analytics:all') &&
-      !req.user.permissions.includes('admin:all')
+      !permissions.includes('operation:analytics:all') &&
+      !permissions.includes('admin:all')
     ) {
       query.operatorId = req.user.id;
     }
