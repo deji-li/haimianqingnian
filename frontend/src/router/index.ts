@@ -62,7 +62,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '客户管理',
           icon: 'User',
-          permissions: ['customer:view'],
         },
         children: [
           {
@@ -71,7 +70,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/customer/List.vue'),
             meta: {
               title: '客户列表',
-              permissions: ['customer:view'],
             },
           },
           {
@@ -80,7 +78,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/customer/LifecycleBoard.vue'),
             meta: {
               title: '生命周期看板',
-              permissions: ['customer:view'],
             },
           },
           {
@@ -90,7 +87,6 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '客户详情',
               hidden: true,
-              permissions: ['customer:view'],
             },
           },
         ],
@@ -104,7 +100,6 @@ const routes: RouteRecordRaw[] = [
         meta: {
           title: '订单管理',
           icon: 'Document',
-          permissions: ['order:view'],
         },
         children: [
           {
@@ -113,7 +108,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/List.vue'),
             meta: {
               title: '订单列表',
-              permissions: ['order:view'],
             },
           },
           {
@@ -122,7 +116,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/SyncConfig.vue'),
             meta: {
               title: '订单同步',
-              permissions: ['order:sync'],
             },
           },
           {
@@ -131,19 +124,18 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/CampusRanking.vue'),
             meta: {
               title: '校区排行榜',
-              permissions: ['order:view'],
             },
           },
         ],
       },
 
-      // ========== AI工具 ==========
+      // ========== 销售工具（整合AI功能） ==========
       {
-        path: 'ai',
-        name: 'AI',
-        redirect: '/ai/chat-analysis',
+        path: 'sales-tools',
+        name: 'SalesTools',
+        redirect: '/sales-tools/chat-analysis',
         meta: {
-          title: 'AI工具',
+          title: '销售工具',
           icon: 'MagicStick',
         },
         children: [
@@ -156,64 +148,19 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'marketing-scenarios',
-            name: 'MarketingScenarios',
-            component: () => import('@/views/ai/MarketingScenarios.vue'),
-            meta: {
-              title: 'AI营销场景',
-            },
-          },
-          {
-            path: 'marketing-content-library',
-            name: 'MarketingContentLibrary',
-            component: () => import('@/views/ai/MarketingContentLibrary.vue'),
-            meta: {
-              title: '营销文案库',
-            },
-          },
-          {
-            path: 'analytics',
-            name: 'AIAnalytics',
-            component: () => import('@/views/ai/AIAnalytics.vue'),
-            meta: {
-              title: 'AI人效分析',
-            },
-          },
-          {
-            path: 'reports',
-            name: 'AIReports',
-            component: () => import('@/views/ai/AIReports.vue'),
-            meta: {
-              title: 'AI诊断报告',
-            },
-          },
-          {
-            path: 'config',
-            name: 'AIConfig',
-            component: () => import('@/views/system/AiConfig.vue'),
-            meta: {
-              title: 'AI配置',
-            },
-          },
-        ],
-      },
-
-      // ========== 销售工具 ==========
-      {
-        path: 'sales-tools',
-        name: 'SalesTools',
-        redirect: '/sales-tools/knowledge',
-        meta: {
-          title: '销售工具',
-          icon: 'Briefcase',
-        },
-        children: [
-          {
             path: 'knowledge',
             name: 'Knowledge',
             component: () => import('@/views/ai/Knowledge.vue'),
             meta: {
               title: '话术库',
+            },
+          },
+          {
+            path: 'tools',
+            name: 'AITools',
+            component: () => import('@/views/ai/ToolCenter.vue'),
+            meta: {
+              title: 'AI工具',
             },
           },
           {
@@ -232,10 +179,26 @@ const routes: RouteRecordRaw[] = [
               title: '标签管理',
             },
           },
+          {
+            path: 'marketing-scenarios',
+            name: 'MarketingScenarios',
+            component: () => import('@/views/ai/MarketingScenarios.vue'),
+            meta: {
+              title: 'AI营销场景',
+            },
+          },
+          {
+            path: 'marketing-content-library',
+            name: 'MarketingContentLibrary',
+            component: () => import('@/views/ai/MarketingContentLibrary.vue'),
+            meta: {
+              title: '营销文案库',
+            },
+          },
         ],
       },
 
-      // ========== 数据分析 ==========
+      // ========== 数据分析（整合所有分析功能） ==========
       {
         path: 'analytics',
         name: 'Analytics',
@@ -285,6 +248,22 @@ const routes: RouteRecordRaw[] = [
               title: '团队排行榜',
             },
           },
+          {
+            path: 'ai-analytics',
+            name: 'AIAnalytics',
+            component: () => import('@/views/ai/AIAnalytics.vue'),
+            meta: {
+              title: 'AI人效分析',
+            },
+          },
+          {
+            path: 'ai-reports',
+            name: 'AIReports',
+            component: () => import('@/views/ai/AIReports.vue'),
+            meta: {
+              title: 'AI诊断报告',
+            },
+          },
         ],
       },
 
@@ -320,7 +299,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/commission/SchemeConfig.vue'),
             meta: {
               title: '提成方案',
-              permissions: ['commission:manage'],
             },
           },
         ],
@@ -425,6 +403,14 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/system/OperationLog.vue'),
             meta: {
               title: '操作日志',
+            },
+          },
+          {
+            path: 'ai-config',
+            name: 'SystemAiConfig',
+            component: () => import('@/views/system/AiConfig.vue'),
+            meta: {
+              title: 'AI配置',
             },
           },
           {
