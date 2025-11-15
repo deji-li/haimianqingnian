@@ -364,6 +364,40 @@ export class OperationService {
 
   // ==================== 统计数据 ====================
 
+  async getDailyReportStats(operatorId?: number, startDate?: string, endDate?: string) {
+    const queryBuilder = this.dailyRecordRepository.createQueryBuilder('record');
+
+    // 如果指定了运营人员，只查询该人员的数据
+    if (operatorId) {
+      queryBuilder.where('record.operator_id = :operatorId', { operatorId });
+    }
+
+    // 日期范围筛选
+    if (startDate && endDate) {
+      queryBuilder.andWhere('record.report_date BETWEEN :startDate AND :endDate', {
+        startDate,
+        endDate,
+      });
+    }
+
+    const records = await queryBuilder.getMany();
+
+    // 统计数据
+    const totalReports = records.length;
+    const totalViews = records.reduce((sum, r) => sum + (r.viewMin + r.viewMax) / 2, 0);
+    const totalPlays = records.reduce((sum, r) => sum + (r.playMin + r.playMax) / 2, 0);
+    const totalComments = records.reduce((sum, r) => sum + (r.commentMin + r.commentMax) / 2, 0);
+    const totalMessages = records.reduce((sum, r) => sum + (r.messageMin + r.messageMax) / 2, 0);
+
+    return {
+      totalReports,
+      totalViews: Math.round(totalViews),
+      totalPlays: Math.round(totalPlays),
+      totalComments: Math.round(totalComments),
+      totalMessages: Math.round(totalMessages),
+    };
+  }
+
   async getOperatorStats(operatorId: number, startDate?: string, endDate?: string) {
     const queryBuilder = this.dailyRecordRepository
       .createQueryBuilder('record')

@@ -147,6 +147,25 @@ export class OperationController {
 
   // ==================== 统计数据 ====================
 
+  @Get('stats')
+  @RequirePermissions('operation:report:view')
+  async getDailyReportStats(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('operatorId') operatorId?: number,
+    @Request() req?,
+  ) {
+    // 如果不是主管或管理员，只能查看自己的统计
+    const permissions = req.user?.permissions || [];
+    if (
+      !permissions.includes('operation:analytics:all') &&
+      !permissions.includes('admin:all')
+    ) {
+      operatorId = req.user.id;
+    }
+    return await this.operationService.getDailyReportStats(operatorId, startDate, endDate);
+  }
+
   @Get('stats/:operatorId')
   @RequirePermissions('operation:analytics:view')
   async getOperatorStats(
@@ -156,9 +175,10 @@ export class OperationController {
     @Request() req?,
   ) {
     // 普通运营人员只能查看自己的统计
+    const permissions = req.user?.permissions || [];
     if (
-      !req.user.permissions.includes('operation:analytics:all') &&
-      !req.user.permissions.includes('admin:all') &&
+      !permissions.includes('operation:analytics:all') &&
+      !permissions.includes('admin:all') &&
       req.user.id !== operatorId
     ) {
       operatorId = req.user.id;
