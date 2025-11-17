@@ -175,57 +175,58 @@ CREATE TABLE IF NOT EXISTS `ai_field_mapping_config` (
 
 -- =====================================================
 -- 7. 添加性能优化索引（38个）
+-- 注意：如果索引已存在会报错，可以忽略
 -- =====================================================
 
 -- 企业知识库表索引 (14个)
-CREATE INDEX IF NOT EXISTS `idx_ekb_status` ON `enterprise_knowledge_base`(`status`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_scene_category` ON `enterprise_knowledge_base`(`sceneCategory`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_product_category` ON `enterprise_knowledge_base`(`productCategory`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_customer_type` ON `enterprise_knowledge_base`(`customerType`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_question_type` ON `enterprise_knowledge_base`(`questionType`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_source_type` ON `enterprise_knowledge_base`(`sourceType`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_priority` ON `enterprise_knowledge_base`(`priority`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_usage_count` ON `enterprise_knowledge_base`(`usageCount`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_negative_feedback` ON `enterprise_knowledge_base`(`negativeFeedbackCount`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_create_time` ON `enterprise_knowledge_base`(`createTime`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_status_priority` ON `enterprise_knowledge_base`(`status`, `priority`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_status_usage` ON `enterprise_knowledge_base`(`status`, `usageCount`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_status_priority_usage` ON `enterprise_knowledge_base`(`status`, `priority`, `usageCount`);
-CREATE INDEX IF NOT EXISTS `idx_ekb_scene_status` ON `enterprise_knowledge_base`(`sceneCategory`, `status`);
+CREATE INDEX `idx_ekb_status` ON `enterprise_knowledge_base`(`status`);
+CREATE INDEX `idx_ekb_scene_category` ON `enterprise_knowledge_base`(`sceneCategory`);
+CREATE INDEX `idx_ekb_product_category` ON `enterprise_knowledge_base`(`productCategory`);
+CREATE INDEX `idx_ekb_customer_type` ON `enterprise_knowledge_base`(`customerType`);
+CREATE INDEX `idx_ekb_question_type` ON `enterprise_knowledge_base`(`questionType`);
+CREATE INDEX `idx_ekb_source_type` ON `enterprise_knowledge_base`(`sourceType`);
+CREATE INDEX `idx_ekb_priority` ON `enterprise_knowledge_base`(`priority`);
+CREATE INDEX `idx_ekb_usage_count` ON `enterprise_knowledge_base`(`usageCount`);
+CREATE INDEX `idx_ekb_negative_feedback` ON `enterprise_knowledge_base`(`negativeFeedbackCount`);
+CREATE INDEX `idx_ekb_create_time` ON `enterprise_knowledge_base`(`createTime`);
+CREATE INDEX `idx_ekb_status_priority` ON `enterprise_knowledge_base`(`status`, `priority`);
+CREATE INDEX `idx_ekb_status_usage` ON `enterprise_knowledge_base`(`status`, `usageCount`);
+CREATE INDEX `idx_ekb_status_priority_usage` ON `enterprise_knowledge_base`(`status`, `priority`, `usageCount`);
+CREATE INDEX `idx_ekb_scene_status` ON `enterprise_knowledge_base`(`sceneCategory`, `status`);
 
 -- 知识反馈表索引 (8个)
-CREATE INDEX IF NOT EXISTS `idx_kf_knowledge_id` ON `knowledge_feedback`(`knowledgeId`);
-CREATE INDEX IF NOT EXISTS `idx_kf_feedback_scene` ON `knowledge_feedback`(`feedbackScene`);
-CREATE INDEX IF NOT EXISTS `idx_kf_handled` ON `knowledge_feedback`(`handled`);
-CREATE INDEX IF NOT EXISTS `idx_kf_create_time` ON `knowledge_feedback`(`createTime`);
-CREATE INDEX IF NOT EXISTS `idx_kf_customer_id` ON `knowledge_feedback`(`customerId`);
-CREATE INDEX IF NOT EXISTS `idx_kf_knowledge_handled` ON `knowledge_feedback`(`knowledgeId`, `handled`);
-CREATE INDEX IF NOT EXISTS `idx_kf_knowledge_time` ON `knowledge_feedback`(`knowledgeId`, `createTime`);
-CREATE INDEX IF NOT EXISTS `idx_kf_scene_handled` ON `knowledge_feedback`(`feedbackScene`, `handled`);
+CREATE INDEX `idx_kf_knowledge_id` ON `knowledge_feedback`(`knowledgeId`);
+CREATE INDEX `idx_kf_feedback_scene` ON `knowledge_feedback`(`feedbackScene`);
+CREATE INDEX `idx_kf_handled` ON `knowledge_feedback`(`handled`);
+CREATE INDEX `idx_kf_create_time` ON `knowledge_feedback`(`createTime`);
+CREATE INDEX `idx_kf_customer_id` ON `knowledge_feedback`(`customerId`);
+CREATE INDEX `idx_kf_knowledge_handled` ON `knowledge_feedback`(`knowledgeId`, `handled`);
+CREATE INDEX `idx_kf_knowledge_time` ON `knowledge_feedback`(`knowledgeId`, `createTime`);
+CREATE INDEX `idx_kf_scene_handled` ON `knowledge_feedback`(`feedbackScene`, `handled`);
 
 -- 知识使用日志表索引 (7个)
-CREATE INDEX IF NOT EXISTS `idx_kul_knowledge_id` ON `knowledge_usage_log`(`knowledgeId`);
-CREATE INDEX IF NOT EXISTS `idx_kul_usage_scene` ON `knowledge_usage_log`(`usageScene`);
-CREATE INDEX IF NOT EXISTS `idx_kul_user_id` ON `knowledge_usage_log`(`userId`);
-CREATE INDEX IF NOT EXISTS `idx_kul_customer_id` ON `knowledge_usage_log`(`customerId`);
-CREATE INDEX IF NOT EXISTS `idx_kul_create_time` ON `knowledge_usage_log`(`createTime`);
-CREATE INDEX IF NOT EXISTS `idx_kul_knowledge_time` ON `knowledge_usage_log`(`knowledgeId`, `createTime`);
-CREATE INDEX IF NOT EXISTS `idx_kul_scene_time` ON `knowledge_usage_log`(`usageScene`, `createTime`);
+CREATE INDEX `idx_kul_knowledge_id` ON `knowledge_usage_log`(`knowledgeId`);
+CREATE INDEX `idx_kul_usage_scene` ON `knowledge_usage_log`(`usageScene`);
+CREATE INDEX `idx_kul_user_id` ON `knowledge_usage_log`(`userId`);
+CREATE INDEX `idx_kul_customer_id` ON `knowledge_usage_log`(`customerId`);
+CREATE INDEX `idx_kul_create_time` ON `knowledge_usage_log`(`createTime`);
+CREATE INDEX `idx_kul_knowledge_time` ON `knowledge_usage_log`(`knowledgeId`, `createTime`);
+CREATE INDEX `idx_kul_scene_time` ON `knowledge_usage_log`(`usageScene`, `createTime`);
 
 -- 挖掘候选知识表索引 (4个)
-CREATE INDEX IF NOT EXISTS `idx_kmc_review_status` ON `knowledge_mining_candidate`(`reviewStatus`);
-CREATE INDEX IF NOT EXISTS `idx_kmc_confidence_score` ON `knowledge_mining_candidate`(`confidenceScore`);
-CREATE INDEX IF NOT EXISTS `idx_kmc_batch_review` ON `knowledge_mining_candidate`(`batchId`, `reviewStatus`);
-CREATE INDEX IF NOT EXISTS `idx_kmc_source_type` ON `knowledge_mining_candidate`(`sourceType`);
+CREATE INDEX `idx_kmc_review_status` ON `knowledge_mining_candidate`(`reviewStatus`);
+CREATE INDEX `idx_kmc_confidence_score` ON `knowledge_mining_candidate`(`confidenceScore`);
+CREATE INDEX `idx_kmc_batch_review` ON `knowledge_mining_candidate`(`batchId`, `reviewStatus`);
+CREATE INDEX `idx_kmc_source_type` ON `knowledge_mining_candidate`(`sourceType`);
 
 -- 挖掘批次表索引 (3个)
-CREATE INDEX IF NOT EXISTS `idx_kmb_status` ON `knowledge_mining_batch`(`status`);
-CREATE INDEX IF NOT EXISTS `idx_kmb_source_type` ON `knowledge_mining_batch`(`sourceType`);
-CREATE INDEX IF NOT EXISTS `idx_kmb_create_time` ON `knowledge_mining_batch`(`createTime`);
+CREATE INDEX `idx_kmb_status` ON `knowledge_mining_batch`(`status`);
+CREATE INDEX `idx_kmb_source_type` ON `knowledge_mining_batch`(`sourceType`);
+CREATE INDEX `idx_kmb_create_time` ON `knowledge_mining_batch`(`createTime`);
 
 -- 行业问题库表索引 (2个)
-CREATE INDEX IF NOT EXISTS `idx_iql_industry` ON `industry_question_library`(`industry`);
-CREATE INDEX IF NOT EXISTS `idx_iql_category` ON `industry_question_library`(`category`);
+CREATE INDEX `idx_iql_industry` ON `industry_question_library`(`industry`);
+CREATE INDEX `idx_iql_category` ON `industry_question_library`(`category`);
 
 -- =====================================================
 -- 8. 导入行业问题库数据（200+条）
