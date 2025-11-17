@@ -336,32 +336,46 @@ export class EnterpriseKnowledgeService {
    * 获取知识库分类统计
    */
   async getCategories() {
-    const sceneCategories = await this.knowledgeRepository
-      .createQueryBuilder('kb')
-      .select('kb.sceneCategory', 'category')
-      .addSelect('COUNT(*)', 'count')
-      .where('kb.status = :status', { status: 'active' })
-      .groupBy('kb.sceneCategory')
-      .getRawMany();
+    try {
+      const sceneCategories = await this.knowledgeRepository
+        .createQueryBuilder('kb')
+        .select('kb.sceneCategory', 'category')
+        .addSelect('COUNT(*)', 'count')
+        .where('kb.status = :status', { status: 'active' })
+        .andWhere('kb.sceneCategory IS NOT NULL')
+        .groupBy('kb.sceneCategory')
+        .getRawMany();
 
-    const productCategories = await this.knowledgeRepository
-      .createQueryBuilder('kb')
-      .select('kb.productCategory', 'category')
-      .addSelect('COUNT(*)', 'count')
-      .where('kb.status = :status', { status: 'active' })
-      .groupBy('kb.productCategory')
-      .getRawMany();
+      const productCategories = await this.knowledgeRepository
+        .createQueryBuilder('kb')
+        .select('kb.productCategory', 'category')
+        .addSelect('COUNT(*)', 'count')
+        .where('kb.status = :status', { status: 'active' })
+        .andWhere('kb.productCategory IS NOT NULL')
+        .groupBy('kb.productCategory')
+        .getRawMany();
 
-    return {
-      sceneCategories: sceneCategories.map((c) => ({
-        category: c.category,
-        count: parseInt(c.count),
-      })),
-      productCategories: productCategories.map((c) => ({
-        category: c.category,
-        count: parseInt(c.count),
-      })),
-    };
+      return {
+        sceneCategories: sceneCategories
+          .filter((c) => c.category)
+          .map((c) => ({
+            category: c.category,
+            count: parseInt(c.count) || 0,
+          })),
+        productCategories: productCategories
+          .filter((c) => c.category)
+          .map((c) => ({
+            category: c.category,
+            count: parseInt(c.count) || 0,
+          })),
+      };
+    } catch (error) {
+      this.logger.error('获取分类统计失败:', error);
+      return {
+        sceneCategories: [],
+        productCategories: [],
+      };
+    }
   }
 
   /**
