@@ -102,14 +102,14 @@ export interface MiningTask {
 
 export function getInitStatus() {
   return request({
-    url: '/enterprise-knowledge/basic-info/status',
+    url: '/enterprise-knowledge/init/status',
     method: 'get'
   })
 }
 
 export function initStep1(data: BasicInfo) {
   return request({
-    url: '/enterprise-knowledge/basic-info/init-step1',
+    url: '/enterprise-knowledge/init/step1/basic-info',
     method: 'post',
     data
   })
@@ -117,7 +117,7 @@ export function initStep1(data: BasicInfo) {
 
 export function initStep2(data: BusinessInfo) {
   return request({
-    url: '/enterprise-knowledge/basic-info/init-step2',
+    url: '/enterprise-knowledge/init/step2/faq',
     method: 'post',
     data
   })
@@ -125,7 +125,7 @@ export function initStep2(data: BusinessInfo) {
 
 export function initStep3(data: KnowledgeInitConfig) {
   return request({
-    url: '/enterprise-knowledge/basic-info/init-step3',
+    url: '/enterprise-knowledge/init/step3/mining',
     method: 'post',
     data
   })
@@ -133,7 +133,7 @@ export function initStep3(data: KnowledgeInitConfig) {
 
 export function initStep4(data: any) {
   return request({
-    url: '/enterprise-knowledge/basic-info/init-step4',
+    url: '/enterprise-knowledge/init/step4/generate',
     method: 'post',
     data
   })
@@ -270,7 +270,7 @@ export function getPendingReview(params: {
   minScore?: number
 }) {
   return request({
-    url: '/enterprise-knowledge/mining/pending',
+    url: '/enterprise-knowledge/mining/pending-review',
     method: 'get',
     params
   })
@@ -296,7 +296,7 @@ export function getMiningBatches(params: {
   limit?: number
 }) {
   return request({
-    url: '/enterprise-knowledge/mining/batches',
+    url: '/enterprise-knowledge/mining/stats',
     method: 'get',
     params
   })
