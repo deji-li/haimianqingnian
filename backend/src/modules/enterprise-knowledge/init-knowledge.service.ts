@@ -544,8 +544,9 @@ export class InitKnowledgeService {
    * 获取初始化状态
    */
   async getInitStatus(userId: number) {
-    // 查询企业基础信息
+    // 查询企业基础信息（查询最新的一条）
     const basicInfo = await this.basicInfoRepository.findOne({
+      where: {},
       order: { id: 'DESC' },
     });
 
