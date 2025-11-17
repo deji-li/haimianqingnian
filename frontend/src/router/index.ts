@@ -198,6 +198,67 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
+      // ========== 企业知识库 ==========
+      {
+        path: 'knowledge',
+        name: 'EnterpriseKnowledge',
+        redirect: '/knowledge/init',
+        meta: {
+          title: '企业知识库',
+          icon: 'Reading',
+        },
+        children: [
+          {
+            path: 'init',
+            name: 'KnowledgeInit',
+            component: () => import('@/views/knowledge/Init.vue'),
+            meta: {
+              title: '初始化向导',
+            },
+          },
+          {
+            path: 'list',
+            name: 'KnowledgeList',
+            component: () => import('@/views/knowledge/List.vue'),
+            meta: {
+              title: '知识管理',
+            },
+          },
+          {
+            path: 'search',
+            name: 'KnowledgeSearch',
+            component: () => import('@/views/knowledge/Search.vue'),
+            meta: {
+              title: '智能搜索',
+            },
+          },
+          {
+            path: 'mining',
+            name: 'KnowledgeMining',
+            component: () => import('@/views/knowledge/Mining.vue'),
+            meta: {
+              title: 'AI知识挖掘',
+            },
+          },
+          {
+            path: 'feedback',
+            name: 'KnowledgeFeedback',
+            component: () => import('@/views/knowledge/Feedback.vue'),
+            meta: {
+              title: '负反馈管理',
+            },
+          },
+          {
+            path: 'statistics',
+            name: 'KnowledgeStatistics',
+            component: () => import('@/views/knowledge/Statistics.vue'),
+            meta: {
+              title: '使用统计',
+            },
+          },
+        ],
+      },
+
       // ========== 数据分析（整合所有分析功能） ==========
       {
         path: 'analytics',

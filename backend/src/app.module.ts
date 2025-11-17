@@ -19,7 +19,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { OperationModule } from './modules/operation/operation.module';
 import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
-import { AiKnowledgeModule } from './modules/ai-knowledge/ai-knowledge.module';
+import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
 import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
@@ -52,7 +52,15 @@ import { OperationDailyRecord } from './modules/operation/entities/operation-dai
 import { OperationCommissionRecord } from './modules/operation/entities/operation-commission-record.entity';
 import { AiChatRecord } from './modules/ai-chat/entities/ai-chat-record.entity';
 import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity';
-import { AiKnowledgeBase } from './modules/ai-knowledge/entities/ai-knowledge-base.entity';
+import { AiFieldMappingConfig } from './modules/ai-config/entities/ai-field-mapping-config.entity';
+import {
+  EnterpriseKnowledgeBase,
+  KnowledgeFeedback,
+  KnowledgePendingReview,
+  EnterpriseBasicInfo,
+  IndustryQuestionLibrary,
+  KnowledgeUsageLog,
+} from './modules/enterprise-knowledge/entities/index';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
@@ -107,7 +115,12 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           OperationCommissionRecord,
           AiChatRecord,
           AiCustomerTag,
-          AiKnowledgeBase,
+          EnterpriseKnowledgeBase,
+          KnowledgeFeedback,
+          KnowledgePendingReview,
+          EnterpriseBasicInfo,
+          IndustryQuestionLibrary,
+          KnowledgeUsageLog,
           AiScript,
           AiRiskAlert,
           AiTrainingRecord,
@@ -115,6 +128,7 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           AiPromptConfig,
           AiApiKey,
           AiPromptVariable,
+          AiFieldMappingConfig,
           BusinessConfig,
           OrderSyncLog,
           AiMarketingScenario,
@@ -154,7 +168,7 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     OperationModule,
     AiChatModule,
     AiTagsModule,
-    AiKnowledgeModule,
+    EnterpriseKnowledgeModule,
     AiToolsModule,
     StatsModule,
     AiConfigModule,

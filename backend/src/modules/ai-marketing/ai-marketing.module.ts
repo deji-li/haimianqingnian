@@ -8,11 +8,13 @@ import { AiMarketingScenario } from './entities/ai-marketing-scenario.entity';
 import { AiMarketingContent } from './entities/ai-marketing-content.entity';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiConfigModule } from '../ai-config/ai-config.module';
+import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-knowledge.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([AiMarketingScenario, AiMarketingContent]),
     AiConfigModule,
+    EnterpriseKnowledgeModule,
   ],
   controllers: [AiMarketingController, MarketingContentController],
   providers: [AiMarketingService, MarketingContentService, DeepseekAnalysisService],

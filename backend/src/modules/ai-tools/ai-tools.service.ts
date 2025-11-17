@@ -9,6 +9,7 @@ import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
 import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
 import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity';
 import { User } from '../user/entities/user.entity';
+import { KnowledgeIntegrationService } from '../enterprise-knowledge/knowledge-integration.service';
 
 @Injectable()
 export class AiToolsService {
@@ -35,6 +36,7 @@ export class AiToolsService {
     private readonly userRepository: Repository<User>,
     private readonly deepseekService: DeepseekAnalysisService,
     private readonly aiConfigService: AiConfigService,
+    private readonly knowledgeIntegrationService: KnowledgeIntegrationService,
   ) {}
 
   /**
@@ -998,6 +1000,15 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       // 7. 客户满意度（模拟数据）
       const customerSatisfaction = 4.5;
 
+      // 8. 知识库使用统计
+      const knowledgeUsageStats = await this.knowledgeIntegrationService
+        .queryKnowledgeForAnalysis({
+          topic: '客户分析报告',
+          category: 'analysis',
+        });
+
+      const knowledgeUsageCount = knowledgeUsageStats?.length || 0;
+
       return {
         totalCustomers,
         newCustomers,
@@ -1006,6 +1017,12 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
         avgResponseTime,
         aiUsageCount,
         customerSatisfaction,
+        knowledgeUsageCount,
+        knowledgeReference: knowledgeUsageStats?.map(k => ({
+          id: k.id,
+          title: k.title,
+          category: k.sceneCategory,
+        })).slice(0, 5),
       };
     } catch (error) {
       this.logger.error(`收集关键指标失败: ${error.message}`);

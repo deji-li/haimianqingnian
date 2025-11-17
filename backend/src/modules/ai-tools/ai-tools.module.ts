@@ -11,6 +11,7 @@ import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-conten
 import { User } from '../user/entities/user.entity';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiConfigModule } from '../ai-config/ai-config.module';
+import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-knowledge.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { AiConfigModule } from '../ai-config/ai-config.module';
     ]),
     ConfigModule,
     AiConfigModule,
+    EnterpriseKnowledgeModule,
   ],
   controllers: [AiToolsController],
   providers: [AiToolsService, DeepseekAnalysisService],

@@ -5,6 +5,7 @@ import { AiMarketingScenario } from './entities/ai-marketing-scenario.entity';
 import { ExecuteScenarioDto, BatchExecuteScenarioDto } from './dto/marketing-scenario.dto';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiConfigService } from '../ai-config/ai-config.service';
+import { KnowledgeIntegrationService } from '../enterprise-knowledge/knowledge-integration.service';
 
 @Injectable()
 export class AiMarketingService {
@@ -15,6 +16,7 @@ export class AiMarketingService {
     private readonly scenarioRepository: Repository<AiMarketingScenario>,
     private readonly deepseekService: DeepseekAnalysisService,
     private readonly aiConfigService: AiConfigService,
+    private readonly knowledgeIntegrationService: KnowledgeIntegrationService,
   ) {}
 
   /**
@@ -185,6 +187,7 @@ export class AiMarketingService {
 
   /**
    * 话术推荐（快捷方法）
+   * 优先从知识库查询，知识库无相关内容时才使用AI生成
    */
   async recommendScripts(
     painPoints: string[],
@@ -192,15 +195,60 @@ export class AiMarketingService {
     conversationStage: string,
     decisionRole: string,
   ) {
-    return await this.executeScenario({
-      scenarioKey: 'script_recommendation',
-      variables: {
-        pain_points: JSON.stringify(painPoints),
-        interest_points: JSON.stringify(interestPoints),
-        conversation_stage: conversationStage,
-        decision_role: decisionRole,
-      },
-    });
+    try {
+      // 1. 优先查询知识库获取推荐话术
+      const knowledgeRecommendations = await this.knowledgeIntegrationService
+        .queryKnowledgeForRecommendation({
+          painPoints,
+          interestPoints,
+          conversationStage,
+          decisionRole,
+        });
+
+      // 2. 如果知识库有相关推荐，直接返回
+      if (knowledgeRecommendations && knowledgeRecommendations.length > 0) {
+        this.logger.log(`从知识库获取到${knowledgeRecommendations.length}条话术推荐`);
+        return {
+          source: 'knowledge_base',
+          recommendations: knowledgeRecommendations.map(k => ({
+            title: k.title,
+            content: k.content,
+            category: k.sceneCategory,
+            usageCount: k.usageCount,
+            knowledgeId: k.id,
+          })),
+        };
+      }
+
+      // 3. 知识库无相关内容，使用AI生成
+      this.logger.log('知识库无相关话术，使用AI生成推荐');
+      const aiResult = await this.executeScenario({
+        scenarioKey: 'script_recommendation',
+        variables: {
+          pain_points: JSON.stringify(painPoints),
+          interest_points: JSON.stringify(interestPoints),
+          conversation_stage: conversationStage,
+          decision_role: decisionRole,
+        },
+      });
+
+      return {
+        source: 'ai_generated',
+        ...aiResult,
+      };
+    } catch (error) {
+      this.logger.error(`话术推荐失败: ${error.message}`);
+      // 出错时回退到AI生成
+      return await this.executeScenario({
+        scenarioKey: 'script_recommendation',
+        variables: {
+          pain_points: JSON.stringify(painPoints),
+          interest_points: JSON.stringify(interestPoints),
+          conversation_stage: conversationStage,
+          decision_role: decisionRole,
+        },
+      });
+    }
   }
 
   /**

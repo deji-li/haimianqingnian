@@ -7,11 +7,21 @@ import { AiPromptVariable } from './entities/ai-prompt-variable.entity';
 import { AiApiKeyController } from './ai-api-key.controller';
 import { AiApiKeyService } from './ai-api-key.service';
 import { AiApiKey } from './entities/ai-api-key.entity';
+import { AiFieldMappingConfig } from './entities/ai-field-mapping-config.entity';
 import { RolePermission } from '../system/entities/role-permission.entity';
 import { Permission } from '../system/entities/permission.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([AiPromptConfig, AiPromptVariable, AiApiKey, RolePermission, Permission])],
+  imports: [
+    TypeOrmModule.forFeature([
+      AiPromptConfig,
+      AiPromptVariable,
+      AiApiKey,
+      AiFieldMappingConfig,
+      RolePermission,
+      Permission,
+    ]),
+  ],
   controllers: [AiConfigController, AiApiKeyController],
   providers: [AiConfigService, AiApiKeyService],
   exports: [AiConfigService, AiApiKeyService], // 导出供其他模块使用
