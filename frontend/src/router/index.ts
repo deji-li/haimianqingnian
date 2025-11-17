@@ -148,14 +148,6 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'knowledge',
-            name: 'Knowledge',
-            component: () => import('@/views/ai/Knowledge.vue'),
-            meta: {
-              title: '话术库',
-            },
-          },
-          {
             path: 'tools',
             name: 'AITools',
             component: () => import('@/views/ai/ToolCenter.vue'),
