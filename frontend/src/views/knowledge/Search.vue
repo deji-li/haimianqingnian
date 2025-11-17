@@ -70,7 +70,7 @@
       <!-- Quick Search Examples -->
       <div v-if="!hasSearched" class="quick-search">
         <div class="quick-search-title">
-          <el-icon><Light /></el-icon>
+          <el-icon><Bulb /></el-icon>
           <span>试试这些问题：</span>
         </div>
         <div class="example-tags">
@@ -329,7 +329,7 @@ import { ref, reactive } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Search,
-  Light,
+  Bulb,
   Document,
   Download,
   View,
