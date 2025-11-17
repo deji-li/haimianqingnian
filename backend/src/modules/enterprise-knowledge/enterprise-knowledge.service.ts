@@ -343,6 +343,7 @@ export class EnterpriseKnowledgeService {
         .addSelect('COUNT(*)', 'count')
         .where('kb.status = :status', { status: 'active' })
         .andWhere('kb.scene_category IS NOT NULL')
+        .andWhere('kb.scene_category != :empty', { empty: '' })
         .groupBy('kb.scene_category')
         .getRawMany();
 
@@ -352,6 +353,7 @@ export class EnterpriseKnowledgeService {
         .addSelect('COUNT(*)', 'count')
         .where('kb.status = :status', { status: 'active' })
         .andWhere('kb.product_category IS NOT NULL')
+        .andWhere('kb.product_category != :empty', { empty: '' })
         .groupBy('kb.product_category')
         .getRawMany();
 

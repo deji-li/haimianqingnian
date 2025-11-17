@@ -69,15 +69,6 @@ export class EnterpriseKnowledgeController {
   }
 
   /**
-   * 获取单个知识库详情
-   */
-  @Get(':id')
-  @ApiOperation({ summary: '获取知识库详情' })
-  async findOne(@Param('id') id: number) {
-    return await this.enterpriseKnowledgeService.findOne(id);
-  }
-
-  /**
    * 智能搜索知识库
    */
   @Post('intelligent-search')
@@ -138,5 +129,15 @@ export class EnterpriseKnowledgeController {
   @ApiOperation({ summary: '获取热门知识库Top10' })
   async getHotKnowledge() {
     return await this.knowledgeUsageService.getHotKnowledge(10);
+  }
+
+  /**
+   * 获取单个知识库详情
+   * 注意：这个路由必须放在最后，因为 :id 是通配符，会匹配所有路径
+   */
+  @Get(':id')
+  @ApiOperation({ summary: '获取知识库详情' })
+  async findOne(@Param('id') id: number) {
+    return await this.enterpriseKnowledgeService.findOne(id);
   }
 }
