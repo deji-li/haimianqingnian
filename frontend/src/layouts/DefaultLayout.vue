@@ -52,12 +52,24 @@
             <span>销售工具</span>
           </template>
           <el-menu-item index="/sales-tools/chat-analysis">聊天分析</el-menu-item>
-          <el-menu-item index="/sales-tools/knowledge">话术库</el-menu-item>
           <el-menu-item index="/sales-tools/tools">AI工具</el-menu-item>
           <el-menu-item index="/sales-tools/recovery">客户复苏</el-menu-item>
           <el-menu-item index="/sales-tools/tags">标签管理</el-menu-item>
           <el-menu-item index="/sales-tools/marketing-scenarios">AI营销场景</el-menu-item>
           <el-menu-item index="/sales-tools/marketing-content-library">营销文案库</el-menu-item>
+        </el-sub-menu>
+
+        <el-sub-menu index="/knowledge">
+          <template #title>
+            <el-icon><Reading /></el-icon>
+            <span>企业知识库</span>
+          </template>
+          <el-menu-item index="/knowledge/init">初始化向导</el-menu-item>
+          <el-menu-item index="/knowledge/list">知识管理</el-menu-item>
+          <el-menu-item index="/knowledge/search">智能搜索</el-menu-item>
+          <el-menu-item index="/knowledge/mining">AI知识挖掘</el-menu-item>
+          <el-menu-item index="/knowledge/feedback">负反馈管理</el-menu-item>
+          <el-menu-item index="/knowledge/statistics">使用统计</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/analytics">
@@ -186,7 +198,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation, Reading } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()
