@@ -180,49 +180,49 @@ CREATE TABLE IF NOT EXISTS `ai_field_mapping_config` (
 
 -- 企业知识库表索引 (14个)
 CREATE INDEX `idx_ekb_status` ON `enterprise_knowledge_base`(`status`);
-CREATE INDEX `idx_ekb_scene_category` ON `enterprise_knowledge_base`(`sceneCategory`);
-CREATE INDEX `idx_ekb_product_category` ON `enterprise_knowledge_base`(`productCategory`);
-CREATE INDEX `idx_ekb_customer_type` ON `enterprise_knowledge_base`(`customerType`);
-CREATE INDEX `idx_ekb_question_type` ON `enterprise_knowledge_base`(`questionType`);
-CREATE INDEX `idx_ekb_source_type` ON `enterprise_knowledge_base`(`sourceType`);
+CREATE INDEX `idx_ekb_scene_category` ON `enterprise_knowledge_base`(`scene_category`);
+CREATE INDEX `idx_ekb_product_category` ON `enterprise_knowledge_base`(`product_category`);
+CREATE INDEX `idx_ekb_customer_type` ON `enterprise_knowledge_base`(`customer_type`);
+CREATE INDEX `idx_ekb_question_type` ON `enterprise_knowledge_base`(`question_type`);
+CREATE INDEX `idx_ekb_source_type` ON `enterprise_knowledge_base`(`source_type`);
 CREATE INDEX `idx_ekb_priority` ON `enterprise_knowledge_base`(`priority`);
-CREATE INDEX `idx_ekb_usage_count` ON `enterprise_knowledge_base`(`usageCount`);
-CREATE INDEX `idx_ekb_negative_feedback` ON `enterprise_knowledge_base`(`negativeFeedbackCount`);
-CREATE INDEX `idx_ekb_create_time` ON `enterprise_knowledge_base`(`createTime`);
+CREATE INDEX `idx_ekb_usage_count` ON `enterprise_knowledge_base`(`usage_count`);
+CREATE INDEX `idx_ekb_negative_feedback` ON `enterprise_knowledge_base`(`negative_feedback_count`);
+CREATE INDEX `idx_ekb_create_time` ON `enterprise_knowledge_base`(`create_time`);
 CREATE INDEX `idx_ekb_status_priority` ON `enterprise_knowledge_base`(`status`, `priority`);
-CREATE INDEX `idx_ekb_status_usage` ON `enterprise_knowledge_base`(`status`, `usageCount`);
-CREATE INDEX `idx_ekb_status_priority_usage` ON `enterprise_knowledge_base`(`status`, `priority`, `usageCount`);
-CREATE INDEX `idx_ekb_scene_status` ON `enterprise_knowledge_base`(`sceneCategory`, `status`);
+CREATE INDEX `idx_ekb_status_usage` ON `enterprise_knowledge_base`(`status`, `usage_count`);
+CREATE INDEX `idx_ekb_status_priority_usage` ON `enterprise_knowledge_base`(`status`, `priority`, `usage_count`);
+CREATE INDEX `idx_ekb_scene_status` ON `enterprise_knowledge_base`(`scene_category`, `status`);
 
 -- 知识反馈表索引 (8个)
-CREATE INDEX `idx_kf_knowledge_id` ON `knowledge_feedback`(`knowledgeId`);
-CREATE INDEX `idx_kf_feedback_scene` ON `knowledge_feedback`(`feedbackScene`);
+CREATE INDEX `idx_kf_knowledge_id` ON `knowledge_feedback`(`knowledge_id`);
+CREATE INDEX `idx_kf_feedback_scene` ON `knowledge_feedback`(`feedback_scene`);
 CREATE INDEX `idx_kf_handled` ON `knowledge_feedback`(`handled`);
-CREATE INDEX `idx_kf_create_time` ON `knowledge_feedback`(`createTime`);
-CREATE INDEX `idx_kf_customer_id` ON `knowledge_feedback`(`customerId`);
-CREATE INDEX `idx_kf_knowledge_handled` ON `knowledge_feedback`(`knowledgeId`, `handled`);
-CREATE INDEX `idx_kf_knowledge_time` ON `knowledge_feedback`(`knowledgeId`, `createTime`);
-CREATE INDEX `idx_kf_scene_handled` ON `knowledge_feedback`(`feedbackScene`, `handled`);
+CREATE INDEX `idx_kf_create_time` ON `knowledge_feedback`(`create_time`);
+CREATE INDEX `idx_kf_customer_id` ON `knowledge_feedback`(`customer_id`);
+CREATE INDEX `idx_kf_knowledge_handled` ON `knowledge_feedback`(`knowledge_id`, `handled`);
+CREATE INDEX `idx_kf_knowledge_time` ON `knowledge_feedback`(`knowledge_id`, `create_time`);
+CREATE INDEX `idx_kf_scene_handled` ON `knowledge_feedback`(`feedback_scene`, `handled`);
 
 -- 知识使用日志表索引 (7个)
-CREATE INDEX `idx_kul_knowledge_id` ON `knowledge_usage_log`(`knowledgeId`);
-CREATE INDEX `idx_kul_usage_scene` ON `knowledge_usage_log`(`usageScene`);
-CREATE INDEX `idx_kul_user_id` ON `knowledge_usage_log`(`userId`);
-CREATE INDEX `idx_kul_customer_id` ON `knowledge_usage_log`(`customerId`);
-CREATE INDEX `idx_kul_create_time` ON `knowledge_usage_log`(`createTime`);
-CREATE INDEX `idx_kul_knowledge_time` ON `knowledge_usage_log`(`knowledgeId`, `createTime`);
-CREATE INDEX `idx_kul_scene_time` ON `knowledge_usage_log`(`usageScene`, `createTime`);
+CREATE INDEX `idx_kul_knowledge_id` ON `knowledge_usage_log`(`knowledge_id`);
+CREATE INDEX `idx_kul_usage_scene` ON `knowledge_usage_log`(`usage_scene`);
+CREATE INDEX `idx_kul_user_id` ON `knowledge_usage_log`(`user_id`);
+CREATE INDEX `idx_kul_customer_id` ON `knowledge_usage_log`(`customer_id`);
+CREATE INDEX `idx_kul_create_time` ON `knowledge_usage_log`(`create_time`);
+CREATE INDEX `idx_kul_knowledge_time` ON `knowledge_usage_log`(`knowledge_id`, `create_time`);
+CREATE INDEX `idx_kul_scene_time` ON `knowledge_usage_log`(`usage_scene`, `create_time`);
 
 -- 挖掘候选知识表索引 (4个)
-CREATE INDEX `idx_kmc_review_status` ON `knowledge_mining_candidate`(`reviewStatus`);
-CREATE INDEX `idx_kmc_confidence_score` ON `knowledge_mining_candidate`(`confidenceScore`);
-CREATE INDEX `idx_kmc_batch_review` ON `knowledge_mining_candidate`(`batchId`, `reviewStatus`);
-CREATE INDEX `idx_kmc_source_type` ON `knowledge_mining_candidate`(`sourceType`);
+CREATE INDEX `idx_kmc_review_status` ON `knowledge_mining_candidate`(`review_status`);
+CREATE INDEX `idx_kmc_confidence_score` ON `knowledge_mining_candidate`(`confidence_score`);
+CREATE INDEX `idx_kmc_batch_review` ON `knowledge_mining_candidate`(`batch_id`, `review_status`);
+CREATE INDEX `idx_kmc_source_type` ON `knowledge_mining_candidate`(`source_type`);
 
 -- 挖掘批次表索引 (3个)
 CREATE INDEX `idx_kmb_status` ON `knowledge_mining_batch`(`status`);
-CREATE INDEX `idx_kmb_source_type` ON `knowledge_mining_batch`(`sourceType`);
-CREATE INDEX `idx_kmb_create_time` ON `knowledge_mining_batch`(`createTime`);
+CREATE INDEX `idx_kmb_source_type` ON `knowledge_mining_batch`(`source_type`);
+CREATE INDEX `idx_kmb_create_time` ON `knowledge_mining_batch`(`create_time`);
 
 -- 行业问题库表索引 (2个)
 CREATE INDEX `idx_iql_industry` ON `industry_question_library`(`industry`);
@@ -376,8 +376,8 @@ INSERT INTO `industry_question_library` (`industry`, `category`, `question`, `su
 -- 教育培训行业示例知识库数据
 -- ============================================
 INSERT INTO enterprise_knowledge_base (
-  title, content, keywords, sceneCategory, productCategory,
-  customerType, questionType, priority, sourceType, status, usageCount
+  title, content, keywords, scene_category, product_category,
+  customer_type, question_type, priority, source_type, status, usage_count
 ) VALUES
 -- 产品介绍场景（10条）
 ('收费标准-一对一辅导', '我们的一对一辅导收费标准如下：小学：150元/小时 初中：200元/小时 高中：250元/小时 艺考生：300元/小时。【优惠政策】1. 购买套餐课程可享受8-9折优惠 2. 一次性购买30小时以上享85折 3. 老学员续费享9折优惠 4. 首次体验课仅需99元，含免费学情测评。价格包含：专业教师授课、教材资料、课后答疑、学习报告', '收费,价格,一对一,辅导,课时费', '产品介绍', '一对一辅导', '潜在客户', '咨询', 95, 'manual', 'active', 0),
