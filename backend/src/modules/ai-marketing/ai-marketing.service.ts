@@ -197,12 +197,16 @@ export class AiMarketingService {
   ) {
     try {
       // 1. 优先查询知识库获取推荐话术
+      // TODO: queryKnowledgeForRecommendation signature mismatch - wrapping params in context
       const knowledgeRecommendations = await this.knowledgeIntegrationService
         .queryKnowledgeForRecommendation({
-          painPoints,
-          interestPoints,
-          conversationStage,
-          decisionRole,
+          customerId: 0, // TODO: Need to pass actual customerId
+          context: {
+            painPoints,
+            interestPoints,
+            conversationStage,
+            decisionRole,
+          },
         });
 
       // 2. 如果知识库有相关推荐，直接返回

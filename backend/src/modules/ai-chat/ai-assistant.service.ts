@@ -175,10 +175,12 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
 4. 如果知识库内容不完全匹配，可以适当扩展
 `;
 
-      // 调用DeepSeek生成
-      const result = await this.deepseekAnalysisService.chat(prompt);
+      // TODO: DeepseekAnalysisService was deleted - temporarily disabled
+      // const result = await this.deepseekAnalysisService.chat(prompt);
+      // return result.answer || result.content || '抱歉，我无法生成合适的回答。';
 
-      return result.answer || result.content || '抱歉，我无法生成合适的回答。';
+      this.logger.warn('generateHybridAnswer temporarily disabled - DeepseekAnalysisService was deleted');
+      return referenceContent; // Return reference content as fallback
     } catch (error) {
       this.logger.error(`生成混合答案失败: ${error.message}`);
       // 降级：直接返回知识库参考内容
@@ -194,11 +196,13 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
     conversationContext?: any,
   ): Promise<string> {
     try {
-      const prompt = `${question}${conversationContext ? `\n\n对话上下文：${JSON.stringify(conversationContext)}` : ''}`;
+      // TODO: DeepseekAnalysisService was deleted - temporarily disabled
+      // const prompt = `${question}${conversationContext ? `\n\n对话上下文：${JSON.stringify(conversationContext)}` : ''}`;
+      // const result = await this.deepseekAnalysisService.chat(prompt);
+      // return result.answer || result.content || '抱歉，我暂时无法回答这个问题。';
 
-      const result = await this.deepseekAnalysisService.chat(prompt);
-
-      return result.answer || result.content || '抱歉，我暂时无法回答这个问题。';
+      this.logger.warn('generatePureAiAnswer temporarily disabled - DeepseekAnalysisService was deleted');
+      return '抱歉，AI服务暂时不可用，请联系管理员。';
     } catch (error) {
       this.logger.error(`生成AI答案失败: ${error.message}`);
       return '抱歉，我遇到了一些技术问题，请稍后再试。';
@@ -219,17 +223,22 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
     context?: any;
   }) {
     try {
+      // TODO: AiChatRecord entity doesn't have 'role', 'content', 'context' fields
+      // It was designed for chat screenshots with OCR, not for conversation storage
+      // Need to either: 1) Create a new entity for AI conversations, or
+      // 2) Store conversation data in aiAnalysisResult JSON field
       const conversation = this.aiChatRecordRepository.create({
         userId: data.userId,
         customerId: data.customerId,
-        role: 'assistant', // AI助手角色
-        content: data.userQuestion,
-        ocrText: data.aiAnswer, // 复用ocrText字段存储AI答案
+        // role: 'assistant', // REMOVED: Field doesn't exist
+        // content: data.userQuestion, // REMOVED: Field doesn't exist - using rawText instead
+        rawText: data.userQuestion, // Using rawText for user question
+        ocrText: data.aiAnswer, // AI answer stored in ocrText
         chatDate: new Date(),
         uploadType: 'text',
-        ocrStatus: '无需OCR',
+        ocrStatus: '已完成', // Changed from '无需OCR'
         analysisStatus: '已完成',
-        context: {
+        aiAnalysisResult: { // Using aiAnalysisResult instead of 'context'
           answerSource: data.answerSource,
           knowledgeId: data.knowledgeId,
           matchScore: data.matchScore,
@@ -270,10 +279,10 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
             knowledgeId: feedbackDto.knowledgeId,
             feedbackScene: 'ai_chat',
             customerId: conversation.customerId,
-            userQuestion: conversation.content,
-            knowledgeAnswer: conversation.ocrText,
+            userQuestion: conversation.rawText || '问题未记录', // Required by DTO - using rawText
+            knowledgeAnswer: conversation.ocrText || '答案未记录', // Required by DTO - using ocrText
             feedbackReason: feedbackDto.feedbackReason,
-            conversationContext: conversation.context,
+            conversationContext: conversation.aiAnalysisResult, // Using aiAnalysisResult instead of context
           },
           userId,
         );
@@ -310,7 +319,8 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
   }) {
     const queryBuilder = this.aiChatRecordRepository.createQueryBuilder('conv');
 
-    queryBuilder.where('conv.role = :role', { role: 'assistant' });
+    // queryBuilder.where('conv.role = :role', { role: 'assistant' }); // REMOVED: Field 'role' doesn't exist in AiChatRecord
+    queryBuilder.where('conv.uploadType = :uploadType', { uploadType: 'text' }); // Filter by text type instead
 
     if (params.userId) {
       queryBuilder.andWhere('conv.userId = :userId', { userId: params.userId });
@@ -327,10 +337,10 @@ ${conversationContext ? `【对话上下文】\n${JSON.stringify(conversationCon
 
     return conversations.map((conv) => ({
       id: conv.id,
-      question: conv.content,
+      question: conv.rawText, // Using rawText instead of content
       answer: conv.ocrText,
-      answerSource: conv.context?.answerSource,
-      knowledgeId: conv.context?.knowledgeId,
+      answerSource: conv.aiAnalysisResult?.answerSource, // Using aiAnalysisResult instead of context
+      knowledgeId: conv.aiAnalysisResult?.knowledgeId,
       chatDate: conv.chatDate,
     }));
   }

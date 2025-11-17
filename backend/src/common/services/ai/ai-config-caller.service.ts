@@ -55,6 +55,11 @@ export class AiConfigCallerService {
       }
 
       // 3. 获取API密钥
+      // TODO: AiApiKeyService.getActiveKey() doesn't exist - service needs refactoring
+      // Entire service disabled until AI services are restored
+      throw new Error('AI服务暂时不可用 - AiApiKeyService已删除，需要重新实现');
+
+      /* Original implementation commented out - requires deleted services
       const apiKey = await this.aiApiKeyService.getActiveKey(provider);
       if (!apiKey) {
         throw new NotFoundException(`${provider} API密钥未配置或未启用`);
@@ -91,6 +96,7 @@ export class AiConfigCallerService {
         // 如果不是JSON格式，返回原文
         return result;
       }
+      */ // End of commented out code
     } catch (error) {
       this.logger.error(
         `AI调用失败: scenarioKey=${scenarioKey}, error=${error.message}`,

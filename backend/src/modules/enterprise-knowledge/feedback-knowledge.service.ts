@@ -84,16 +84,23 @@ export class FeedbackKnowledgeService {
     const aiAnalysisResult = await this.analyzeFeedbackWithAI(dto);
 
     // 3. 保存反馈记录
+    // TODO: Entity fields 'userQuestion' and 'knowledgeAnswer' don't exist
+    // Storing them in conversationContext instead
     const feedback = this.feedbackRepository.create({
       knowledgeId: dto.knowledgeId,
       userId,
       customerId: dto.customerId,
       feedbackScene: dto.feedbackScene,
-      userQuestion: dto.userQuestion,
-      knowledgeAnswer: dto.knowledgeAnswer,
+      // userQuestion: dto.userQuestion, // REMOVED: Field doesn't exist in entity
+      // knowledgeAnswer: dto.knowledgeAnswer, // REMOVED: Field doesn't exist in entity
       feedbackReason: dto.feedbackReason,
-      conversationContext: dto.conversationContext,
-      expectedAnswer: dto.expectedAnswer,
+      conversationContext: {
+        ...dto.conversationContext,
+        userQuestion: dto.userQuestion, // Storing in context instead
+        knowledgeAnswer: dto.knowledgeAnswer, // Storing in context instead
+        expectedAnswer: dto.expectedAnswer,
+      },
+      // expectedAnswer: dto.expectedAnswer, // REMOVED: Field doesn't exist, moved to conversationContext
       aiAnalysis: aiAnalysisResult.analysis,
       optimizationSuggestion: aiAnalysisResult.optimizationSuggestion,
       handled: false,
@@ -263,8 +270,8 @@ export class FeedbackKnowledgeService {
           handled: true,
           handlerId: userId,
           handleTime: new Date(),
-          handleAction: 'updated',
-          handlerNote: dto.handlerNote,
+          // handleAction: 'updated', // REMOVED: Field doesn't exist - using handleResult instead
+          handleResult: `已更新知识库内容${dto.handlerNote ? ': ' + dto.handlerNote : ''}`,
         });
 
         this.logger.log(`更新知识ID=${feedback.knowledgeId}内容`);
@@ -280,8 +287,8 @@ export class FeedbackKnowledgeService {
           handled: true,
           handlerId: userId,
           handleTime: new Date(),
-          handleAction: 'disabled',
-          handlerNote: dto.handlerNote,
+          // handleAction: 'disabled', // REMOVED: Field doesn't exist - using handleResult instead
+          handleResult: `已禁用知识库${dto.handlerNote ? ': ' + dto.handlerNote : ''}`,
         });
 
         this.logger.log(`手动禁用知识ID=${feedback.knowledgeId}`);
@@ -293,8 +300,8 @@ export class FeedbackKnowledgeService {
           handled: true,
           handlerId: userId,
           handleTime: new Date(),
-          handleAction: 'ignored',
-          handlerNote: dto.handlerNote,
+          // handleAction: 'ignored', // REMOVED: Field doesn't exist - using handleResult instead
+          handleResult: `已忽略反馈${dto.handlerNote ? ': ' + dto.handlerNote : ''}`,
         });
 
         this.logger.log(`忽略反馈ID=${dto.feedbackId}`);

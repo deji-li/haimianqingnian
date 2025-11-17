@@ -2,14 +2,22 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './entities/index';
-import { DeepseekAnalysisService, AiAnalysisResult } from '../../common/services/ai/deepseek-analysis.service';
+// import { DeepseekAnalysisService, AiAnalysisResult } from '../../common/services/ai/deepseek-analysis.service'; // TODO: Service deleted
 import { Customer } from '../customer/entities/customer.entity';
-import { AiConfigService } from '../ai-config/ai-config.service';
+// import { AiConfigService } from '../ai-config/ai-config.service'; // TODO: Service deleted
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
-import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
-import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity';
+import { EnterpriseKnowledgeBase } from '../enterprise-knowledge/entities/enterprise-knowledge-base.entity';
+// import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity'; // TODO: Module deleted
 import { User } from '../user/entities/user.entity';
 import { KnowledgeIntegrationService } from '../enterprise-knowledge/knowledge-integration.service';
+
+// TODO: Temporary type definition - was from deleted DeepseekAnalysisService
+interface AiAnalysisResult {
+  riskLevel: string;
+  riskReason?: string;
+  intentionScore?: number;
+  nextSteps?: string[];
+}
 
 @Injectable()
 export class AiToolsService {
@@ -28,21 +36,24 @@ export class AiToolsService {
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(AiChatRecord)
     private readonly chatRecordRepository: Repository<AiChatRecord>,
-    @InjectRepository(AiKnowledgeBase)
-    private readonly knowledgeRepository: Repository<AiKnowledgeBase>,
-    @InjectRepository(AiMarketingContent)
-    private readonly marketingContentRepository: Repository<AiMarketingContent>,
+    @InjectRepository(EnterpriseKnowledgeBase)
+    private readonly knowledgeRepository: Repository<EnterpriseKnowledgeBase>,
+    // @InjectRepository(AiMarketingContent) // TODO: Entity deleted
+    // private readonly marketingContentRepository: Repository<AiMarketingContent>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
-    private readonly deepseekService: DeepseekAnalysisService,
-    private readonly aiConfigService: AiConfigService,
+    // private readonly deepseekService: DeepseekAnalysisService, // TODO: Service deleted
+    // private readonly aiConfigService: AiConfigService, // TODO: Service deleted
     private readonly knowledgeIntegrationService: KnowledgeIntegrationService,
   ) {}
 
   /**
    * 基于客户画像生成推荐话术
+   * TODO: Requires DeepseekAnalysisService - currently disabled
    */
   async generateScript(customerId: number, scriptType: string) {
+    throw new Error('generateScript temporarily disabled - DeepseekAnalysisService was deleted');
+    /* TODO: Re-implement when AI service is available
     try {
       const customer = await this.customerRepository.findOne({
         where: { id: customerId },
@@ -71,6 +82,7 @@ export class AiToolsService {
       this.logger.error(`生成话术失败: ${error.message}`, error.stack);
       throw error;
     }
+    */
   }
 
   /**
@@ -178,8 +190,11 @@ export class AiToolsService {
 
   /**
    * 批量识别沉睡客户并生成复苏话术
+   * TODO: Requires DeepseekAnalysisService - currently disabled
    */
   async identifySleepingCustomers(days = 30) {
+    throw new Error('identifySleepingCustomers temporarily disabled - DeepseekAnalysisService was deleted');
+    /* TODO: Re-implement when AI service is available
     try {
       const sleepingDate = new Date();
       sleepingDate.setDate(sleepingDate.getDate() - days);
@@ -222,6 +237,7 @@ export class AiToolsService {
       this.logger.error(`识别沉睡客户失败: ${error.message}`);
       throw error;
     }
+    */
   }
 
   /**
@@ -243,8 +259,11 @@ export class AiToolsService {
 
   /**
    * 陪练对话
+   * TODO: Requires AiConfigService and DeepseekAnalysisService - currently disabled
    */
   async trainConversation(trainingId: number, userMessage: string) {
+    throw new Error('trainConversation temporarily disabled - AI services were deleted');
+    /* TODO: Re-implement when AI services are available
     try {
       const training = await this.trainingRepository.findOne({
         where: { id: trainingId },
@@ -311,6 +330,7 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       this.logger.error(`陪练对话失败: ${error.message}`);
       throw error;
     }
+    */
   }
 
   /**
@@ -344,6 +364,7 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 
   /**
    * AI营销文案生成
+   * TODO: Requires AiConfigService and DeepseekAnalysisService - currently disabled
    */
   async generateMarketingContent(params: {
     contentType: string; // 朋友圈文案、微信群发文案、抖音营销文案、小红书营销文案、短视频拍摄脚本、公众号推文
@@ -355,6 +376,8 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
     style?: string; // 风格要求
     wordCount?: string; // 字数要求
   }) {
+    throw new Error('generateMarketingContent temporarily disabled - AI services were deleted');
+    /* TODO: Re-implement when AI services are available
     try {
       const {
         contentType,
@@ -527,6 +550,7 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       this.logger.error(`生成营销文案失败: ${error.message}`);
       throw error;
     }
+    */
   }
 
   /**
@@ -770,10 +794,12 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       const riskAlert = await riskQuery.getCount();
 
       // 6. 营销文案生成（从ai_marketing_content表统计）
-      const marketingQuery = this.marketingContentRepository.createQueryBuilder('m');
-      if (userId) marketingQuery.andWhere('m.user_id = :userId', { userId });
-      if (dateCondition) marketingQuery.andWhere(dateCondition);
-      const marketing = await marketingQuery.getCount();
+      // TODO: marketingContentRepository disabled - entity was deleted
+      // const marketingQuery = this.marketingContentRepository.createQueryBuilder('m');
+      // if (userId) marketingQuery.andWhere('m.user_id = :userId', { userId });
+      // if (dateCondition) marketingQuery.andWhere(dateCondition);
+      // const marketing = await marketingQuery.getCount();
+      const marketing = 0;
 
       return {
         chatAnalysis,
@@ -1071,8 +1097,13 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
 
   /**
    * 生成AI洞察
+   * TODO: Requires DeepseekAnalysisService - currently disabled
    */
   private async generateAiInsights(keyMetrics: any): Promise<string[]> {
+    // TODO: Re-implement when AI service is available
+    this.logger.warn('generateAiInsights disabled - returning placeholder data');
+    return ['AI洞察功能暂时不可用 - DeepseekAnalysisService已删除'];
+    /* Original implementation commented out
     try {
       const prompt = `作为一个资深的CRM分析专家，请根据以下数据生成3-5个关键洞察发现：
 
@@ -1103,12 +1134,18 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       this.logger.error(`生成AI洞察失败: ${error.message}`);
       return ['暂无洞察'];
     }
+    */
   }
 
   /**
    * 诊断问题
+   * TODO: Requires AiConfigService and DeepseekAnalysisService - currently disabled
    */
   private async diagnoseProblems(keyMetrics: any): Promise<string[]> {
+    // TODO: Re-implement when AI services are available
+    this.logger.warn('diagnoseProblems disabled - returning placeholder data');
+    return ['问题诊断功能暂时不可用 - AI服务已删除'];
+    /* Original implementation commented out
     try {
       // 从数据库获取提示词配置
       const scenarioKey = 'crm_problem_diagnosis';
@@ -1154,12 +1191,18 @@ ${conversation.map((c, i) => `${i % 2 === 0 ? '销售' : '客户'}：${c.message
       this.logger.error(`诊断问题失败: ${error.message}`);
       return ['暂无问题诊断'];
     }
+    */
   }
 
   /**
    * 生成改进建议
+   * TODO: Requires AiConfigService and DeepseekAnalysisService - currently disabled
    */
   private async generateRecommendations(keyMetrics: any, problems: string[]): Promise<string[]> {
+    // TODO: Re-implement when AI services are available
+    this.logger.warn('generateRecommendations disabled - returning placeholder data');
+    return ['改进建议功能暂时不可用 - AI服务已删除'];
+    /* Original implementation commented out
     try {
       // 从数据库获取提示词配置
       const scenarioKey = 'crm_improvement_recommendation';
@@ -1200,6 +1243,7 @@ ${problems.map((p, i) => `${i + 1}. ${p}`).join('\n')}
       this.logger.error(`生成改进建议失败: ${error.message}`);
       return ['暂无改进建议'];
     }
+    */
   }
 
   /**

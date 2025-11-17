@@ -6,11 +6,11 @@ import { AiToolsService } from './ai-tools.service';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './entities/index';
 import { Customer } from '../customer/entities/customer.entity';
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
-import { AiKnowledgeBase } from '../ai-knowledge/entities/ai-knowledge-base.entity';
-import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity';
+import { EnterpriseKnowledgeBase } from '../enterprise-knowledge/entities/enterprise-knowledge-base.entity';
+// import { AiMarketingContent } from '../ai-marketing/entities/ai-marketing-content.entity'; // TODO: Module deleted
 import { User } from '../user/entities/user.entity';
-import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
-import { AiConfigModule } from '../ai-config/ai-config.module';
+// import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service'; // TODO: Service deleted
+// import { AiConfigModule } from '../ai-config/ai-config.module'; // TODO: Module deleted
 import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-knowledge.module';
 
 @Module({
@@ -22,16 +22,16 @@ import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-kn
       AiReport,
       Customer,
       AiChatRecord,
-      AiKnowledgeBase,
-      AiMarketingContent,
+      EnterpriseKnowledgeBase,
+      // AiMarketingContent, // TODO: Module deleted
       User,
     ]),
     ConfigModule,
-    AiConfigModule,
+    // AiConfigModule, // TODO: Module deleted
     EnterpriseKnowledgeModule,
   ],
   controllers: [AiToolsController],
-  providers: [AiToolsService, DeepseekAnalysisService],
+  providers: [AiToolsService], // DeepseekAnalysisService removed - service deleted
   exports: [AiToolsService],
 })
 export class AiToolsModule {}

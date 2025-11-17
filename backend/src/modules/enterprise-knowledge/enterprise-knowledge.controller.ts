@@ -11,7 +11,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { EnterpriseKnowledgeService } from './enterprise-knowledge.service';
 import { KnowledgeUsageService } from './knowledge-usage.service';
 import {

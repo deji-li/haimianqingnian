@@ -98,14 +98,14 @@ export class IndustryQuestionService {
         // 保存到行业问题库
         const entities = result.questions.map((q: any) =>
           this.industryQuestionRepository.create({
-            industry: dto.industry,
+            industryName: dto.industry, // Using industryName instead of industry
             question: q.question,
-            answer: q.suggestedAnswer,
-            category: q.category || '常见问题',
-            importance: q.importance || 'medium',
+            answerTemplate: q.suggestedAnswer, // Using answerTemplate instead of answer
+            sceneCategory: q.category || '常见问题', // Using sceneCategory instead of category
+            // importance: q.importance || 'medium', // REMOVED: Field doesn't exist
             usageCount: 0,
-            tags: q.tags || null,
-            sourceType: 'ai_generated',
+            // tags: q.tags || null, // REMOVED: Field doesn't exist
+            sourceType: 'ai_generate', // Changed from 'ai_generated' to match enum value
           }),
         );
 
@@ -140,7 +140,7 @@ export class IndustryQuestionService {
 
     // 准备知识库数据
     let question = industryQuestion.question;
-    let answer = industryQuestion.answer;
+    let answer = industryQuestion.answerTemplate; // Using answerTemplate instead of answer
 
     if (dto.editBeforeAdopt) {
       if (!dto.editedQuestion || !dto.editedAnswer) {
@@ -154,7 +154,7 @@ export class IndustryQuestionService {
     const knowledge = this.knowledgeRepository.create({
       title: question,
       content: answer,
-      sceneCategory: dto.sceneCategory || industryQuestion.category,
+      sceneCategory: dto.sceneCategory || industryQuestion.sceneCategory, // Using sceneCategory instead of category
       productCategory: dto.productCategory || '通用',
       questionType: '行业常见问题',
       sourceType: 'industry_recommend',
@@ -162,7 +162,7 @@ export class IndustryQuestionService {
       creatorId: userId,
       status: 'active',
       priority: dto.priority || 70,
-      keywords: industryQuestion.tags,
+      keywords: null, // industryQuestion.tags doesn't exist - using null
     });
 
     await this.knowledgeRepository.save(knowledge);
@@ -201,16 +201,16 @@ export class IndustryQuestionService {
       try {
         const knowledge = this.knowledgeRepository.create({
           title: iq.question,
-          content: iq.answer,
-          sceneCategory: iq.category,
+          content: iq.answerTemplate, // Using answerTemplate instead of answer
+          sceneCategory: iq.sceneCategory, // Using sceneCategory instead of category
           productCategory: '通用',
           questionType: '行业常见问题',
           sourceType: 'industry_recommend',
           sourceId: iq.id,
           creatorId: userId,
           status: 'active',
-          priority: iq.importance === 'high' ? 80 : iq.importance === 'medium' ? 70 : 60,
-          keywords: iq.tags,
+          priority: 70, // importance field doesn't exist - using fixed value
+          keywords: null, // tags field doesn't exist - using null
         });
 
         await this.knowledgeRepository.save(knowledge);

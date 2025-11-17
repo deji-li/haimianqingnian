@@ -8,7 +8,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { AiAssistantService } from './ai-assistant.service';
 import { AiAssistantChatDto, AiAssistantFeedbackDto } from './dto/ai-assistant.dto';
 import { Type } from 'class-transformer';

@@ -119,8 +119,8 @@ export class MiningKnowledgeService {
                 productCategory: classification.productCategory,
                 customerType: classification.customerType,
                 questionType: classification.questionType,
-                sourceType: 'ai_mining',
-                sourceId: record.id,
+                sourceType: 'ai_mining', // For EnterpriseKnowledgeBase, valid enum value
+                sourceId: record.id, // For EnterpriseKnowledgeBase entity (not sourceChatRecordId)
                 creatorId: userId,
                 status: 'active',
                 priority: 60,
@@ -139,8 +139,8 @@ export class MiningKnowledgeService {
                 productCategory: classification.productCategory,
                 customerType: classification.customerType,
                 questionType: classification.questionType,
-                sourceType: 'ai_mining',
-                sourceId: record.id,
+                sourceType: 'chat_mining', // Changed from 'ai_mining' to match enum value
+                sourceChatRecordId: record.id, // Using sourceChatRecordId instead of sourceId
                 miningBatchId: batchId,
                 reviewStatus: 'pending',
                 miningReason: qa.reason || 'AI挖掘自动提取',
@@ -220,8 +220,8 @@ export class MiningKnowledgeService {
       const result = await this.aiConfigCallerService.callAI(
         'knowledge_qa_extraction',
         {
-          chatContent: chatRecord.content,
-          customerContext: JSON.stringify(chatRecord.context || {}),
+          chatContent: chatRecord.ocrText, // Using ocrText instead of content
+          customerContext: JSON.stringify(chatRecord.aiAnalysisResult || {}), // Using aiAnalysisResult instead of context
         },
       );
 
@@ -425,7 +425,7 @@ export class MiningKnowledgeService {
       customerType: review.customerType,
       questionType: review.questionType,
       sourceType: review.sourceType,
-      sourceId: review.sourceId,
+      sourceId: review.sourceChatRecordId, // Using sourceChatRecordId from KnowledgePendingReview entity
       creatorId: userId,
       status: 'active',
       priority: priority || 60,

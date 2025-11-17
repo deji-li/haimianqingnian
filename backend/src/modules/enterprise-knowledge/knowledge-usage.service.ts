@@ -32,15 +32,16 @@ export class KnowledgeUsageService {
   }) {
     try {
       // 创建日志记录
+      // TODO: Entity uses matchedKnowledgeIds (array) instead of knowledgeId (single)
       const log = this.usageLogRepository.create({
-        knowledgeId: data.knowledgeId,
+        matchedKnowledgeIds: data.knowledgeId ? [data.knowledgeId] : [], // Using matchedKnowledgeIds array instead of knowledgeId
         userId: data.userId,
         customerId: data.customerId,
         usageScene: data.usageScene,
-        userQuestion: data.userQuestion,
-        matchScore: data.matchScore,
-        responseTime: data.responseTime,
-        satisfied: data.satisfied,
+        queryText: data.userQuestion, // Using queryText instead of userQuestion
+        // matchScore: data.matchScore, // REMOVED: Field doesn't exist in entity
+        // responseTime: data.responseTime, // REMOVED: Field doesn't exist in entity
+        // satisfied: data.satisfied, // REMOVED: Field doesn't exist in entity
       });
 
       await this.usageLogRepository.save(log);

@@ -234,8 +234,8 @@ export class InitKnowledgeService {
                 productCategory: qa.productCategory,
                 customerType: qa.customerType,
                 questionType: qa.questionType,
-                sourceType: 'ai_mining',
-                sourceId: record.id,
+                sourceType: 'ai_mining', // For EnterpriseKnowledgeBase, valid enum value
+                sourceId: record.id, // For EnterpriseKnowledgeBase entity (not sourceChatRecordId)
                 creatorId: userId,
                 status: 'active',
                 priority: 60,
@@ -254,8 +254,8 @@ export class InitKnowledgeService {
                 productCategory: qa.productCategory,
                 customerType: qa.customerType,
                 questionType: qa.questionType,
-                sourceType: 'ai_mining',
-                sourceId: record.id,
+                sourceType: 'chat_mining', // Changed from 'ai_mining' to match enum value
+                sourceChatRecordId: record.id, // Using sourceChatRecordId instead of sourceId
                 miningBatchId: `init_${Date.now()}`,
                 reviewStatus: 'pending',
                 miningReason: qa.reason || 'AI挖掘自动提取',
@@ -322,8 +322,8 @@ export class InitKnowledgeService {
       const result = await this.aiConfigCallerService.callAI(
         'knowledge_qa_extraction',
         {
-          chatContent: chatRecord.content,
-          customerContext: JSON.stringify(chatRecord.context || {}),
+          chatContent: chatRecord.ocrText, // Using ocrText instead of content
+          customerContext: JSON.stringify(chatRecord.aiAnalysisResult || {}), // Using aiAnalysisResult instead of context
         },
       );
 
@@ -472,12 +472,13 @@ export class InitKnowledgeService {
         // 保存到行业问题库
         const entities = result.questions.map((q: any) =>
           this.industryQuestionRepository.create({
-            industry,
+            industryName: industry, // Using industryName instead of industry
             question: q.question,
-            answer: q.suggestedAnswer,
-            category: q.category,
-            importance: q.importance || 'medium',
+            answerTemplate: q.suggestedAnswer, // Using answerTemplate instead of answer
+            sceneCategory: q.category, // Using sceneCategory instead of category
+            // importance: q.importance || 'medium', // REMOVED: Field doesn't exist
             usageCount: 0,
+            sourceType: 'ai_generate', // Added required field with enum value
           }),
         );
 
