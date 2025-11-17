@@ -339,20 +339,20 @@ export class EnterpriseKnowledgeService {
     try {
       const sceneCategories = await this.knowledgeRepository
         .createQueryBuilder('kb')
-        .select('kb.sceneCategory', 'category')
+        .select('kb.scene_category', 'category')
         .addSelect('COUNT(*)', 'count')
         .where('kb.status = :status', { status: 'active' })
-        .andWhere('kb.sceneCategory IS NOT NULL')
-        .groupBy('kb.sceneCategory')
+        .andWhere('kb.scene_category IS NOT NULL')
+        .groupBy('kb.scene_category')
         .getRawMany();
 
       const productCategories = await this.knowledgeRepository
         .createQueryBuilder('kb')
-        .select('kb.productCategory', 'category')
+        .select('kb.product_category', 'category')
         .addSelect('COUNT(*)', 'count')
         .where('kb.status = :status', { status: 'active' })
-        .andWhere('kb.productCategory IS NOT NULL')
-        .groupBy('kb.productCategory')
+        .andWhere('kb.product_category IS NOT NULL')
+        .groupBy('kb.product_category')
         .getRawMany();
 
       return {
