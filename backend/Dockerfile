@@ -14,9 +14,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖（包括devDependencies，因为需要构建）
-# 使用淘宝镜像加速
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm install
+RUN npm install
 
 # 复制源代码
 COPY . .
@@ -43,9 +41,7 @@ ENV NODE_ENV=production
 COPY package*.json ./
 
 # 只安装生产依赖
-# 使用淘宝镜像加速
-RUN npm config set registry https://registry.npmmirror.com && \
-    npm install --production && \
+RUN npm install --production && \
     npm cache clean --force
 
 # 从构建阶段复制编译后的代码
