@@ -593,7 +593,7 @@ const loadKnowledgeList = async () => {
   loading.value = true
   try {
     const res = await getKnowledgeList(queryForm)
-    knowledgeList.value = res.data.items || []
+    knowledgeList.value = res.data.list || []
     total.value = res.data.total || 0
   } catch (error) {
     ElMessage.error('加载知识列表失败')
