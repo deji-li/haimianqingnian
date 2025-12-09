@@ -126,6 +126,76 @@ const routes: RouteRecordRaw[] = [
               title: '校区排行榜',
             },
           },
+          {
+            path: 'order-ranking',
+            name: 'OrderRanking',
+            component: () => import('@/views/order/Ranking.vue'),
+            meta: {
+              title: '订单排行榜',
+            },
+          },
+          {
+            path: 'sales-ranking',
+            name: 'SalesRanking',
+            component: () => import('@/views/team/Leaderboard.vue'),
+            meta: {
+              title: '销售排行榜',
+            },
+          },
+          {
+            path: 'ranking-overview',
+            name: 'RankingOverview',
+            component: () => import('@/views/ranking/Overview.vue'),
+            meta: {
+              title: '排行榜总览',
+            },
+          },
+          {
+            path: 'detail/:id',
+            name: 'OrderDetail',
+            component: () => import('@/views/order/Detail.vue'),
+            meta: {
+              title: '订单详情',
+              hidden: true,
+            },
+          },
+        ],
+      },
+
+      // ========== 老师管理 ==========
+      {
+        path: 'teacher',
+        name: 'Teacher',
+        redirect: '/teacher/list',
+        meta: {
+          title: '老师管理',
+          icon: 'User',
+        },
+        children: [
+          {
+            path: 'list',
+            name: 'TeacherList',
+            component: () => import('@/views/teacher/List.vue'),
+            meta: {
+              title: '老师列表',
+            },
+          },
+          {
+            path: 'ranking',
+            name: 'TeacherRanking',
+            component: () => import('@/views/teacher/Ranking.vue'),
+            meta: {
+              title: '老师排行榜',
+            },
+          },
+          {
+            path: 'detail/:id',
+            name: 'TeacherDetail',
+            component: () => import('@/views/teacher/Detail.vue'),
+            meta: {
+              title: '老师详情',
+            },
+          },
         ],
       },
 
@@ -156,11 +226,11 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'recovery',
-            name: 'CustomerRecovery',
-            component: () => import('@/views/ai/MarketingAssistant.vue'),
+            path: 'ocr',
+            name: 'OCRTool',
+            component: () => import('@/views/ai/OCRTool.vue'),
             meta: {
-              title: '客户复苏',
+              title: 'OCR识别',
             },
           },
           {
@@ -179,8 +249,75 @@ const routes: RouteRecordRaw[] = [
               title: 'AI营销场景',
             },
           },
+        ],
+      },
+
+      // ========== 企业知识库 ==========
+      {
+        path: 'enterprise-knowledge',
+        name: 'EnterpriseKnowledge',
+        redirect: '/ai/enterprise-knowledge/management',
+        meta: {
+          title: '企业知识库',
+          icon: 'Reading',
+        },
+        children: [
           {
-            path: 'marketing-content-library',
+            path: 'management',
+            name: 'EnterpriseKnowledgeManagement',
+            component: () => import('@/views/enterprise-knowledge/Management.vue'),
+            meta: {
+              title: '知识库管理',
+            },
+          },
+          {
+            path: 'create',
+            name: 'EnterpriseKnowledgeCreate',
+            component: () => import('@/views/enterprise-knowledge/Create.vue'),
+            meta: {
+              title: '创建知识库',
+              hidden: true,
+            },
+          },
+          {
+            path: 'mining',
+            name: 'EnterpriseKnowledgeMining',
+            component: () => import('@/views/enterprise-knowledge/Mining.vue'),
+            meta: {
+              title: '知识挖掘',
+            },
+          },
+          {
+            path: 'analytics',
+            name: 'EnterpriseKnowledgeAnalytics',
+            component: () => import('@/views/enterprise-knowledge/Analytics.vue'),
+            meta: {
+              title: '知识分析',
+            },
+          },
+        ],
+      },
+
+      // ========== AI营销 ==========
+      {
+        path: 'ai-marketing',
+        name: 'AIMarketing',
+        redirect: '/ai-marketing/assistant',
+        meta: {
+          title: 'AI营销',
+          icon: 'MagicStick',
+        },
+        children: [
+          {
+            path: 'assistant',
+            name: 'AIMarketingAssistant',
+            component: () => import('@/views/ai/MarketingAssistant.vue'),
+            meta: {
+              title: 'AI营销助手',
+            },
+          },
+          {
+            path: 'content-library',
             name: 'MarketingContentLibrary',
             component: () => import('@/views/ai/MarketingContentLibrary.vue'),
             meta: {
@@ -190,13 +327,13 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
-      // ========== 企业知识库 ==========
+      // ========== 知识库系统 ==========
       {
         path: 'knowledge',
-        name: 'EnterpriseKnowledge',
+        name: 'Knowledge',
         redirect: '/knowledge/init',
         meta: {
-          title: '企业知识库',
+          title: '知识库系统',
           icon: 'Reading',
         },
         children: [
@@ -302,6 +439,14 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
+            path: 'team-statistics',
+            name: 'TeamStatistics',
+            component: () => import('@/views/team/TeamStatistics.vue'),
+            meta: {
+              title: '团队统计',
+            },
+          },
+          {
             path: 'ai-analytics',
             name: 'AIAnalytics',
             component: () => import('@/views/ai/AIAnalytics.vue'),
@@ -386,6 +531,46 @@ const routes: RouteRecordRaw[] = [
               title: '运营日报',
             },
           },
+          {
+            path: 'accounts',
+            name: 'OperationAccounts',
+            component: () => import('@/views/operation/AccountManagement.vue'),
+            meta: {
+              title: '账号管理',
+            },
+          },
+          {
+            path: 'commissions',
+            name: 'OperationCommissions',
+            component: () => import('@/views/operation/CommissionManagement.vue'),
+            meta: {
+              title: '提成管理',
+            },
+          },
+          {
+            path: 'dashboard',
+            name: 'OperationDashboard',
+            component: () => import('@/views/operation/DataDashboard.vue'),
+            meta: {
+              title: '数据看板',
+            },
+          },
+          {
+            path: 'customers',
+            name: 'OperationCustomers',
+            component: () => import('@/views/operation/CustomerConversion.vue'),
+            meta: {
+              title: '客户转化',
+            },
+          },
+          {
+            path: 'reports',
+            name: 'OperationReports',
+            component: () => import('@/views/operation/ReportCenter.vue'),
+            meta: {
+              title: '报表中心',
+            },
+          },
         ],
       },
 
@@ -463,7 +648,7 @@ const routes: RouteRecordRaw[] = [
             name: 'SystemAiConfig',
             component: () => import('@/views/system/AiConfig.vue'),
             meta: {
-              title: 'AI配置',
+              title: 'AI配置管理',
             },
           },
           {
@@ -472,6 +657,47 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/system/BusinessConfig.vue'),
             meta: {
               title: '业务配置',
+            },
+          },
+          {
+            path: 'ai-api-keys',
+            name: 'SystemAiApiKeys',
+            component: () => import('@/views/system/AiApiKeyManagement.vue'),
+            meta: {
+              title: 'AI API密钥',
+            },
+          },
+          {
+            path: 'wework-config',
+            name: 'WeWorkConfig',
+            component: () => import('@/views/wework/Config.vue'),
+            meta: {
+              title: '企业微信配置',
+            },
+          },
+          {
+            path: 'wework-contacts',
+            name: 'WeWorkContacts',
+            component: () => import('@/views/wework/ContactManagement.vue'),
+            meta: {
+              title: '联系人管理',
+            },
+          },
+          {
+            path: 'wework-contact/:id',
+            name: 'WeWorkContactDetail',
+            component: () => import('@/views/wework/ContactDetail.vue'),
+            meta: {
+              title: '联系人详情',
+              hidden: true,
+            },
+          },
+          {
+            path: 'wework-sync-logs',
+            name: 'WeWorkSyncLogs',
+            component: () => import('@/views/wework/SyncLogs.vue'),
+            meta: {
+              title: '同步日志',
             },
           },
         ],

@@ -94,6 +94,19 @@
           <el-menu-item index="/enterprise-knowledge/analytics">知识分析</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="/knowledge">
+          <template #title>
+            <el-icon><Reading /></el-icon>
+            <span>知识库系统</span>
+          </template>
+          <el-menu-item index="/knowledge/init">初始化向导</el-menu-item>
+          <el-menu-item index="/knowledge/list">知识管理</el-menu-item>
+          <el-menu-item index="/knowledge/search">智能搜索</el-menu-item>
+          <el-menu-item index="/knowledge/mining">AI知识挖掘</el-menu-item>
+          <el-menu-item index="/knowledge/feedback">负反馈管理</el-menu-item>
+          <el-menu-item index="/knowledge/statistics">使用统计</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="/analytics">
           <template #title>
             <el-icon><TrendCharts /></el-icon>
