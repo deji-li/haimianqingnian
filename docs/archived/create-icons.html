@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>生成TabBar图标</title>
+</head>
+<body>
+    <h2>TabBar图标生成器</h2>
+    <p>点击按钮生成并下载图标（右键保存到 mobile/static/tabbar/ 目录）</p>
+
+    <canvas id="canvas" width="81" height="81" style="display:none;"></canvas>
+
+    <div>
+        <button onclick="createIcon('🏠', 'home', false)">下载 home.png</button>
+        <button onclick="createIcon('🏠', 'home-active', true)">下载 home-active.png</button>
+    </div>
+    <div>
+        <button onclick="createIcon('👥', 'customer', false)">下载 customer.png</button>
+        <button onclick="createIcon('👥', 'customer-active', true)">下载 customer-active.png</button>
+    </div>
+    <div>
+        <button onclick="createIcon('📦', 'order', false)">下载 order.png</button>
+        <button onclick="createIcon('📦', 'order-active', true)">下载 order-active.png</button>
+    </div>
+    <div>
+        <button onclick="createIcon('📊', 'stats', false)">下载 stats.png</button>
+        <button onclick="createIcon('📊', 'stats-active', true)">下载 stats-active.png</button>
+    </div>
+    <div>
+        <button onclick="createIcon('👤', 'my', false)">下载 my.png</button>
+        <button onclick="createIcon('👤', 'my-active', true)">下载 my-active.png</button>
+    </div>
+
+    <script>
+        function createIcon(emoji, name, active) {
+            const canvas = document.getElementById('canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 清空画布
+            ctx.clearRect(0, 0, 81, 81);
+
+            // 设置背景（可选）
+            if (active) {
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(0, 0, 81, 81);
+            } else {
+                ctx.fillStyle = '#7A7E83';
+                ctx.fillRect(0, 0, 81, 81);
+            }
+
+            // 绘制emoji
+            ctx.font = '50px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = 'white';
+            ctx.fillText(emoji, 40.5, 40.5);
+
+            // 转换为PNG并下载
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = name + '.png';
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+        }
+    </script>
+</body>
+</html>

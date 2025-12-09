@@ -41,7 +41,6 @@ export class QueryOrderDto {
     enum: ['待上课', '上课中', '已完成', '已退款'],
   })
   @IsOptional()
-  @ValidateIf((o) => o.orderStatus !== '' && o.orderStatus !== null && o.orderStatus !== undefined)
   @IsEnum(['待上课', '上课中', '已完成', '已退款'], {
     message: 'orderStatus must be one of the following values: 待上课, 上课中, 已完成, 已退款',
   })

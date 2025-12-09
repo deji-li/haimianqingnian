@@ -191,7 +191,35 @@ export class DeepseekAnalysisService {
 
     } catch (error) {
       this.logger.error(`AI分析失败: ${error.message}`, error.stack);
-      throw new Error(`AI分析失败: ${error.message}`);
+
+      // 详细分析错误类型
+      let errorMessage = `AI分析失败: ${error.message}`;
+
+      if (error.code === 'ECONNABORTED' || error.message.includes('aborted')) {
+        errorMessage = 'AI分析失败: 请求超时，请稍后重试或减少文本长度';
+      } else if (error.code === 'ECONNRESET' || error.message.includes('reset')) {
+        errorMessage = 'AI分析失败: 网络连接被重置，请检查网络连接';
+      } else if (error.response) {
+        // API返回错误
+        const status = error.response.status;
+        const data = error.response.data;
+
+        if (status === 401) {
+          errorMessage = 'AI分析失败: API密钥无效或已过期';
+        } else if (status === 429) {
+          errorMessage = 'AI分析失败: 请求频率过高，请稍后重试';
+        } else if (status === 402) {
+          errorMessage = 'AI分析失败: API余额不足';
+        } else if (data?.error?.message) {
+          errorMessage = `AI分析失败: ${data.error.message}`;
+        } else {
+          errorMessage = `AI分析失败: API错误 (${status})`;
+        }
+      } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        errorMessage = 'AI分析失败: 无法连接到AI服务，请检查网络';
+      }
+
+      throw new Error(errorMessage);
     }
   }
 
@@ -209,7 +237,13 @@ export class DeepseekAnalysisService {
     }
 
     // 默认系统提示词
-    return `你是一个专业的教育培训行业销售分析专家，擅长分析微信聊天记录并提供深度洞察。
+    return `你是一个专业的教育培训行业销售分析专家，擅长分析通过高精度OCR识别的微信聊天记录并提供深度洞察。
+
+注意：以下聊天记录是通过百度高精度OCR识别获得，具有以下特点：
+1. 文字识别精度极高（>99%准确率）
+2. 包含文字位置信息，能准确区分不同发言者
+3. 提供置信度评分，识别可靠性高
+4. 能准确识别中文、英文、数字、表情符号等
 
 你的任务是：
 1. 深入分析销售与客户的微信聊天记录
@@ -219,10 +253,11 @@ export class DeepseekAnalysisService {
 5. 提供具体可执行的销售策略和话术建议
 
 分析要求：
-- 客观准确，基于事实证据
-- 洞察深入，发现隐藏信息
+- 客观准确，基于高精度OCR识别的事实证据
+- 洞察深入，发现隐藏信息和潜在需求
 - 建议具体，可直接执行
-- 输出格式为严格的JSON，方便系统解析`;
+- 输出格式为严格的JSON，方便系统解析
+- 充分利用高精度OCR的准确性，提供更精准的客户洞察`;
   }
 
   /**
@@ -245,7 +280,12 @@ export class DeepseekAnalysisService {
     }
 
     // 默认提示词
-    let prompt = `请深度分析以下微信聊天记录，并按照JSON格式输出分析结果。\n\n`;
+    let prompt = `请深度分析以下微信聊天记录，并按照JSON格式输出分析结果。
+
+重要提醒：
+- 以下聊天内容由百度高精度OCR识别，准确率超过99%
+- 识别包含了位置信息和置信度评分，数据可靠性极高
+- 请充分利用高精度OCR的准确性优势，进行更精准的客户洞察\n\n`;
 
     if (customerInfo) {
       prompt += `【客户基本信息】\n`;
@@ -257,7 +297,7 @@ export class DeepseekAnalysisService {
     prompt += `【聊天记录】\n${chatText}\n\n`;
 
     prompt += `【分析要求】\n`;
-    prompt += `请严格按照以下JSON格式输出分析结果（不要添加任何markdown格式符号）：\n\n`;
+    prompt += `请充分利用高精度OCR的精确性，严格按照以下JSON格式输出分析结果（不要添加任何markdown格式符号）：\n\n`;
     prompt += this.getJsonTemplate();
 
     return prompt;

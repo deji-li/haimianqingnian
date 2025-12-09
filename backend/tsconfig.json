@@ -22,5 +22,5 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test"]
+  "exclude": ["node_modules", "dist", "test", "src/modules/enterprise-knowledge", "src/modules/wework", "src/modules/ai-tools", "src/modules/ai-marketing", "src/modules/ai-chat", "src/modules/ai-tags"]
 }

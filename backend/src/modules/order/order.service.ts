@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between } from 'typeorm';
+import { Repository, In, DataSource } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
@@ -10,6 +10,7 @@ import { QueryOrderDto } from './dto/query-order.dto';
 import { CommissionService } from '../commission/commission.service';
 import { OperationCommissionRecord } from '../operation/entities/operation-commission-record.entity';
 import { DictionaryService } from '../system/dictionary.service';
+import { ConversionTrackingService } from '../operation/conversion-tracking.service';
 
 @Injectable()
 export class OrderService {
@@ -26,6 +27,8 @@ export class OrderService {
     private operationCommissionRepository: Repository<OperationCommissionRecord>,
     private commissionService: CommissionService,
     private dictionaryService: DictionaryService,
+    private dataSource: DataSource,
+    private conversionTrackingService: ConversionTrackingService,
   ) {}
 
   /**
@@ -129,6 +132,25 @@ export class OrderService {
               });
 
               await this.operationCommissionRepository.save(operationCommission);
+
+              // 创建转化通知给运营人员
+              try {
+                await this.conversionTrackingService.createConversionNotification({
+                  operatorId: customer.operatorId,
+                  customerId: customer.id,
+                  orderId: savedOrder.id,
+                  customerName: customer.realName || customer.wechatNickname || '未知客户',
+                  orderAmount: savedOrder.paymentAmount
+                });
+
+                // 更新客户转化阶段为"成交转化"
+                await this.conversionTrackingService.updateConversionStage(
+                  customer.id,
+                  '成交转化'
+                );
+              } catch (notifyError) {
+                this.logger.error('Failed to create conversion notification:', notifyError);
+              }
             }
           }
         }
@@ -145,107 +167,134 @@ export class OrderService {
    * 分页查询订单列表
    */
   async findAll(queryDto: QueryOrderDto, dataScope?: any) {
-    const { page, pageSize, keyword, startDate, endDate, ...filters } =
+    console.log('后端接收到的查询参数:', JSON.stringify(queryDto, null, 2));
+    const { page = 1, pageSize = 20, keyword, startDate, endDate, ...filters } =
       queryDto;
 
-    const qb = this.orderRepository
-      .createQueryBuilder('order')
-      .leftJoin('customers', 'customer', 'customer.id = order.customer_id')
-      .leftJoin('users', 'sales', 'sales.id = order.sales_id')
-      .leftJoin('campus', 'campus', 'campus.id = order.campus_id')
-      .addSelect('customer.real_name', 'customerRealName')
-      .addSelect('customer.wechat_nickname', 'customerWechatNickname')
-      .addSelect('customer.phone', 'customerPhone')
-      .addSelect('sales.real_name', 'salesName')
-      .addSelect('campus.campus_name', 'campusName');
+    console.log('解析后的参数 - page:', page, 'pageSize:', pageSize);
 
-    // 应用数据权限
+    // 构建基础SQL查询
+    let sql = `
+      SELECT
+        o.id,
+        o.order_no,
+        o.customer_id,
+        o.wechat_id,
+        o.wechat_nickname,
+        o.phone,
+        o.sales_id,
+        o.campus_id,
+        o.course_name,
+        o.payment_amount,
+        o.payment_time,
+        o.is_new_student,
+        o.order_status,
+        o.teacher_name,
+        o.region,
+        o.distributor_sales,
+        o.remark,
+        o.data_source,
+        o.create_time,
+        o.update_time,
+        u.real_name as salesName,
+        c.campus_name as campusName,
+        cust.real_name as customerName
+      FROM orders o
+      LEFT JOIN users u ON o.sales_id = u.id
+      LEFT JOIN campus c ON o.campus_id = c.id
+      LEFT JOIN customers cust ON o.customer_id = cust.id
+      WHERE 1=1
+    `;
+
+    const params: any[] = [];
+    let paramIndex = 1;
+
+    // 动态构建WHERE条件
     if (dataScope?.salesId) {
-      qb.andWhere('order.sales_id = :salesId', {
-        salesId: dataScope.salesId,
-      });
+      sql += ` AND o.sales_id = ?`;
+      params.push(dataScope.salesId);
     }
+
     if (dataScope?.campusId) {
-      qb.andWhere('order.campus_id = :campusId', {
-        campusId: dataScope.campusId,
-      });
+      sql += ` AND o.campus_id = ?`;
+      params.push(dataScope.campusId);
     }
 
     // 关键词搜索
     if (keyword) {
-      qb.andWhere(
-        '(order.order_no LIKE :keyword OR order.wechat_id LIKE :keyword OR order.phone LIKE :keyword)',
-        { keyword: `%${keyword}%` },
-      );
+      sql += ` AND (o.order_no LIKE ? OR o.wechat_id LIKE ? OR o.phone LIKE ? OR o.wechat_nickname LIKE ?)`;
+      const keywordPattern = `%${keyword}%`;
+      params.push(keywordPattern, keywordPattern, keywordPattern, keywordPattern);
     }
 
     // 日期范围
     if (startDate && endDate) {
-      qb.andWhere('order.payment_time BETWEEN :startDate AND :endDate', {
-        startDate: `${startDate} 00:00:00`,
-        endDate: `${endDate} 23:59:59`,
-      });
+      sql += ` AND o.payment_time BETWEEN ? AND ?`;
+      params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
     }
 
     // 其他过滤条件
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
-        const columnName = key.replace(
-          /[A-Z]/g,
-          (letter) => `_${letter.toLowerCase()}`,
-        );
-        qb.andWhere(`order.${columnName} = :${key}`, { [key]: value });
+        sql += ` AND o.${key} = ?`;
+        params.push(value);
       }
     });
 
-    // 分页
-    const total = await qb.getCount();
-    qb.skip((page - 1) * pageSize).take(pageSize);
+    // 获取总数
+    const countSql = sql.replace(/SELECT.*?FROM.*?LEFT JOIN.*?LEFT JOIN.*?LEFT JOIN.*?WHERE/, 'SELECT COUNT(*) FROM orders o WHERE').replace(/ORDER BY.*$/, '');
+    const totalResult = await this.dataSource.query(countSql, params);
+    const total = parseInt(totalResult[0].count);
 
-    // 排序
-    qb.orderBy('order.payment_time', 'DESC');
+    // 添加排序和分页
+    sql += ` ORDER BY o.payment_time DESC LIMIT ? OFFSET ?`;
+    params.push(pageSize, (page - 1) * pageSize);
 
-    const rawResults = await qb.getRawMany();
+    try {
+      // 直接执行SQL查询
+      const results = await this.dataSource.query(sql, params);
 
-    // 格式化结果 - 从raw results中提取数据
-    const list = rawResults.map((raw) => ({
-      id: raw.order_id,
-      orderNo: raw.order_order_no,
-      customerId: raw.order_customer_id,
-      wechatId: raw.order_wechat_id,
-      wechatNickname: raw.order_wechat_nickname,
-      phone: raw.order_phone || raw.customerPhone, // 优先使用订单phone，没有则使用客户phone
-      salesId: raw.order_sales_id,
-      campusId: raw.order_campus_id,
-      courseName: raw.order_course_name,
-      paymentAmount: raw.order_payment_amount,
-      paymentTime: raw.order_payment_time,
-      isNewStudent: raw.order_is_new_student,
-      orderStatus: raw.order_order_status,
-      teacherName: raw.order_teacher_name,
-      region: raw.order_region,
-      distributorSales: raw.order_distributor_sales,
-      remark: raw.order_remark,
-      dataSource: raw.order_data_source,
-      createTime: raw.order_create_time,
-      updateTime: raw.order_update_time,
-      salesName: raw.salesName,
-      campusName: raw.campusName,
-      customer: raw.order_customer_id ? {
-        id: raw.order_customer_id,
-        realName: raw.customerRealName,
-        wechatNickname: raw.customerWechatNickname,
-        phone: raw.customerPhone,
-      } : null,
-      customerName: raw.customerRealName || raw.order_wechat_nickname,
-    }));
+      console.log('实际查询到的数据条数:', results.length);
+      console.log('查询总数:', total);
 
-    return {
-      list,
-      total,
-      page,
-      pageSize,
-    };
+      // 格式化结果
+      const list = results.map((order: any) => ({
+        id: order.id,
+        orderNo: order.order_no,
+        customerId: order.customer_id,
+        wechatId: order.wechat_id,
+        wechatNickname: order.wechat_nickname,
+        phone: order.phone,
+        salesId: order.sales_id,
+        campusId: order.campus_id,
+        courseName: order.course_name,
+        paymentAmount: parseFloat(order.payment_amount || 0),
+        paymentTime: order.payment_time,
+        isNewStudent: order.is_new_student,
+        orderStatus: order.order_status,
+        teacherName: order.teacher_name,
+        region: order.region,
+        distributorSales: order.distributor_sales,
+        remark: order.remark,
+        dataSource: order.data_source,
+        createTime: order.create_time,
+        updateTime: order.update_time,
+        salesName: order.salesName || '',
+        campusName: order.campusName || '',
+        customer: null, // 暂时留空，需要时可单独查询
+        customerName: order.customerName || '',
+      }));
+
+      return {
+        list,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      console.error('查询订单时发生错误:', error);
+      throw error;
+    }
   }
 
   /**
@@ -254,20 +303,27 @@ export class OrderService {
   async findOne(id: number) {
     const order = await this.orderRepository.findOne({
       where: { id },
-      relations: ['customer'],
+      relations: ['customer', 'teacher'],
     });
 
     if (!order) {
       throw new NotFoundException('订单不存在');
     }
 
-    // 获取销售和校区信息
+    // 获取销售、校区和老师详细信息
     const qb = this.orderRepository
       .createQueryBuilder('order')
       .leftJoin('users', 'sales', 'sales.id = order.sales_id')
       .leftJoin('campus', 'campus', 'campus.id = order.campus_id')
+      .leftJoin('teachers', 'teacher', 'teacher.id = order.teacher_id')
+      .leftJoin('campus', 'teacher_campus', 'teacher_campus.id = teacher.campus_id')
       .addSelect('sales.real_name', 'salesName')
       .addSelect('campus.campus_name', 'campusName')
+      .addSelect('teacher.name', 'teacherName')
+      .addSelect('teacher.subject', 'teacherSubject')
+      .addSelect('teacher.default_commission_rate', 'teacherCommissionRate')
+      .addSelect('teacher.campus_id', 'teacherCampusId')
+      .addSelect('teacher_campus.campus_name', 'teacherCampusName')
       .where('order.id = :id', { id });
 
     const result = await qb.getRawOne();
@@ -277,6 +333,15 @@ export class OrderService {
       salesName: result?.salesName,
       campusName: result?.campusName,
       customerName: order.customer?.realName || order.wechatNickname,
+      // 老师详细信息
+      teacherInfo: order.teacher ? {
+        id: order.teacher.id,
+        name: order.teacher.name,
+        subject: order.teacher.subject || result?.teacherSubject,
+        commissionRate: order.teacher.defaultCommissionRate || result?.teacherCommissionRate,
+        campusName: result?.teacherCampusName,
+        campusId: result?.teacherCampusId
+      } : null,
     };
   }
 
@@ -389,54 +454,59 @@ export class OrderService {
    * 获取订单统计数据（用于看板）
    */
   async getStatistics(startDate?: string, endDate?: string, dataScope?: any) {
-    const qb = this.orderRepository.createQueryBuilder('order');
+    // 构建基础SQL查询
+    let sql = `SELECT
+      COUNT(*) as totalOrders,
+      SUM(payment_amount) as totalAmount,
+      SUM(CASE WHEN is_new_student = 1 THEN 1 ELSE 0 END) as newStudentOrders
+      FROM orders WHERE 1=1`;
+
+    const params: any[] = [];
 
     // 应用数据权限
     if (dataScope?.salesId) {
-      qb.andWhere('order.sales_id = :salesId', {
-        salesId: dataScope.salesId,
-      });
+      sql += ` AND sales_id = ?`;
+      params.push(dataScope.salesId);
     }
     if (dataScope?.campusId) {
-      qb.andWhere('order.campus_id = :campusId', {
-        campusId: dataScope.campusId,
-      });
+      sql += ` AND campus_id = ?`;
+      params.push(dataScope.campusId);
     }
 
     // 日期范围
     if (startDate && endDate) {
-      qb.andWhere('order.payment_time BETWEEN :startDate AND :endDate', {
-        startDate: `${startDate} 00:00:00`,
-        endDate: `${endDate} 23:59:59`,
-      });
+      sql += ` AND payment_time BETWEEN ? AND ?`;
+      params.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
     }
 
-    // 总订单数
-    const totalOrders = await qb.getCount();
-
-    // 总金额
-    const totalAmount = await qb
-      .select('SUM(order.payment_amount)', 'total')
-      .getRawOne();
-
-    // 新学员订单数
-    const newStudentOrders = await qb
-      .andWhere('order.is_new_student = 1')
-      .getCount();
+    const result = await this.dataSource.query(sql, params);
+    const data = result[0];
 
     // 按状态统计
-    const statusStats = await this.orderRepository
-      .createQueryBuilder('order')
-      .select('order.order_status', 'status')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('order.order_status')
-      .getRawMany();
+    let statusSql = `SELECT order_status as status, COUNT(*) as count FROM orders WHERE 1=1`;
+    const statusParams: any[] = [];
+
+    if (dataScope?.salesId) {
+      statusSql += ` AND sales_id = ?`;
+      statusParams.push(dataScope.salesId);
+    }
+    if (dataScope?.campusId) {
+      statusSql += ` AND campus_id = ?`;
+      statusParams.push(dataScope.campusId);
+    }
+    if (startDate && endDate) {
+      statusSql += ` AND payment_time BETWEEN ? AND ?`;
+      statusParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    }
+
+    statusSql += ` GROUP BY order_status`;
+    const statusStats = await this.dataSource.query(statusSql, statusParams);
 
     return {
-      totalOrders,
-      totalAmount: parseFloat(totalAmount?.total || 0),
-      newStudentOrders,
-      oldStudentOrders: totalOrders - newStudentOrders,
+      totalOrders: parseInt(data.totalOrders || 0),
+      totalAmount: parseFloat(data.totalAmount || 0),
+      newStudentOrders: parseInt(data.newStudentOrders || 0),
+      oldStudentOrders: parseInt(data.totalOrders || 0) - parseInt(data.newStudentOrders || 0),
       statusStats,
     };
   }
@@ -479,25 +549,26 @@ export class OrderService {
     }
 
     // 查询校区排行榜
-    const rankings = await this.orderRepository
-      .createQueryBuilder('order')
-      .leftJoin('campus', 'campus', 'campus.id = order.campus_id')
-      .select('campus.id', 'campusId')
-      .addSelect('campus.campus_name', 'campusName')
-      .addSelect('COUNT(order.id)', 'orderCount')
-      .addSelect('SUM(order.payment_amount)', 'totalAmount')
-      .addSelect('SUM(CASE WHEN order.is_new_student = 1 THEN 1 ELSE 0 END)', 'newStudentCount')
-      .where('order.payment_time BETWEEN :rangeStart AND :rangeEnd', {
-        rangeStart,
-        rangeEnd,
-      })
-      .andWhere('order.campus_id IS NOT NULL')
-      .groupBy('campus.id')
-      .orderBy('orderCount', 'DESC')
-      .limit(10)
-      .getRawMany();
+    const sql = `
+      SELECT
+        campus.id as campusId,
+        campus.campus_name as campusName,
+        COUNT(o.id) as orderCount,
+        SUM(o.payment_amount) as totalAmount,
+        SUM(CASE WHEN o.is_new_student = 1 THEN 1 ELSE 0 END) as newStudentCount
+      FROM campus
+      LEFT JOIN orders o ON campus.id = o.campus_id
+        AND o.payment_time BETWEEN ? AND ?
+      WHERE campus.id IS NOT NULL
+      GROUP BY campus.id, campus.campus_name
+      HAVING orderCount > 0
+      ORDER BY orderCount DESC
+      LIMIT 10
+    `;
 
-    return rankings.map((item, index) => ({
+    const rankings = await this.dataSource.query(sql, [rangeStart, rangeEnd]);
+
+    return rankings.map((item: any, index: number) => ({
       rank: index + 1,
       campusId: item.campusId,
       campusName: item.campusName,

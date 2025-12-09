@@ -13,6 +13,8 @@ import {
   StreamableFile,
   UploadedFile,
   UseInterceptors,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { Response } from 'express';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -100,8 +102,8 @@ export class CustomerController {
   @Delete(':id')
   @ApiOperation({ summary: '删除客户' })
   @RequirePermissions('customer:delete')
-  async remove(@Param('id') id: string) {
-    return this.customerService.remove(+id);
+  async remove(@Param('id') id: string, @Request() req) {
+    return this.customerService.remove(+id, req.user.id);
   }
 
   @Post('follow-record')
@@ -180,4 +182,126 @@ export class CustomerController {
   ) {
     return this.customerService.importFromExcel(file, req.user);
   }
+
+  // ========== 订单绑定相关接口 ==========
+
+  @Get(':id/orders')
+  @ApiOperation({ summary: '获取客户的订单列表' })
+  @RequirePermissions('customer:view')
+  async getCustomerOrders(@Param('id') id: number) {
+    return this.customerService.getCustomerOrders(id);
+  }
+
+  @Post(':id/orders/bind')
+  @ApiOperation({ summary: '绑定订单到客户' })
+  @RequirePermissions('customer:edit')
+  async bindOrderToCustomer(
+    @Param('id') id: number,
+    @Body() body: { orderId: number }
+  ) {
+    if (!body.orderId) {
+      throw new BadRequestException('订单ID不能为空');
+    }
+    return this.customerService.bindOrderToCustomer(id, body.orderId);
+  }
+
+  @Post(':id/orders/bind-by-order-no')
+  @ApiOperation({ summary: '通过订单号绑定订单到客户' })
+  @RequirePermissions('customer:edit')
+  async bindOrderByOrderNo(
+    @Param('id') id: number,
+    @Body() body: { orderNo: string }
+  ) {
+    if (!body.orderNo) {
+      throw new BadRequestException('订单号不能为空');
+    }
+    return this.customerService.bindOrderByOrderNo(id, body.orderNo);
+  }
+
+  @Delete(':id/orders/:orderId/unbind')
+  @ApiOperation({ summary: '解绑客户的订单' })
+  @RequirePermissions('customer:edit')
+  async unbindOrderFromCustomer(
+    @Param('id') id: number,
+    @Param('orderId') orderId: number
+  ) {
+    return this.customerService.unbindOrderFromCustomer(id, orderId);
+  }
+
+  @Get(':id/available-orders')
+  @ApiOperation({ summary: '获取可绑定的订单列表' })
+  @RequirePermissions('customer:edit')
+  async getAvailableOrders(
+    @Param('id') id: number,
+    @Query() query: { keyword?: string; page?: number; pageSize?: number }
+  ) {
+    return this.customerService.getAvailableOrders(id, query);
+  }
+
+  // ========== 企业微信集成相关API ==========
+  // TODO: 实现企业微信集成服务后取消注释
+  /*
+  @Post(':id/wework-sync')
+  @ApiOperation({ summary: '同步客户企业微信数据' })
+  @RequirePermissions('customer:edit')
+  async syncCustomerWeWorkData(@Param('id') id: number) {
+    return this.customerService.syncWeWorkData(id);
+  }
+  */
+
+  /*
+  @Put(':id/wework-unlink')
+  @ApiOperation({ summary: '解除客户企业微信关联' })
+  @RequirePermissions('customer:edit')
+  async unlinkCustomerWeWork(@Param('id') id: number) {
+    return this.customerService.unlinkWeWork(id);
+  }
+
+  @Get(':id/wework-status')
+  @ApiOperation({ summary: '获取客户企业微信状态' })
+  @RequirePermissions('customer:view')
+  async getCustomerWeWorkStatus(@Param('id') id: number) {
+    return this.customerService.getWeWorkStatus(id);
+  }
+
+  @Post(':id/wework-chat-analysis')
+  @ApiOperation({ summary: '触发客户企业微信聊天AI分析' })
+  @RequirePermissions('customer:edit')
+  async triggerWeWorkChatAnalysis(
+    @Param('id') id: number,
+    @Body() body: { messageCount?: number; force?: boolean }
+  ) {
+    return this.customerService.triggerWeWorkChatAnalysis(id, body);
+  }
+
+  @Get(':id/wework-chat-records')
+  @ApiOperation({ summary: '获取客户企业微信聊天记录' })
+  @RequirePermissions('customer:view')
+  async getWeWorkChatRecords(
+    @Param('id') id: number,
+    @Query() query: {
+      page?: number;
+      pageSize?: number;
+      msgtype?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) {
+    return this.customerService.getWeWorkChatRecords(id, query);
+  }
+
+  @Post(':id/wework-send-message')
+  @ApiOperation({ summary: '向客户发送企业微信消息' })
+  @RequirePermissions('customer:edit')
+  async sendWeWorkMessage(
+    @Param('id') id: number,
+    @Body() body: {
+      messageType: 'text' | 'image' | 'file';
+      content: any;
+    }
+  ) {
+    return this.customerService.sendWeWorkMessage(id, body);
+  }
+  */
+  // ========== 企业微信集成相关API结束 ==========
 }

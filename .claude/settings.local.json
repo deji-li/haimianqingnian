@@ -4,7 +4,12 @@
       "Bash(mysql:*)",
       "Bash(cat:*)",
       "Bash(dir:*)",
-      "Bash(findstr:*)"
+      "Bash(findstr:*)",
+      "Bash(git branch:*)",
+      "Bash(git log:*)",
+      "Bash(find:*)",
+      "WebSearch",
+      "Bash(netstat:*)"
     ],
     "deny": [],
     "ask": []

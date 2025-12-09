@@ -1,0 +1,230 @@
+{
+  "easycom": {
+    "autoscan": true,
+    "custom": {
+      "^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+    }
+  },
+  "pages": [
+    {
+      "path": "pages/login/index",
+      "style": {
+        "navigationBarTitleText": "登录",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/index/index",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/customer/list",
+      "style": {
+        "navigationBarTitleText": "客户列表"
+      }
+    },
+    {
+      "path": "pages/customer/detail",
+      "style": {
+        "navigationBarTitleText": "客户详情"
+      }
+    },
+    {
+      "path": "pages/customer/detail-wework",
+      "style": {
+        "navigationBarTitleText": "客户详情"
+      }
+    },
+    {
+      "path": "pages/customer/add",
+      "style": {
+        "navigationBarTitleText": "添加客户"
+      }
+    },
+    {
+      "path": "pages/customer/edit",
+      "style": {
+        "navigationBarTitleText": "编辑客户"
+      }
+    },
+    {
+      "path": "pages/customer/smart-create",
+      "style": {
+        "navigationBarTitleText": "AI智能创建客户",
+        "navigationStyle": "default"
+      }
+    },
+    {
+      "path": "pages/order/list",
+      "style": {
+        "navigationBarTitleText": "订单列表"
+      }
+    },
+    {
+      "path": "pages/order/detail",
+      "style": {
+        "navigationBarTitleText": "订单详情"
+      }
+    },
+    {
+      "path": "pages/order/add",
+      "style": {
+        "navigationBarTitleText": "创建订单"
+      }
+    },
+    {
+      "path": "pages/order/edit",
+      "style": {
+        "navigationBarTitleText": "编辑订单"
+      }
+    },
+    {
+      "path": "pages/stats/index",
+      "style": {
+        "navigationBarTitleText": "数据统计"
+      }
+    },
+    {
+      "path": "pages/my/index",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/my/profile",
+      "style": {
+        "navigationBarTitleText": "个人信息"
+      }
+    },
+    {
+      "path": "pages/my/notifications",
+      "style": {
+        "navigationBarTitleText": "消息通知"
+      }
+    },
+    {
+      "path": "pages/my/settings",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
+      "path": "pages/my/about",
+      "style": {
+        "navigationBarTitleText": "关于我们"
+      }
+    },
+    {
+      "path": "pages/system/index",
+      "style": {
+        "navigationBarTitleText": "系统管理"
+      }
+    },
+    {
+      "path": "pages/system/roles",
+      "style": {
+        "navigationBarTitleText": "角色管理"
+      }
+    },
+    {
+      "path": "pages/system/role-permissions",
+      "style": {
+        "navigationBarTitleText": "配置权限"
+      }
+    },
+    {
+      "path": "pages/system/permissions",
+      "style": {
+        "navigationBarTitleText": "权限管理"
+      }
+    },
+    {
+      "path": "pages/system/users",
+      "style": {
+        "navigationBarTitleText": "用户管理"
+      }
+    },
+    {
+      "path": "pages/system/departments",
+      "style": {
+        "navigationBarTitleText": "部门管理"
+      }
+    },
+    {
+      "path": "pages/system/campuses",
+      "style": {
+        "navigationBarTitleText": "校区管理"
+      }
+    },
+    {
+      "path": "pages/system/wework-config",
+      "style": {
+        "navigationBarTitleText": "企业微信配置"
+      }
+    },
+    {
+      "path": "pages/system/ai-config",
+      "style": {
+        "navigationBarTitleText": "AI配置"
+      }
+    },
+    {
+      "path": "pages/system/logs",
+      "style": {
+        "navigationBarTitleText": "操作日志"
+      }
+    },
+    {
+      "path": "pages/wework/Settings",
+      "style": {
+        "navigationBarTitleText": "企业微信设置"
+      }
+    }
+  ],
+  "tabBar": {
+    "color": "#909399",
+    "selectedColor": "#FFB800",
+    "borderStyle": "white",
+    "backgroundColor": "#ffffff",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "iconPath": "/mobile/static/tabbar/home.png",
+        "selectedIconPath": "/mobile/static/tabbar/home-active.png",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/customer/list",
+        "iconPath": "/mobile/static/tabbar/customer.png",
+        "selectedIconPath": "/mobile/static/tabbar/customer-active.png",
+        "text": "客户"
+      },
+      {
+        "pagePath": "pages/order/list",
+        "iconPath": "/mobile/static/tabbar/order.png",
+        "selectedIconPath": "/mobile/static/tabbar/order-active.png",
+        "text": "订单"
+      },
+      {
+        "pagePath": "pages/stats/index",
+        "iconPath": "/mobile/static/tabbar/stats.png",
+        "selectedIconPath": "/mobile/static/tabbar/stats-active.png",
+        "text": "统计"
+      },
+      {
+        "pagePath": "pages/my/index",
+        "iconPath": "/mobile/static/tabbar/my.png",
+        "selectedIconPath": "/mobile/static/tabbar/my-active.png",
+        "text": "我的"
+      }
+    ]
+  },
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "教育CRM",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#F8F8F8"
+  }
+}

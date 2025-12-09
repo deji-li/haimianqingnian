@@ -2,9 +2,9 @@ import { IsNotEmpty, IsString, IsOptional, IsBoolean, IsEnum } from 'class-valid
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateAiApiKeyDto {
-  @ApiProperty({ description: 'AI供应商', enum: ['deepseek', 'doubao'] })
+  @ApiProperty({ description: 'AI供应商', enum: ['deepseek', 'doubao', 'baidu_ocr'] })
   @IsNotEmpty()
-  @IsEnum(['deepseek', 'doubao'])
+  @IsEnum(['deepseek', 'doubao', 'baidu_ocr'])
   provider: string;
 
   @ApiProperty({ description: 'API密钥' })
@@ -26,6 +26,16 @@ export class CreateAiApiKeyDto {
   @IsOptional()
   @IsString()
   modelName?: string;
+
+  @ApiProperty({ description: 'Secret Key（百度OCR专用）', required: false })
+  @IsOptional()
+  @IsString()
+  secretKey?: string;
+
+  @ApiProperty({ description: 'App ID（百度OCR专用）', required: false })
+  @IsOptional()
+  @IsString()
+  appId?: string;
 
   @ApiProperty({ description: '备注说明', required: false })
   @IsOptional()
@@ -58,6 +68,16 @@ export class UpdateAiApiKeyDto {
   @IsOptional()
   @IsString()
   modelName?: string;
+
+  @ApiProperty({ description: 'Secret Key（百度OCR专用）', required: false })
+  @IsOptional()
+  @IsString()
+  secretKey?: string;
+
+  @ApiProperty({ description: 'App ID（百度OCR专用）', required: false })
+  @IsOptional()
+  @IsString()
+  appId?: string;
 
   @ApiProperty({ description: '备注说明', required: false })
   @IsOptional()

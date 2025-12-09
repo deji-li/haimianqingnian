@@ -34,20 +34,19 @@ export class OrderSyncScheduler {
       this.isRunning = true;
 
       // 获取同步间隔配置（分钟）
-      const intervalMinutes = parseInt(
-        await this.businessConfigService.getConfig('order_sync.interval') || '30',
-      );
+      const intervalConfig = await this.businessConfigService.getConfig('order_sync.interval') || '30';
+      const intervalMinutes = !isNaN(parseInt(intervalConfig)) ? parseInt(intervalConfig) : 30;
 
       // 检查上次同步时间（简化版：直接执行，实际可通过数据库记录判断）
       // TODO: 可以增加更精确的间隔控制
 
       this.logger.log('开始定时增量同步任务');
 
-      const result = await this.orderSyncService.triggerSync();
+      const result = await this.orderSyncService.syncOrders({});
 
       this.logger.log(
-        `定时同步完成: 成功=${result.successCount}, 失败=${result.failedCount}, ` +
-          `创建=${result.createdCount}, 更新=${result.updatedCount}`,
+        `定时同步完成: 成功=${result.success}, 失败=${result.failed}, ` +
+          `创建=${result.created}, 更新=${result.updated}`,
       );
     } catch (error) {
       this.logger.error(`定时同步失败: ${error.message}`, error.stack);
@@ -84,14 +83,14 @@ export class OrderSyncScheduler {
       const endDate = new Date();
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      const result = await this.orderSyncService.triggerSync({
+      const result = await this.orderSyncService.syncOrders({
         startTime: this.formatDate(startDate),
         endTime: this.formatDate(endDate),
       });
 
       this.logger.log(
-        `每日批量更新完成: 成功=${result.successCount}, 失败=${result.failedCount}, ` +
-          `创建=${result.createdCount}, 更新=${result.updatedCount}`,
+        `每日批量更新完成: 成功=${result.success}, 失败=${result.failed}, ` +
+          `创建=${result.created}, 更新=${result.updated}`,
       );
     } catch (error) {
       this.logger.error(`每日批量更新失败: ${error.message}`, error.stack);

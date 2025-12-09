@@ -1,0 +1,206 @@
+========================================
+CRM System - How to Start
+========================================
+
+PROBLEM FIXED:
+- Database username changed to: root
+- Database password changed to: 123456
+- Auto table creation enabled
+
+========================================
+Quick Start (Easiest Way)
+========================================
+
+Double click: START.bat
+
+That's it! The script will:
+1. Start MySQL service
+2. Create database
+3. Start backend (new window)
+4. Start frontend (new window)
+5. Open browser automatically
+
+Login:
+  Username: admin
+  Password: 123456
+
+========================================
+Manual Start (If Script Fails)
+========================================
+
+Step 1: Start MySQL Service
+----------------------------
+Open PowerShell as Administrator, run:
+
+  Start-Service MySQL80
+
+Verify:
+  Get-Service MySQL80
+  (Should show "Running")
+
+
+Step 2: Create Database
+----------------------------
+Open Command Prompt, run:
+
+  mysql -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+Verify:
+  mysql -u root -p123456 -e "SHOW DATABASES;"
+  (Should see "education_crm")
+
+
+Step 3: Start Backend
+----------------------------
+Open Command Prompt Window 1:
+
+  cd D:\CC\1.1\backend
+  npm run start:dev
+
+Wait for:
+  "Application is running on: http://localhost:3000"
+
+DO NOT CLOSE THIS WINDOW!
+
+
+Step 4: Start Frontend
+----------------------------
+Open Command Prompt Window 2:
+
+  cd D:\CC\1.1\frontend
+  npm run dev
+
+Wait for:
+  "Local: http://localhost:5174/"
+
+DO NOT CLOSE THIS WINDOW!
+
+
+Step 5: Access System
+----------------------------
+Open browser:
+  http://localhost:5174
+
+Login:
+  Username: admin
+  Password: 123456
+
+========================================
+Verify Backend is Working
+========================================
+
+Visit: http://localhost:3000/api
+
+You should see:
+  Swagger API Documentation page
+
+If you see this page = Backend is OK
+If you cannot open = Backend failed to start
+
+========================================
+Common Issues
+========================================
+
+Issue 1: MySQL Service Won't Start
+-----------------------------------
+Solution:
+  Run Command Prompt as Administrator
+  Run: net start MySQL80
+
+
+Issue 2: Port 3000 Already in Use
+-----------------------------------
+Solution:
+  netstat -ano | findstr :3000
+  Find the PID (last column)
+  taskkill /PID [PID] /F
+
+
+Issue 3: Cannot Connect to MySQL
+-----------------------------------
+Solution:
+  Test connection:
+    mysql -u root -p123456 -e "SELECT 1;"
+
+  If fails, check password in:
+    backend\.env.development
+    (Should be: DB_PASSWORD=123456)
+
+
+Issue 4: Database Tables Not Created
+-----------------------------------
+Solution:
+  Check backend\.env.development:
+    DB_SYNCHRONIZE=true
+
+  Restart backend after change
+
+
+Issue 5: "Server Error" on Login
+-----------------------------------
+Solution:
+  Check "CRM-Backend" window for errors
+  Most common: Database connection failed
+
+  Verify:
+  1. MySQL is running
+  2. Database exists
+  3. Password is correct
+
+========================================
+File Locations
+========================================
+
+Config file:
+  D:\CC\1.1\backend\.env.development
+
+Database settings in config:
+  DB_HOST=localhost
+  DB_PORT=3306
+  DB_USERNAME=root
+  DB_PASSWORD=123456
+  DB_DATABASE=education_crm
+  DB_SYNCHRONIZE=true
+
+Start script:
+  D:\CC\1.1\START.bat
+
+========================================
+Need Help?
+========================================
+
+Provide these information:
+
+1. MySQL Service Status:
+   Get-Service MySQL80
+
+2. MySQL Connection Test:
+   mysql -u root -p123456 -e "SHOW DATABASES;"
+
+3. Backend Window Error:
+   Copy all red error text from "CRM-Backend" window
+
+4. Backend Config:
+   Show content of backend\.env.development
+
+========================================
+Quick Commands
+========================================
+
+Start MySQL:
+  Start-Service MySQL80
+
+Stop MySQL:
+  Stop-Service MySQL80
+
+Test MySQL:
+  mysql -u root -p123456 -e "SELECT 1;"
+
+Create Database:
+  mysql -u root -p123456 -e "CREATE DATABASE education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+Kill Port 3000:
+  netstat -ano | findstr :3000
+  taskkill /PID [PID] /F
+
+========================================

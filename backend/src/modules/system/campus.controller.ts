@@ -7,18 +7,14 @@ import {
   Patch,
   Body,
   Param,
-  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { CampusService } from './campus.service';
 import { CreateCampusDto } from './dto/create-campus.dto';
 import { UpdateCampusDto } from './dto/update-campus.dto';
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 
 @ApiTags('校区管理')
 @Controller('campus')
-@UseGuards(JwtAuthGuard)
-@ApiBearerAuth()
 export class CampusController {
   constructor(private readonly campusService: CampusService) {}
 

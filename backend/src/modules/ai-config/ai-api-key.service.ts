@@ -67,6 +67,37 @@ export class AiApiKeyService {
   }
 
   /**
+   * 获取指定供应商的活跃API密钥
+   */
+  async getActiveKey(provider: string): Promise<AiApiKey | null> {
+    try {
+      return await this.aiApiKeyRepository.findOne({
+        where: { provider, isActive: true },
+      });
+    } catch (error) {
+      this.logger.error(`获取${provider}的活跃API密钥失败: ${error.message}`, error.stack);
+      return null;
+    }
+  }
+
+  /**
+   * 获取所有可用的AI模型
+   */
+  async getAvailableModels(): Promise<string[]> {
+    try {
+      const configs = await this.aiApiKeyRepository.find({
+        where: { isActive: true },
+        select: ['provider'],
+      });
+
+      return configs.map(config => config.provider);
+    } catch (error) {
+      this.logger.error(`获取可用AI模型失败: ${error.message}`, error.stack);
+      return [];
+    }
+  }
+
+  /**
    * 根据ID查询API密钥配置
    */
   async findOne(id: number): Promise<AiApiKey> {

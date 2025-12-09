@@ -6,10 +6,13 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, Between } from 'typeorm';
+import { Repository, Like, Between, Not, DataSource } from 'typeorm';
 import { Customer } from './entities/customer.entity';
 import { CustomerFollowRecord } from './entities/customer-follow-record.entity';
+import { TemporaryOrder, TemporaryOrderStatus } from './entities/temporary-order.entity';
+import { CustomerMergeLog, MergeType } from './entities/customer-merge-log.entity';
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
+import { Order } from '../order/entities/order.entity';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { BatchUpdateCustomerDto } from './dto/batch-update-customer.dto';
@@ -19,7 +22,7 @@ import {
   SmartCreateCustomerDto,
   SmartCreateCustomerResponseDto,
 } from './dto/smart-create-customer.dto';
-import { DoubaoOcrService } from '../../common/services/ai/doubao-ocr.service';
+import { CustomerBaiduOcrService } from '../../common/services/ai/customer-baidu-ocr.service';
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service';
 import { AiTagsService } from '../ai-tags/ai-tags.service';
 import { BusinessConfigService } from '../business-config/business-config.service';
@@ -36,23 +39,74 @@ export class CustomerService {
     private customerRepository: Repository<Customer>,
     @InjectRepository(CustomerFollowRecord)
     private followRecordRepository: Repository<CustomerFollowRecord>,
+    @InjectRepository(TemporaryOrder)
+    private temporaryOrderRepository: Repository<TemporaryOrder>,
+    @InjectRepository(CustomerMergeLog)
+    private customerMergeLogRepository: Repository<CustomerMergeLog>,
     @InjectRepository(AiChatRecord)
     private aiChatRecordRepository: Repository<AiChatRecord>,
-    private readonly doubaoOcrService: DoubaoOcrService,
+    @InjectRepository(Order)
+    private orderRepository: Repository<Order>,
+    private readonly customerBaiduOcrService: CustomerBaiduOcrService,
     private readonly deepseekAnalysisService: DeepseekAnalysisService,
     private readonly aiTagsService: AiTagsService,
     private readonly businessConfigService: BusinessConfigService,
+    private readonly dataSource: DataSource,
   ) {}
+
+  // ========== 软删除辅助方法 ==========
+
+  /**
+   * 获取基础查询条件（排除已删除的客户）
+   */
+  private getActiveCustomerQuery() {
+    return {
+      isDeleted: false
+    };
+  }
+
+  /**
+   * 为查询添加软删除过滤条件
+   */
+  private addSoftDeleteFilter(query: any) {
+    return {
+      ...query,
+      where: {
+        ...query.where,
+        isDeleted: false
+      }
+    };
+  }
+
+  /**
+   * 检查客户是否已被删除
+   */
+  private async isCustomerDeleted(customerId: number): Promise<boolean> {
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+      select: ['id', 'isDeleted']
+    });
+    return customer?.isDeleted || false;
+  }
+  // ========== 软删除辅助方法结束 ==========
 
   // 创建客户
   async create(createCustomerDto: CreateCustomerDto) {
-    // 检查微信号是否已存在
+    // 检查微信号是否已存在（排除已删除的客户）
     const existingCustomer = await this.customerRepository.findOne({
-      where: { wechatId: createCustomerDto.wechatId },
+      where: {
+        wechatId: createCustomerDto.wechatId,
+        isDeleted: false
+      },
     });
 
     if (existingCustomer) {
       throw new ConflictException('该微信号已存在');
+    }
+
+    // 检查是否有订单号，如果有则检查是否需要合并海绵创建的客户
+    if (createCustomerDto.externalOrderIds && createCustomerDto.externalOrderIds.length > 0) {
+      await this.mergeWithHaimianCustomers(createCustomerDto);
     }
 
     const customer = this.customerRepository.create(createCustomerDto);
@@ -276,7 +330,9 @@ export class CustomerService {
 
   // 更新客户
   async update(id: number, updateCustomerDto: UpdateCustomerDto) {
-    const customer = await this.customerRepository.findOne({ where: { id } });
+    const customer = await this.customerRepository.findOne({
+      where: { id, isDeleted: false }
+    });
 
     if (!customer) {
       throw new NotFoundException('客户不存在');
@@ -339,15 +395,25 @@ export class CustomerService {
     };
   }
 
-  // 删除客户
-  async remove(id: number) {
-    const customer = await this.customerRepository.findOne({ where: { id } });
+  // 删除客户（软删除）
+  async remove(id: number, deletedBy?: number, deleteReason?: string) {
+    const customer = await this.customerRepository.findOne({
+      where: { id, isDeleted: false }
+    });
 
     if (!customer) {
       throw new NotFoundException('客户不存在');
     }
 
-    await this.customerRepository.remove(customer);
+    // 执行软删除
+    await this.customerRepository.update(id, {
+      isDeleted: true,
+      deletedAt: new Date(),
+      deletedReason: deleteReason || '手动删除客户',
+      deletedBy: deletedBy || null
+    });
+
+    this.logger.log(`客户 ${id} 已软删除，原因: ${deleteReason || '手动删除客户'}`);
     return { message: '删除成功' };
   }
 
@@ -689,9 +755,9 @@ export class CustomerService {
       // 2. OCR识别
       let chatText: string;
       if (imagePaths.length === 1) {
-        chatText = await this.doubaoOcrService.extractTextFromImage(imagePaths[0]);
+        chatText = await this.customerBaiduOcrService.extractTextFromImage(imagePaths[0]);
       } else {
-        chatText = await this.doubaoOcrService.extractTextFromImages(imagePaths);
+        chatText = await this.customerBaiduOcrService.extractTextFromImages(imagePaths);
       }
 
       this.logger.log(`客户${customerId}: OCR识别完成，文本长度: ${chatText.length}`);
@@ -1351,6 +1417,963 @@ export class CustomerService {
     } catch (error) {
       this.logger.error(`导入客户失败: ${error.message}`);
       throw error;
+    }
+  }
+
+  /**
+   * 合并海绵创建的客户（当销售上传客户时）
+   * 优化策略：智能匹配、数据合并、历史记录保留
+   */
+  private async mergeWithHaimianCustomers(createCustomerDto: CreateCustomerDto): Promise<void> {
+    if (!createCustomerDto.externalOrderIds || createCustomerDto.externalOrderIds.length === 0) {
+      return;
+    }
+
+    this.logger.log(`开始客户合并逻辑，订单号: ${createCustomerDto.externalOrderIds.join(', ')}`);
+
+    for (const orderId of createCustomerDto.externalOrderIds) {
+      try {
+        // 查找绑定该订单的海绵创建的客户
+        const haimianCustomers = await this.findHaimianCustomersByOrder(orderId);
+
+        if (haimianCustomers.length === 0) {
+          this.logger.debug(`订单 ${orderId} 未找到关联的海绵客户`);
+          continue;
+        }
+
+        for (const haimianCustomer of haimianCustomers) {
+          // 智能匹配验证
+          const matchScore = await this.calculateCustomerMatchScore(createCustomerDto, haimianCustomer, orderId);
+
+          if (matchScore >= 0.7) { // 匹配度阈值70%
+            this.logger.log(`发现高匹配度海绵客户需要合并: ${haimianCustomer.wechatNickname}, 订单: ${orderId}, 匹配度: ${(matchScore * 100).toFixed(1)}%`);
+
+            // 执行客户合并
+            await this.performCustomerMerge(createCustomerDto, haimianCustomer, orderId);
+          } else {
+            this.logger.warn(`海绵客户匹配度不足，跳过合并: ${haimianCustomer.wechatNickname}, 订单: ${orderId}, 匹配度: ${(matchScore * 100).toFixed(1)}%`);
+          }
+        }
+      } catch (error) {
+        this.logger.error(`处理订单 ${orderId} 的客户合并时出错: ${error.message}`);
+      }
+    }
+  }
+
+  /**
+   * 通过订单号查找海绵创建的客户
+   */
+  private async findHaimianCustomersByOrder(orderId: string): Promise<Customer[]> {
+    const customers = await this.customerRepository.find({
+      where: {
+        source: '海绵青年GO',
+        // @ts-ignore
+        externalOrderIds: Like(`%${orderId}%`),
+      },
+    });
+
+    // 进一步精确匹配（避免误匹配）
+    return customers.filter(customer =>
+      Array.isArray(customer.externalOrderIds) &&
+      customer.externalOrderIds.includes(orderId)
+    );
+  }
+
+  /**
+   * 计算客户匹配度分数
+   */
+  private async calculateCustomerMatchScore(
+    createCustomerDto: CreateCustomerDto,
+    haimianCustomer: Customer,
+    orderId: string
+  ): Promise<number> {
+    let score = 0;
+    let totalFactors = 0;
+
+    // 订单号匹配（最高权重）
+    if (Array.isArray(haimianCustomer.externalOrderIds) &&
+        haimianCustomer.externalOrderIds.includes(orderId)) {
+      score += 0.4;
+    }
+    totalFactors += 0.4;
+
+    // 手机号匹配
+    if (createCustomerDto.phone && haimianCustomer.phone) {
+      if (createCustomerDto.phone === haimianCustomer.phone) {
+        score += 0.3;
+      }
+      totalFactors += 0.3;
+    } else if (createCustomerDto.phone || haimianCustomer.phone) {
+      totalFactors += 0.3; // 部分匹配机会
+    }
+
+    // 微信昵称匹配
+    if (createCustomerDto.wechatNickname && haimianCustomer.wechatNickname) {
+      // 去除"海绵用户_"前缀进行比较
+      const cleanHaimianNickname = haimianCustomer.wechatNickname.replace(/^海绵用户_/, '');
+      if (createCustomerDto.wechatNickname === cleanHaimianNickname) {
+        score += 0.2;
+      } else if (createCustomerDto.wechatNickname.includes(cleanHaimianNickname) ||
+                 cleanHaimianNickname.includes(createCustomerDto.wechatNickname)) {
+        score += 0.1; // 部分匹配
+      }
+    }
+    totalFactors += 0.2;
+
+    // 真实姓名匹配
+    if (createCustomerDto.realName && haimianCustomer.realName) {
+      if (createCustomerDto.realName === haimianCustomer.realName) {
+        score += 0.1;
+      }
+    }
+    totalFactors += 0.1;
+
+    return totalFactors > 0 ? score / totalFactors : 0;
+  }
+
+  /**
+   * 执行客户合并操作
+   */
+  private async performCustomerMerge(
+    createCustomerDto: CreateCustomerDto,
+    haimianCustomer: Customer,
+    orderId: string
+  ): Promise<void> {
+    try {
+      // 1. 备份海绵客户的重要信息
+      const backupData = {
+        originalId: haimianCustomer.id,
+        originalNickname: haimianCustomer.wechatNickname,
+        originalPhone: haimianCustomer.phone,
+        originalRealName: haimianCustomer.realName,
+        externalOrderIds: haimianCustomer.externalOrderIds,
+        source: haimianCustomer.source,
+        customerIntent: haimianCustomer.customerIntent,
+        lifecycleStage: haimianCustomer.lifecycleStage,
+        createTime: haimianCustomer.createTime
+      };
+
+      // 2. 智能数据合并策略
+      const mergedData = await this.intelligentDataMerge(createCustomerDto, haimianCustomer);
+
+      // 3. 创建合并记录日志
+      const mergeLog = {
+        mergeType: 'haimian_to_manual',
+        orderId,
+        haimianCustomerId: haimianCustomer.id,
+        manualCustomerWechatId: createCustomerDto.wechatId,
+        mergeTime: new Date(),
+        backupData,
+        mergedFields: Object.keys(mergedData),
+        originalData: haimianCustomer,
+        newData: createCustomerDto
+      };
+
+      // 4. 如果海绵客户有更完整的信息，更新新客户数据
+      if (Object.keys(mergedData).length > 0) {
+        Object.assign(createCustomerDto, mergedData);
+        this.logger.log(`客户合并完成，更新字段: ${Object.keys(mergedData).join(', ')}`);
+      }
+
+      // 5. 迁移关联数据（如果有）
+      await this.migrateRelatedData(haimianCustomer.id, createCustomerDto.wechatId);
+
+      // 6. 软删除海绵临时客户
+      await this.customerRepository.update(haimianCustomer.id, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedReason: '客户合并到正式客户',
+        deletedBy: createCustomerDto.salesId || null
+      });
+
+      // 7. 记录合并日志（可以保存到单独的合并日志表或跟进记录）
+      await this.logCustomerMergeFollowRecord(mergeLog);
+
+      this.logger.log(`成功删除海绵临时客户: ${backupData.originalNickname}，订单: ${orderId}`);
+
+    } catch (error) {
+      this.logger.error(`客户合并失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 智能数据合并策略
+   */
+  private async intelligentDataMerge(
+    createCustomerDto: CreateCustomerDto,
+    haimianCustomer: Customer
+  ): Promise<any> {
+    const mergedData: any = {};
+
+    // 手机号：优先使用销售提供的手机号
+    if (createCustomerDto.phone && !haimianCustomer.phone) {
+      mergedData.phone = createCustomerDto.phone;
+    } else if (!createCustomerDto.phone && haimianCustomer.phone) {
+      mergedData.phone = haimianCustomer.phone;
+    }
+
+    // 微信昵称：优先使用真实昵称而非系统生成的
+    if (createCustomerDto.wechatNickname &&
+        (haimianCustomer.wechatNickname?.startsWith('海绵用户_') ||
+         !haimianCustomer.wechatNickname)) {
+      mergedData.wechatNickname = createCustomerDto.wechatNickname;
+    } else if (!createCustomerDto.wechatNickname && haimianCustomer.wechatNickname) {
+      mergedData.wechatNickname = haimianCustomer.wechatNickname;
+    }
+
+    // 真实姓名：优先使用非空值
+    if (createCustomerDto.realName && !haimianCustomer.realName) {
+      mergedData.realName = createCustomerDto.realName;
+    } else if (!createCustomerDto.realName && haimianCustomer.realName) {
+      mergedData.realName = haimianCustomer.realName;
+    }
+
+    // 客户意向：海绵客户已经是高意向客户，保留更高意向
+    const intentLevels = ['无意向', '低意向', '中意向', '高意向'];
+    const haimianIntentIndex = intentLevels.indexOf(haimianCustomer.customerIntent || '中意向');
+    const manualIntentIndex = intentLevels.indexOf(createCustomerDto.customerIntent || '中意向');
+
+    if (haimianIntentIndex > manualIntentIndex) {
+      mergedData.customerIntent = haimianCustomer.customerIntent;
+    }
+
+    // 生命周期阶段：海绵客户已经是成交客户，保留更高级阶段
+    const stageLevels = ['未分级', '线索', '初次接触', '需求确认', '方案沟通', '报价', '试听中', '已成交', '已流失'];
+    const haimianStageIndex = stageLevels.indexOf(haimianCustomer.lifecycleStage || '线索');
+    const manualStageIndex = stageLevels.indexOf(createCustomerDto.lifecycleStage || '线索');
+
+    if (haimianStageIndex > manualStageIndex) {
+      mergedData.lifecycleStage = haimianCustomer.lifecycleStage;
+    }
+
+    // 合并订单号（确保不重复）
+    if (haimianCustomer.externalOrderIds &&
+        Array.isArray(haimianCustomer.externalOrderIds)) {
+      const mergedOrderIds = new Set([
+        ...(createCustomerDto.externalOrderIds || []),
+        ...haimianCustomer.externalOrderIds
+      ]);
+      mergedData.externalOrderIds = Array.from(mergedOrderIds);
+    }
+
+    // 保留海绵客户的备注信息
+    if (haimianCustomer.remark && haimianCustomer.remark !== 'AI识别中，请稍后查看完整信息...') {
+      const existingRemark = createCustomerDto.remark || '';
+      mergedData.remark = existingRemark ?
+        `${existingRemark}\n\n【来自海绵订单同步】\n${haimianCustomer.remark}` :
+        haimianCustomer.remark;
+    }
+
+    return mergedData;
+  }
+
+  /**
+   * 迁移关联数据（如跟进记录、标签等）
+   */
+  private async migrateRelatedData(
+    fromCustomerId: number,
+    toCustomerWechatId: string
+  ): Promise<void> {
+    try {
+      // 查找目标客户
+      const targetCustomer = await this.customerRepository.findOne({
+        where: { wechatId: toCustomerWechatId }
+      });
+
+      if (!targetCustomer) {
+        this.logger.warn(`未找到目标客户 ${toCustomerWechatId}，无法迁移关联数据`);
+        return;
+      }
+
+      // 迁移跟进记录
+      const followRecords = await this.followRecordRepository.find({
+        where: { customerId: fromCustomerId }
+      });
+
+      if (followRecords.length > 0) {
+        for (const record of followRecords) {
+          record.customerId = targetCustomer.id;
+          // 在备注中添加迁移标识
+          if (record.followContent) {
+            record.followContent = `【迁移记录】${record.followContent}`;
+          }
+        }
+        await this.followRecordRepository.save(followRecords);
+        this.logger.log(`迁移了 ${followRecords.length} 条跟进记录`);
+      }
+
+      // TODO: 可以在这里添加其他关联数据的迁移逻辑
+      // 例如：AI聊天记录、客户标签、订单信息等
+
+    } catch (error) {
+      this.logger.error(`迁移关联数据失败: ${error.message}`);
+      // 不抛出错误，避免影响主流程
+    }
+  }
+
+  /**
+   * 记录客户合并日志
+   */
+  private async logCustomerMergeFollowRecord(mergeLog: any): Promise<void> {
+    try {
+      // 创建一条特殊的跟进记录来记录合并信息
+      const targetCustomer = await this.customerRepository.findOne({
+        where: { wechatId: mergeLog.manualCustomerWechatId }
+      });
+
+      if (targetCustomer) {
+        const followRecord = this.followRecordRepository.create({
+          customerId: targetCustomer.id,
+          followContent: `【客户合并记录】\n合并时间：${mergeLog.mergeTime.toLocaleString('zh-CN')}\n来源订单：${mergeLog.orderId}\n原海绵客户ID：${mergeLog.haimianCustomerId}\n原昵称：${mergeLog.backupData.originalNickname}\n合并字段：${mergeLog.mergedFields.join('、')}\n\n${JSON.stringify(mergeLog.backupData, null, 2)}`,
+          followTime: new Date(),
+          operatorId: null, // 系统自动操作
+          nextFollowTime: null,
+        });
+
+        await this.followRecordRepository.save(followRecord);
+        this.logger.log(`客户合并日志已记录，跟进记录ID: ${followRecord.id}`);
+      }
+
+    } catch (error) {
+      this.logger.error(`记录客户合并日志失败: ${error.message}`);
+      // 不抛出错误，避免影响主流程
+    }
+  }
+
+  // ========== 订单绑定相关方法 ==========
+
+  /**
+   * 获取客户的订单列表
+   */
+  async getCustomerOrders(customerId: number) {
+    this.logger.log(`获取客户 ${customerId} 的订单列表`);
+
+    // 检查客户是否存在
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`客户不存在，ID: ${customerId}`);
+    }
+
+    // 查询该客户的订单，使用简单查询确保数据获取正确
+    const orders = await this.orderRepository.find({
+      where: { customerId },
+      order: { paymentTime: 'DESC' },
+      relations: ['customer', 'campus', 'teacher'] // 只包含已定义的关联关系
+    });
+
+      // 格式化数据以匹配前端期望的结构
+    const formattedOrders = orders.map((order: any) => ({
+      id: order.id,
+      orderNo: order.orderNo,
+      customerId: customerId,
+      courseName: order.courseName,
+      paymentAmount: Number(order.paymentAmount) || 0,
+      paymentTime: order.paymentTime,
+      isNewStudent: order.isNewStudent,
+      orderStatus: order.orderStatus,
+      teacherName: order.teacherName,
+      region: order.region,
+      distributorSales: order.distributorSales,
+      remark: order.remark,
+      dataSource: order.dataSource,
+      createTime: order.createTime,
+      updateTime: order.updateTime,
+      salesName: order.sales?.realName || '',
+      campusName: order.campus?.campusName || '',
+    }));
+
+    this.logger.log(`客户 ${customerId} 共有 ${formattedOrders.length} 个订单`);
+    return {
+      success: true,
+      data: formattedOrders,
+      message: '获取客户订单成功',
+    };
+  }
+
+  /**
+   * 绑定订单到客户
+   */
+  async bindOrderToCustomer(customerId: number, orderId: number) {
+    this.logger.log(`绑定订单 ${orderId} 到客户 ${customerId}`);
+
+    // 检查客户是否存在
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`客户不存在，ID: ${customerId}`);
+    }
+
+    // 检查订单是否存在
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`订单不存在，ID: ${orderId}`);
+    }
+
+    // 检查订单是否已被其他客户绑定
+    if (order.customerId && order.customerId !== customerId) {
+      throw new BadRequestException(`订单已被其他客户绑定`);
+    }
+
+    // 更新订单的客户ID
+    await this.orderRepository.update(orderId, {
+      customerId,
+      wechatId: customer.wechatId,
+      wechatNickname: customer.wechatNickname,
+      phone: customer.phone,
+    });
+
+    // 更新客户最后修改时间
+    await this.customerRepository.update(customerId, {
+      updateTime: new Date(),
+    });
+
+    this.logger.log(`订单 ${orderId} 已成功绑定到客户 ${customerId}`);
+
+    return {
+      success: true,
+      message: '订单绑定成��',
+      data: {
+        orderId,
+        customerId,
+        orderNo: order.orderNo,
+      },
+    };
+  }
+
+  /**
+   * 通过订单号搜索并绑定订单到客户
+   * @param customerId 客户ID
+   * @param orderNo 订单号
+   * @returns 绑定结果
+   */
+  async bindOrderByOrderNo(customerId: number, orderNo: string) {
+    this.logger.log(`通过订单号 ${orderNo} 绑定到客户 ${customerId}`);
+
+    // 检查客户是否存在
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`客户不存在，ID: ${customerId}`);
+    }
+
+    // 查找订单
+    const order = await this.orderRepository.findOne({
+      where: { orderNo: orderNo.trim() },
+    });
+
+    if (!order) {
+      // 订单不存在，创建临时订单记录
+      this.logger.log(`订单 ${orderNo} 不存在，创建临时订单记录`);
+      return await this.createTemporaryOrderBinding(customerId, orderNo.trim());
+    }
+
+    // 检查订单是否已被其他客户绑定
+    if (order.customerId && order.customerId !== customerId) {
+      // 获取已绑定该订单的客户信息
+      const existingCustomer = await this.customerRepository.findOne({
+        where: { id: order.customerId },
+      });
+
+      if (existingCustomer) {
+        // 实现用户同步逻辑：将原有客户的数据同步到新客户，然后删除原有客户
+        this.logger.log(`订单 ${orderNo} 已绑定给客户 ${existingCustomer.id}，开始同步数据到客户 ${customerId}`);
+
+        // 同步数据逻辑
+        await this.syncCustomerData(existingCustomer.id, customerId);
+
+        // 删除原有客户（如果没有其他订单）
+        await this.safeDeleteCustomer(existingCustomer.id);
+
+        this.logger.log(`客户数据同步完成：${existingCustomer.id} -> ${customerId}`);
+      }
+    }
+
+    // 检查是否是海绵同步的订单，如果是，则删除原来创建的临时客户
+    if (order.externalSystem === 'HAIMIAN' && order.customerId) {
+      const haimianCustomer = await this.customerRepository.findOne({
+        where: { id: order.customerId },
+      });
+
+      if (haimianCustomer && haimianCustomer.source === '海绵青年GO') {
+        this.logger.log(`删除海绵创建的临时客户: ${haimianCustomer.wechatNickname}`);
+
+        // 检查该临时客户是否还有其他订单
+        const otherOrders = await this.orderRepository.find({
+          where: {
+            customerId: haimianCustomer.id,
+          },
+        });
+
+        const otherOrdersCount = otherOrders.filter(o => o.id !== order.id).length;
+
+        if (otherOrdersCount === 0) {
+          // 如果没有其他订单，软删除该临时客户
+          await this.customerRepository.update(haimianCustomer.id, {
+            isDeleted: true,
+            deletedAt: new Date(),
+            deletedReason: '订单绑定后删除海绵临时客户'
+          });
+          this.logger.log(`已软删除海绵临时客户 ID: ${haimianCustomer.id}`);
+        } else {
+          this.logger.log(`海绵临时客户还有其他订单，保留客户 ID: ${haimianCustomer.id}`);
+        }
+      }
+    }
+
+    // 使用事务确保数据一致性
+    await this.dataSource.transaction(async manager => {
+      // 绑定订单到新客户
+      await manager.update('Order', order.id, {
+        customerId,
+        wechatId: customer.wechatId,
+        wechatNickname: customer.wechatNickname,
+        phone: customer.phone,
+      });
+
+      // 更新客户的订单号列表
+      if (!customer.externalOrderIds) {
+        customer.externalOrderIds = [];
+      }
+      if (!customer.externalOrderIds.includes(orderNo)) {
+        customer.externalOrderIds.push(orderNo);
+        await manager.update('Customer', customerId, {
+          externalOrderIds: customer.externalOrderIds,
+          updateTime: new Date(),
+        });
+      }
+    });
+
+    this.logger.log(`订单 ${orderNo} 已成功绑定到客户 ${customerId}`);
+
+    return {
+      success: true,
+      message: '订单绑定成功',
+      data: {
+        orderId: order.id,
+        customerId,
+        orderNo: order.orderNo,
+        orderInfo: {
+          courseName: order.courseName,
+          paymentAmount: order.paymentAmount,
+          orderStatus: order.orderStatus,
+          paymentTime: order.paymentTime,
+        },
+      },
+    };
+  }
+
+  /**
+   * 解绑客户的订单
+   */
+  async unbindOrderFromCustomer(customerId: number, orderId: number) {
+    this.logger.log(`解绑客户 ${customerId} 的订单 ${orderId}`);
+
+    // 检查客户是否存在
+    const customer = await this.customerRepository.findOne({
+      where: { id: customerId },
+    });
+
+    if (!customer) {
+      throw new NotFoundException(`客户不存在，ID: ${customerId}`);
+    }
+
+    // 检查订单是否存在且属于该客户
+    const order = await this.orderRepository.findOne({
+      where: { id: orderId, customerId },
+    });
+
+    if (!order) {
+      throw new NotFoundException(`订单不存在或不属于该客户，ID: ${orderId}`);
+    }
+
+    // 使用事务确保数据一致性
+    await this.dataSource.transaction(async manager => {
+      // 更新订单，清空客户关联信息
+      await manager.update('Order', orderId, {
+        customerId: null,
+        wechatId: null,
+        wechatNickname: null,
+      });
+    });
+
+    // 更新客户最后修改时间
+    await this.customerRepository.update(customerId, {
+      updateTime: new Date(),
+    });
+
+    this.logger.log(`订单 ${orderId} 已从客户 ${customerId} 解绑`);
+
+    return {
+      success: true,
+      message: '订单解绑成功',
+      data: {
+        orderId,
+        customerId,
+        orderNo: order.orderNo,
+      },
+    };
+  }
+
+  /**
+   * 获取可绑定的订单列表
+   * 修改：按订单号搜索，不限制是否已绑定（支持订单重新绑定）
+   */
+  async getAvailableOrders(customerId: number, query: { keyword?: string; page?: number; pageSize?: number }) {
+    this.logger.log(`获取可绑定到客户 ${customerId} 的订单列表`);
+
+    const { keyword = '', page = 1, pageSize = 20 } = query;
+
+    // 构建查询条件 - 按订单号搜索所有订单（包括已绑定的）
+    const whereCondition: any = {};
+
+    if (keyword) {
+      whereCondition.orderNo = Like(`%${keyword}%`);
+    }
+
+    // 查询总数
+    const total = await this.orderRepository.count({ where: whereCondition });
+
+    // 查询订单列表
+    const orders = await this.orderRepository.find({
+      where: whereCondition,
+      relations: ['customer'], // 关联客户信息
+      order: { paymentTime: 'DESC' },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    this.logger.log(`客户 ${customerId} 搜索订单: ${total} 个，当前页: ${orders.length} 个`);
+
+    return {
+      success: true,
+      data: {
+        list: orders,
+        total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(total / pageSize),
+      },
+      message: '获取可绑定订单成功',
+    };
+  }
+
+  /**
+   * 同步客户数据（从临时客户同步到正式客户）
+   * 注意：以正式客户（目标）的信息为主，补全缺失信息
+   */
+  private async syncCustomerData(sourceCustomerId: number, targetCustomerId: number) {
+    this.logger.log(`开始同步客户数据: 临时客户${sourceCustomerId} -> 正式客户${targetCustomerId}`);
+
+    const sourceCustomer = await this.customerRepository.findOne({
+      where: { id: sourceCustomerId },
+    });
+
+    const targetCustomer = await this.customerRepository.findOne({
+      where: { id: targetCustomerId },
+    });
+
+    if (!sourceCustomer || !targetCustomer) {
+      throw new Error('源客户或目标客户不存在');
+    }
+
+    // 同步逻辑：以正式客户（目标）的信息为主，从临时客户（源）补全缺失信息
+    const updateData: Partial<Customer> = {
+      // 保留正式客户已有的信息，只补充缺失的信息
+      realName: targetCustomer.realName || sourceCustomer.realName,
+      phone: targetCustomer.phone || sourceCustomer.phone,
+      wechatId: targetCustomer.wechatId || sourceCustomer.wechatId,
+      wechatNickname: targetCustomer.wechatNickname || sourceCustomer.wechatNickname,
+
+      // 从临时客户同步详细信息（正式客户通常缺失这些）
+      gender: targetCustomer.gender || sourceCustomer.gender,
+      age: targetCustomer.age || sourceCustomer.age,
+      address: targetCustomer.address || sourceCustomer.address,
+      customerIntent: targetCustomer.customerIntent || sourceCustomer.customerIntent,
+      lifecycleStage: targetCustomer.lifecycleStage || sourceCustomer.lifecycleStage,
+
+      // 保留正式客户的来源，如果为空则使用临时客户的来源
+      source: targetCustomer.source || sourceCustomer.source,
+
+      // 合并订单号列表
+      externalOrderIds: [
+        ...(targetCustomer.externalOrderIds || []),
+        ...(sourceCustomer.externalOrderIds || []),
+      ].filter((value, index, self) => self.indexOf(value) === index), // 去重
+
+      // 合并标签
+      tags: [
+        ...(targetCustomer.tags || []),
+        ...(sourceCustomer.tags || []),
+      ].filter((value, index, self) => self.indexOf(value) === index), // 去重
+
+      updateTime: new Date(),
+    };
+
+    // 更新正式客户信息
+    await this.customerRepository.update(targetCustomerId, updateData);
+
+    // 将临时客户的所有关联记录转移到正式客户
+    await this.transferCustomerRelations(sourceCustomerId, targetCustomerId);
+
+    this.logger.log(`客户数据同步完成：正式客户${targetCustomerId}已获得临时客户${sourceCustomerId}的所有信息`);
+  }
+
+  /**
+   * 转移客户关联关系（跟进记录、AI聊天记录等）
+   */
+  private async transferCustomerRelations(sourceCustomerId: number, targetCustomerId: number) {
+    try {
+      // 转移跟进记录
+      await this.followRecordRepository
+        .createQueryBuilder()
+        .update()
+        .set({ customerId: targetCustomerId })
+        .where('customerId = :sourceCustomerId', { sourceCustomerId })
+        .execute();
+
+      // 转移AI聊天记录
+      await this.aiChatRecordRepository
+        .createQueryBuilder()
+        .update()
+        .set({ customerId: targetCustomerId })
+        .where('customerId = :sourceCustomerId', { sourceCustomerId })
+        .execute();
+
+      // 更新所有相关订单的customerId
+      await this.orderRepository
+        .createQueryBuilder()
+        .update()
+        .set({ customerId: targetCustomerId })
+        .where('customerId = :sourceCustomerId', { sourceCustomerId })
+        .execute();
+
+      this.logger.log(`客户关联关系转移完成: ${sourceCustomerId} -> ${targetCustomerId}`);
+    } catch (error) {
+      this.logger.error(`转移客户关联关系失败: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * 安全删除客户（检查是否还有关联数据）
+   */
+  private async safeDeleteCustomer(customerId: number) {
+    try {
+      // 检查是否还有订单关联
+      const remainingOrders = await this.orderRepository.find({
+        where: { customerId },
+      });
+
+      if (remainingOrders.length > 0) {
+        this.logger.log(`客户 ${customerId} 还有 ${remainingOrders.length} 个订单，暂不删除`);
+        return;
+      }
+
+      // 检查是否还有跟进记录（已经被转移，理论上应该为空）
+      const remainingFollowRecords = await this.followRecordRepository.find({
+        where: { customerId },
+      });
+
+      if (remainingFollowRecords.length > 0) {
+        this.logger.log(`客户 ${customerId} 还有跟进记录，暂不删除`);
+        return;
+      }
+
+      // 安全软删除客户
+      await this.customerRepository.update(customerId, {
+        isDeleted: true,
+        deletedAt: new Date(),
+        deletedReason: '系统安全删除'
+      });
+      this.logger.log(`客户 ${customerId} 已安全软删除`);
+    } catch (error) {
+      this.logger.error(`安全删除客户失败: ${error.message}`);
+      // 删除失败不应该影响主流程
+    }
+  }
+
+  /**
+   * 创建临时订单绑定记录
+   * 当订单还未从海绵系统同步时使用
+   */
+  private async createTemporaryOrderBinding(customerId: number, orderNo: string) {
+    try {
+      // 检查是否已有临时订单记录
+      const existingTempOrder = await this.temporaryOrderRepository.findOne({
+        where: {
+          orderNo: orderNo,
+          status: TemporaryOrderStatus.PENDING
+        }
+      });
+
+      if (existingTempOrder) {
+        this.logger.log(`订单号 ${orderNo} 已存在临时记录，ID: ${existingTempOrder.id}`);
+
+        // 检查是否已绑定到相同客户
+        if (existingTempOrder.customerId === customerId) {
+          return {
+            success: true,
+            message: `订单号 ${orderNo} 已记录，等待海绵系统同步`,
+            type: 'temporary_order_exists',
+            tempOrderId: existingTempOrder.id
+          };
+        } else {
+          // 需要更新临时订单的客户ID
+          await this.temporaryOrderRepository.update(existingTempOrder.id, {
+            customerId,
+            updatedAt: new Date(),
+            notes: `更新客户绑定从 ${existingTempOrder.customerId} 到 ${customerId}`
+          });
+
+          return {
+            success: true,
+            message: `订单号 ${orderNo} 已更新客户绑定，等待海绵系统同步`,
+            type: 'temporary_order_updated',
+            tempOrderId: existingTempOrder.id
+          };
+        }
+      }
+
+      // 创建新的临时订单记录
+      const tempOrder = this.temporaryOrderRepository.create({
+        customerId,
+        orderNo,
+        status: TemporaryOrderStatus.PENDING,
+        createdBy: customerId, // 假设当前操作用户就是客户绑定的用户
+        notes: '销售手动绑定订单号，等待海绵系统自动同步'
+      });
+
+      const savedTempOrder = await this.temporaryOrderRepository.save(tempOrder);
+
+      // 更新客户的订单号列表
+      await this.customerRepository.update(customerId, {
+        externalOrderIds: () => `IFNULL(externalOrderIds, '[]')`,
+        updateTime: new Date(),
+      });
+
+      this.logger.log(`创建临时订单记录成功: ${orderNo} -> 客户 ${customerId}`);
+
+      return {
+        success: true,
+        message: `订单号 ${orderNo} 已记录，等待海绵系统同步后自动绑定`,
+        type: 'temporary_order_created',
+        tempOrderId: savedTempOrder.id
+      };
+
+    } catch (error) {
+      this.logger.error(`创建临时订单记录失败: ${error.message}`, error.stack);
+      throw new Error(`创建临时订单记录失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 记录客户合并日志
+   */
+  private async logCustomerMerge(sourceCustomerId: number, targetCustomerId: number, orderNo: string, mergeType: MergeType, mergeData?: any, errorMessage?: string) {
+    try {
+      const mergeLog = this.customerMergeLogRepository.create({
+        sourceCustomerId,
+        targetCustomerId,
+        orderNo,
+        mergeType,
+        mergeData,
+        createdBy: targetCustomerId, // 假设操作人是目标客户对应的销售人员
+        isSuccessful: !errorMessage,
+        errorMessage,
+        mergeReason: errorMessage ? `合并失败: ${errorMessage}` : '订单绑定导致客户合并',
+        rollbackPossible: true
+      });
+
+      await this.customerMergeLogRepository.save(mergeLog);
+      this.logger.log(`记录客户合并日志: ${sourceCustomerId} -> ${targetCustomerId}, 订单: ${orderNo}`);
+
+    } catch (error) {
+      this.logger.error(`记录客户合并日志失败: ${error.message}`);
+      // 不影响主流程，记录失败不是致命错误
+    }
+  }
+
+  /**
+   * 检查临时订单状态
+   */
+  async checkTemporaryOrderStatus(customerId: number) {
+    try {
+      const pendingOrders = await this.temporaryOrderRepository.find({
+        where: {
+          customerId,
+          status: TemporaryOrderStatus.PENDING
+        },
+        order: { createdAt: 'DESC' }
+      });
+
+      return {
+        success: true,
+        data: {
+          pendingCount: pendingOrders.length,
+          orders: pendingOrders.map(order => ({
+            orderNo: order.orderNo,
+            createdAt: order.createdAt,
+            syncAttempts: order.syncAttempts,
+            notes: order.notes
+          }))
+        }
+      };
+
+    } catch (error) {
+      this.logger.error(`检查临时订单状态失败: ${error.message}`);
+      throw new Error(`检查临时订单状态失败: ${error.message}`);
+    }
+  }
+
+  /**
+   * 手动触发订单同步检查
+   */
+  async triggerOrderSyncCheck(orderNo: string) {
+    try {
+      const tempOrders = await this.temporaryOrderRepository.find({
+        where: {
+          orderNo,
+          status: TemporaryOrderStatus.PENDING
+        }
+      });
+
+      if (tempOrders.length === 0) {
+        return {
+          success: false,
+          message: `未找到订单号 ${orderNo} 的临时记录`
+        };
+      }
+
+      // 更新同步尝试次数和时间
+      for (const tempOrder of tempOrders) {
+        await this.temporaryOrderRepository.update(tempOrder.id, {
+          syncAttempts: tempOrder.syncAttempts + 1,
+          lastSyncAttempt: new Date()
+        });
+      }
+
+      // 这里可以调用海绵API进行即时同步
+      // 暂时返回检查结果
+      return {
+        success: true,
+        message: `已触发订单 ${orderNo} 的同步检查，共 ${tempOrders.length} 个临时记录`,
+        triggeredCount: tempOrders.length
+      };
+
+    } catch (error) {
+      this.logger.error(`触发订单同步检查失败: ${error.message}`);
+      throw new Error(`触发订单同步检查失败: ${error.message}`);
     }
   }
 }

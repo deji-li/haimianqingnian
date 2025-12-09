@@ -24,6 +24,6 @@ import { Permission } from '../system/entities/permission.entity';
   ],
   controllers: [AiConfigController, AiApiKeyController],
   providers: [AiConfigService, AiApiKeyService],
-  exports: [AiConfigService, AiApiKeyService], // 导出供其他模块使用
+  exports: [AiConfigService, AiApiKeyService, TypeOrmModule], // 导出供其他模块使用
 })
 export class AiConfigModule {}

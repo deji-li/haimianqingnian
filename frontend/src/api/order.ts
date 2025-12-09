@@ -61,9 +61,44 @@ export const deleteOrder = (id: number) => {
 
 // 获取客户订单历史
 export const getCustomerOrders = (customerId: number) => {
-  return request<Order[]>({
-    url: `/order/customer/${customerId}`,
+  return request({
+    url: `/customer/${customerId}/orders`,
     method: 'get',
+  })
+}
+
+// 绑定订单到客户
+export const bindOrderToCustomer = (customerId: number, orderId: number) => {
+  return request({
+    url: `/customer/${customerId}/orders/bind`,
+    method: 'post',
+    data: { orderId },
+  })
+}
+
+// 通过订单号绑定订单到客户
+export const bindOrderByOrderNo = (customerId: number, orderNo: string) => {
+  return request({
+    url: `/customer/${customerId}/orders/bind-by-order-no`,
+    method: 'post',
+    data: { orderNo },
+  })
+}
+
+// 解绑客户的订单
+export const unbindOrderFromCustomer = (customerId: number, orderId: number) => {
+  return request({
+    url: `/customer/${customerId}/orders/${orderId}/unbind`,
+    method: 'delete',
+  })
+}
+
+// 获取可绑定的订单列表
+export const getAvailableOrders = (customerId: number, params?: { keyword?: string; page?: number; pageSize?: number }) => {
+  return request({
+    url: `/customer/${customerId}/available-orders`,
+    method: 'get',
+    params,
   })
 }
 

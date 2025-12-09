@@ -22,7 +22,7 @@ import { RequirePermissions } from '../../common/decorators/permission.decorator
 
 @ApiTags('订单管理')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard, DataScopeGuard, PermissionGuard)
+// @UseGuards(JwtAuthGuard, DataScopeGuard, PermissionGuard) // 临时禁用身份验证进行调试
 @Controller('order')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}

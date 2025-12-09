@@ -199,8 +199,8 @@ export class MiningKnowledgeService {
       });
     }
 
-    // 只查询用户消息
-    queryBuilder.andWhere('chat.role = :role', { role: 'user' });
+    // 只查询有OCR结果或文本内容的记录
+    queryBuilder.andWhere('(chat.ocrText IS NOT NULL OR chat.rawText IS NOT NULL)');
 
     // 按创建时间排序
     queryBuilder.orderBy('chat.createTime', 'DESC');
@@ -217,11 +217,14 @@ export class MiningKnowledgeService {
    */
   private async extractQAFromChat(chatRecord: AiChatRecord) {
     try {
+      // 使用ocrText或rawText作为聊天内容
+      const chatContent = chatRecord.ocrText || chatRecord.rawText || '';
+
       const result = await this.aiConfigCallerService.callAI(
         'knowledge_qa_extraction',
         {
-          chatContent: chatRecord.ocrText, // Using ocrText instead of content
-          customerContext: JSON.stringify(chatRecord.aiAnalysisResult || {}), // Using aiAnalysisResult instead of context
+          chatContent,
+          customerContext: JSON.stringify(chatRecord.aiAnalysisResult || {}),
         },
       );
 

@@ -71,4 +71,20 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsString()
   remark?: string;
+
+  @ApiPropertyOptional({
+    description: '生命周期阶段',
+    example: '成交客户',
+  })
+  @IsOptional()
+  @IsString()
+  lifecycleStage?: string;
+
+  @ApiPropertyOptional({
+    description: '外部订单ID列表',
+    example: ['ORDER001', 'ORDER002'],
+    type: [String]
+  })
+  @IsOptional()
+  externalOrderIds?: string[];
 }

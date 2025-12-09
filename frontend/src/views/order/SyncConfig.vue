@@ -46,9 +46,9 @@
                 filterable
               >
                 <el-option
-                  v-for="user in salesList"
+                  v-for="user in salesList.filter(user => user && user.id && user.realName)"
                   :key="user.id"
-                  :label="user.username"
+                  :label="user.realName"
                   :value="user.id"
                 />
               </el-select>
@@ -142,11 +142,19 @@
                   v-model="logQuery.orderNo"
                   placeholder="请输入订单号"
                   clearable
+                  style="width: 180px"
                 />
               </el-form-item>
 
               <el-form-item label="同步类型">
-                <el-select v-model="logQuery.syncType" placeholder="全部" clearable>
+                <el-select
+                  v-model="logQuery.syncType"
+                  placeholder="全部"
+                  clearable
+                  style="width: 120px"
+                >
+                  <el-option label="自动同步" value="auto" />
+                  <el-option label="手动同步" value="manual" />
                   <el-option label="新建" value="create" />
                   <el-option label="更新" value="update" />
                   <el-option label="跳过" value="skip" />
@@ -155,7 +163,12 @@
               </el-form-item>
 
               <el-form-item label="同步结果">
-                <el-select v-model="logQuery.result" placeholder="全部" clearable>
+                <el-select
+                  v-model="logQuery.result"
+                  placeholder="全部"
+                  clearable
+                  style="width: 100px"
+                >
                   <el-option label="成功" value="success" />
                   <el-option label="失败" value="failed" />
                 </el-select>
@@ -187,7 +200,11 @@
             </el-table-column>
             <el-table-column prop="oldStatus" label="原状态" width="100" />
             <el-table-column prop="newStatus" label="新状态" width="100" />
-            <el-table-column prop="syncTime" label="同步时间" width="160" />
+            <el-table-column prop="syncTime" label="同步时间" width="160">
+              <template #default="{ row }">
+                {{ formatSyncTime(row.syncTime) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="result" label="结果" width="80">
               <template #default="{ row }">
                 <el-tag :type="row.result === 'success' ? 'success' : 'danger'">
@@ -359,7 +376,7 @@
                 placeholder="全部状态"
                 clearable
               >
-                <el-option label="全部" :value="null" />
+                <el-option label="全部" value="" />
                 <el-option label="待发货" :value="2" />
                 <el-option label="待收货" :value="3" />
                 <el-option label="已完成" :value="7" />
@@ -520,7 +537,7 @@
           {{ currentLog.newStatus || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="同步时间">
-          {{ currentLog.syncTime }}
+          {{ formatSyncTime(currentLog.syncTime) }}
         </el-descriptions-item>
         <el-descriptions-item label="执行耗时">
           {{ currentLog.executionTime }}ms
@@ -581,14 +598,29 @@ import { orderSyncApi } from '@/api/order-sync';
 import { userApi } from '@/api/user';
 import { customerApi } from '@/api/customer';
 
+// 时间格式化函数
+const formatSyncTime = (time) => {
+  if (!time) return '-';
+  const date = new Date(time);
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+};
+
 // 当前标签页
 const activeTab = ref('basic');
 
 // 基本配置
 const configForm = reactive({
-  apiKey: '',
-  apiUrl: '',
-  defaultSalesId: null,
+  apiKey: '12MfKhW5fQf6KoVlBRqR7Wm8Ma2fMtZT', // 海绵API密钥
+  apiUrl: 'https://yx.vipstore.top/yoga/admin/getGoodsOrderList', // 海绵订单接口地址
+  defaultSalesId: 1, // 默认为第一个用户
   enabled: true,
   interval: 30,
   dailyUpdateTime: '02:00',
@@ -662,27 +694,94 @@ const statusMappings = ref([
   { externalStatus: '1', condition: '-', localStatus: '不同步', description: '未支付订单不同步到系统' },
 ]);
 
+// 键名映射 - 从数据库字段到前��字段的映射
+const configKeyMap = {
+  'api_key': 'apiKey',
+  'api_url': 'apiUrl',
+  'daily_update_time': 'dailyUpdateTime',
+  'sync_range_days': 'syncRangeDays',
+  'update_existing': 'updateExisting',
+  'sync_customer_info': 'syncCustomerInfo',
+  'auto_create_campus': 'autoCreateCampus',
+  'enabled': 'enabled',
+  'interval': 'interval',
+  'batch_size': 'batchSize',
+  'default_sales_id': 'defaultSalesId'
+};
+
+// 反向键名映射 - 从前端字段到数据库字段的映射
+const reverseConfigKeyMap = {
+  'apiKey': 'api_key',
+  'apiUrl': 'api_url',
+  'dailyUpdateTime': 'daily_update_time',
+  'syncRangeDays': 'sync_range_days',
+  'updateExisting': 'update_existing',
+  'syncCustomerInfo': 'sync_customer_info',
+  'autoCreateCampus': 'auto_create_campus',
+  'enabled': 'enabled',
+  'interval': 'interval',
+  'batchSize': 'batch_size',
+  'defaultSalesId': 'default_sales_id'
+};
+
 // 加载配置
 const loadConfig = async () => {
   try {
     const res = await orderSyncApi.getConfig();
-    const configs = res.data || [];
+    console.log('配置API响应:', res); // 添加调试日志
+
+    // 处理后端返回的数据格式：{success: true, data: {key: value, ...}}
+    let configs = [];
+    if (res && res.data && typeof res.data === 'object') {
+      // 将对象转换为数组格式
+      configs = Object.entries(res.data).map(([key, value]) => ({
+        configKey: key,
+        configValue: value
+      }));
+    } else if (Array.isArray(res)) {
+      configs = res;
+    }
+
+    console.log('处理后的配置数组:', configs); // 添加调试日志
 
     configs.forEach((item) => {
-      const key = item.configKey.replace('order_sync.', '');
+      let key = item.configKey.replace('order_sync.', '');
+
+      // 应用键名映射
+      if (configKeyMap[key]) {
+        key = configKeyMap[key];
+      }
+
+      console.log('处理配置项:', {
+        originalKey: item.configKey,
+        processedKey: key,
+        originalValue: item.configValue,
+        inForm: key in configForm
+      });
+
       if (key in configForm) {
         let value = item.configValue;
 
         // 类型转换
         if (key === 'enabled' || key === 'updateExisting' || key === 'syncCustomerInfo' || key === 'autoCreateCampus') {
-          value = value === 'true';
+          // 处理布尔值：支持字符串和布尔类型
+          if (typeof value === 'string') {
+            value = value === 'true';
+          } else if (typeof value === 'boolean') {
+            value = value; // 保持布尔值不变
+          }
         } else if (key === 'defaultSalesId' || key === 'interval' || key === 'syncRangeDays' || key === 'batchSize') {
           value = parseInt(value);
         }
 
         configForm[key] = value;
+        console.log(`设置表单字段 ${key} =`, value);
+      } else {
+        console.log(`表单中没有字段: ${key}`);
       }
     });
+
+    console.log('最终表单数据:', configForm);
   } catch (error) {
     ElMessage.error('加载配置失败');
   }
@@ -693,11 +792,40 @@ const saveConfig = async () => {
   try {
     saving.value = true;
 
+    // 手动映射配置键 - 确保正确转换
+    const keyMapping = {
+      'apiKey': 'api_key',
+      'apiUrl': 'api_url',
+      'defaultSalesId': 'default_sales_id',
+      'dailyUpdateTime': 'daily_update_time',
+      'syncRangeDays': 'sync_range_days',
+      'batchSize': 'batch_size',
+      'updateExisting': 'update_existing',
+      'syncCustomerInfo': 'sync_customer_info',
+      'autoCreateCampus': 'auto_create_campus',
+      'enabled': 'enabled',
+      'interval': 'interval'
+    };
+
     // 转换配置为数组格式
-    const updates = Object.keys(configForm).map((key) => ({
-      configKey: `order_sync.${key}`,
-      configValue: String(configForm[key]),
-    }));
+    const updates = Object.keys(configForm).map((key) => {
+      let value = configForm[key];
+
+      // 处理null值，避免转换��"null"字符串
+      if (value === null || value === undefined) {
+        value = '';
+      } else {
+        value = String(value);
+      }
+
+      // 使用强制键名映射
+      const dbKey = keyMapping[key] || key;
+
+      return {
+        configKey: `order_sync.${dbKey}`,
+        configValue: value,
+      };
+    });
 
     // 批量更新
     for (const item of updates) {
@@ -716,9 +844,10 @@ const saveConfig = async () => {
 const loadSalesList = async () => {
   try {
     const res = await userApi.getList({ roleId: 3 }); // 假设roleId=3为销售角色
-    salesList.value = res.data.list || [];
+    salesList.value = (res && res.list) ? res.list : [];
   } catch (error) {
     console.error('加载销售人员失败', error);
+    salesList.value = []; // 设置空数组避免undefined错误
   }
 };
 
@@ -726,11 +855,45 @@ const loadSalesList = async () => {
 const loadLogs = async () => {
   try {
     logsLoading.value = true;
-    const res = await orderSyncApi.getLogs(logQuery);
-    logs.list = res.data.list || [];
-    logs.total = res.data.total || 0;
+
+    // 映射前端参数到后端期望的参数名
+    const params = {
+      page: logQuery.page,
+      limit: logQuery.pageSize
+    };
+
+    // 映射筛选条件
+    if (logQuery.orderNo) {
+      // 使用新增的orderNo参数筛选
+      params.orderNo = logQuery.orderNo;
+    }
+
+    // 处理同步类型筛选
+    if (logQuery.syncType) {
+      params.syncType = logQuery.syncType;
+    }
+
+    // 处理同步结果筛选
+    if (logQuery.result) {
+      params.result = logQuery.result;
+    }
+
+    console.log('发送的日志查询参数:', params);
+    const res = await orderSyncApi.getLogs(params);
+    console.log('日志查询完整响应:', JSON.stringify(res, null, 2));
+
+    // 处理后端返回的数据格式
+    logs.list = res.logs || [];
+    logs.total = res.total || 0;
   } catch (error) {
-    ElMessage.error('加载日志失败');
+    console.error('加载日志失败:', error);
+    if (error.response?.status === 400) {
+      ElMessage.error('参数错误: ' + (error.response.data?.message || '请求参数不正确'));
+    } else if (error.response?.status === 403) {
+      ElMessage.error('权限不足: 需要订单同步权限');
+    } else {
+      ElMessage.error('加载日志失败');
+    }
   } finally {
     logsLoading.value = false;
   }
@@ -742,6 +905,7 @@ const resetLogQuery = () => {
   logQuery.syncType = '';
   logQuery.result = '';
   logQuery.page = 1;
+  logQuery.pageSize = 20;
   loadLogs();
 };
 
@@ -810,7 +974,7 @@ const searchCustomers = async () => {
       page: 1,
       pageSize: 50,
     });
-    customers.value = res.data.list || [];
+    customers.value = res.list || [];
   } catch (error) {
     ElMessage.error('搜索客户失败');
   } finally {

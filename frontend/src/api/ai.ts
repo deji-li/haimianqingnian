@@ -217,17 +217,117 @@ export function endTraining(id: number) {
 // ==================== AI营销助手 ====================
 export function generateMarketingContent(data: any) {
   return request({
-    url: '/ai-tools/marketing/generate',
+    url: '/ai-marketing/assistant/generate',
     method: 'post',
     data
   })
 }
 
-export function getMarketingHistory(contentType?: string) {
+export function getMarketingHistory(params?: {
+  page?: number
+  limit?: number
+  scenario?: string
+  customerId?: number
+}) {
   return request({
-    url: '/ai-tools/marketing/history',
+    url: '/ai-marketing/assistant/history',
     method: 'get',
-    params: { contentType }
+    params
+  })
+}
+
+export function getMarketingHistoryDetail(id: number) {
+  return request({
+    url: `/ai-marketing/assistant/history/${id}`,
+    method: 'get'
+  })
+}
+
+export function batchDeleteMarketingHistory(historyIds: number[]) {
+  return request({
+    url: '/ai-marketing/assistant/history/batch-delete',
+    method: 'post',
+    data: { historyIds }
+  })
+}
+
+export function submitMarketingFeedback(data: {
+  historyId: number
+  contentRating: number
+  effectiveRating: number
+  feedback: string
+  improvement?: string
+}) {
+  return request({
+    url: '/ai-marketing/assistant/feedback',
+    method: 'post',
+    data
+  })
+}
+
+export function recommendContentToLibrary(data: {
+  historyId: number
+  title: string
+  category?: string
+  tags?: string[]
+  remark?: string
+}) {
+  return request({
+    url: '/ai-marketing/assistant/recommend',
+    method: 'post',
+    data
+  })
+}
+
+export function feedbackContentToKnowledge(historyId: number) {
+  return request({
+    url: `/ai-marketing/assistant/feedback-to-knowledge/${historyId}`,
+    method: 'post'
+  })
+}
+
+export function getRecommendedKnowledge(scenario: string, limit?: number) {
+  return request({
+    url: `/ai-marketing/assistant/knowledge/recommended/${scenario}`,
+    method: 'get',
+    params: { limit }
+  })
+}
+
+export function getPopularKnowledge(limit?: number) {
+  return request({
+    url: '/ai-marketing/assistant/knowledge/popular',
+    method: 'get',
+    params: { limit }
+  })
+}
+
+// ==================== 客户洞察 ====================
+export function getCustomerInsights(customerId: number) {
+  return request({
+    url: `/ai-marketing/assistant/insights/${customerId}`,
+    method: 'get'
+  })
+}
+
+export function getAllCustomerInsights() {
+  return request({
+    url: '/ai-marketing/assistant/insights',
+    method: 'get'
+  })
+}
+
+export function addCustomerInsight(data: {
+  customerId: number
+  insightType: 'painPoint' | 'need' | 'interest'
+  content: string
+  source?: string
+  confidence?: number
+}) {
+  return request({
+    url: '/ai-marketing/assistant/insights',
+    method: 'post',
+    data
   })
 }
 

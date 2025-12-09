@@ -1,0 +1,223 @@
+========================================
+MySQL Service Not Found - What to Do?
+========================================
+
+The error "MySQL80 service not found" means:
+  - MySQL is installed but service has different name
+  - OR MySQL is not installed as Windows service
+  - OR MySQL is not installed at all
+
+========================================
+STEP 1: Find Out If MySQL Is Installed
+========================================
+
+Test 1: Check if mysql command works
+-------------------------------------
+Open Command Prompt, run:
+
+  mysql --version
+
+Result A: Shows version (e.g., "mysql Ver 8.0.x")
+  -> MySQL IS installed
+  -> Continue to Step 2
+
+Result B: "mysql is not recognized"
+  -> MySQL NOT installed or not in PATH
+  -> Continue to Step 3
+
+
+Test 2: Try to connect
+-----------------------
+  mysql -u root -p
+
+  Enter password: 123456
+
+Result A: Shows "mysql>" prompt
+  -> MySQL IS running!
+  -> No need to start service
+  -> Skip to "Start Application" section
+
+Result B: "Can't connect to MySQL server"
+  -> MySQL installed but not running
+  -> Continue to Step 2
+
+Result C: Command not found
+  -> MySQL not installed
+  -> Continue to Step 3
+
+
+========================================
+STEP 2: Find MySQL Service Name
+========================================
+
+Run the diagnostic script:
+
+  Double-click: find-mysql.bat
+
+This will show:
+  - All MySQL services on your system
+  - The correct service name
+  - Whether MySQL is already running
+
+Common service names:
+  - MySQL
+  - MySQL57
+  - MySQL80
+  - MySQL8
+  - mysqld
+  - MYSQL
+
+
+To manually search:
+
+  Get-Service | findstr -i mysql
+
+Note the SERVICE NAME (not Display Name)
+
+
+========================================
+STEP 3: MySQL Not Installed
+========================================
+
+You have 2 options:
+
+OPTION A: Install MySQL (Recommended)
+--------------------------------------
+1. Download MySQL installer:
+   https://dev.mysql.com/downloads/installer/
+
+2. Run installer, choose "Server only"
+
+3. Set root password: 123456
+
+4. Complete installation
+
+5. Run: START-NO-SERVICE.bat
+
+
+OPTION B: Use Docker
+--------------------
+1. Install Docker Desktop
+
+2. In project folder, run:
+   docker-compose up -d
+
+3. Wait 30 seconds for MySQL to start
+
+4. Run: START-NO-SERVICE.bat
+
+
+========================================
+START APPLICATION (MySQL Already Running)
+========================================
+
+If MySQL is running (Test 2 Result A above):
+
+You can skip MySQL service management!
+
+Just run: START-NO-SERVICE.bat
+
+Or manually:
+
+  Window 1 - Backend:
+    cd D:\CC\1.1\backend
+    npm run start:dev
+
+  Window 2 - Frontend:
+    cd D:\CC\1.1\frontend
+    npm run dev
+
+  Browser:
+    http://localhost:5174
+    Login: admin / 123456
+
+
+========================================
+QUICK DIAGNOSIS
+========================================
+
+Run these commands and tell me the results:
+
+1. mysql --version
+   What does it show?
+
+2. mysql -u root -p
+   (password: 123456)
+   Can you login?
+
+3. Get-Service | findstr -i mysql
+   What services are shown?
+
+4. where mysql
+   What path is shown?
+
+
+========================================
+MOST LIKELY SCENARIOS
+========================================
+
+Scenario 1: MySQL Installed, Running, Different Service Name
+-------------------------------------------------------------
+Symptom: mysql command works, can connect
+
+Solution:
+  Don't worry about service name
+  Just run: START-NO-SERVICE.bat
+
+
+Scenario 2: MySQL Installed, Not Running
+-----------------------------------------
+Symptom: mysql command works, can't connect
+
+Solution:
+  Find service name with: Get-Service | findstr -i mysql
+  Start service: Start-Service [ServiceName]
+  Then run: START-NO-SERVICE.bat
+
+
+Scenario 3: MySQL Not Installed
+--------------------------------
+Symptom: mysql command not found
+
+Solution:
+  Install MySQL from:
+  https://dev.mysql.com/downloads/installer/
+
+  OR use Docker:
+  docker-compose up -d
+
+
+Scenario 4: MySQL Installed, Not in PATH
+-----------------------------------------
+Symptom: mysql command not found, but MySQL exists
+
+Solution:
+  Add to PATH:
+    C:\Program Files\MySQL\MySQL Server 8.0\bin
+
+  OR use full path:
+    "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
+
+
+========================================
+RECOMMENDED NEXT STEPS
+========================================
+
+1. Run: find-mysql.bat
+   This will tell you the exact situation
+
+2. Based on result:
+
+   MySQL found and running:
+     -> Run: START-NO-SERVICE.bat
+
+   MySQL found but not running:
+     -> Start it manually or find service name
+     -> Run: START-NO-SERVICE.bat
+
+   MySQL not found:
+     -> Install MySQL or use Docker
+     -> See MYSQL_LOCAL_SETUP.md for installation guide
+
+
+========================================

@@ -19,7 +19,7 @@ export class AiApiKey {
 
   @Column({
     type: 'enum',
-    enum: ['deepseek', 'doubao'],
+    enum: ['deepseek', 'doubao', 'baidu_ocr'],
     nullable: false,
     comment: 'AI供应商',
   })
@@ -46,6 +46,22 @@ export class AiApiKey {
     comment: '默认模型名称',
   })
   modelName: string;
+
+  @Column({
+    name: 'secret_key',
+    length: 500,
+    nullable: true,
+    comment: 'Secret Key（百度OCR专用）',
+  })
+  secretKey: string;
+
+  @Column({
+    name: 'app_id',
+    length: 200,
+    nullable: true,
+    comment: 'App ID（百度OCR专用）',
+  })
+  appId: string;
 
   @Column({ name: 'is_active', type: 'boolean', default: true, comment: '是否启用' })
   isActive: boolean;

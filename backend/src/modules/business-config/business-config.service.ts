@@ -49,21 +49,29 @@ export class BusinessConfigService {
    * 更新配置
    */
   async updateConfig(configKey: string, configValue: any): Promise<BusinessConfig> {
-    const config = await this.businessConfigRepository.findOne({
+    let config = await this.businessConfigRepository.findOne({
       where: { configKey },
     });
 
+    // 如果配置项不存在，则创建它
     if (!config) {
-      throw new NotFoundException(`配置项不存在: ${configKey}`);
+      this.logger.warn(`配置项不存在，自动创建: ${configKey}`);
+      config = this.businessConfigRepository.create({
+        configKey,
+        configValue,
+        configCategory: 'order_sync', // 默认分类
+        description: `自动创建的配置项: ${configKey}`,
+      });
+    } else {
+      config.configValue = configValue;
     }
 
-    config.configValue = configValue;
     const updated = await this.businessConfigRepository.save(config);
 
     // 清除缓存
     this.configCache.delete(configKey);
 
-    this.logger.log(`配置已更新: ${configKey}`);
+    this.logger.log(`配置已更新: ${configKey} = ${configValue}`);
     return updated;
   }
 

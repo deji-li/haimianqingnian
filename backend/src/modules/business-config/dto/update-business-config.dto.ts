@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsObject } from 'class-validator';
+import { IsString, IsNotEmpty } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UpdateBusinessConfigDto {
@@ -7,8 +7,6 @@ export class UpdateBusinessConfigDto {
   @IsNotEmpty()
   configKey: string;
 
-  @ApiProperty({ description: '配置值（JSON对象）' })
-  @IsObject()
-  @IsNotEmpty()
+  @ApiProperty({ description: '配置值' })
   configValue: any;
 }

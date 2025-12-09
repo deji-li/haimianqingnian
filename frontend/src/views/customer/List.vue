@@ -26,7 +26,7 @@
             style="width: 120px"
           >
             <el-option
-              v-for="item in customerIntentOptions"
+              v-for="item in customerIntentOptions.filter(opt => opt && opt.id && opt.dictLabel && opt.dictValue)"
               :key="item.id"
               :label="item.dictLabel"
               :value="item.dictValue"
@@ -42,7 +42,7 @@
             style="width: 140px"
           >
             <el-option
-              v-for="item in trafficSourceOptions"
+              v-for="item in trafficSourceOptions.filter(opt => opt && opt.id && opt.dictLabel && opt.dictValue)"
               :key="item.id"
               :label="item.dictLabel"
               :value="item.dictValue"
@@ -85,7 +85,7 @@
                     style="width: 100%"
                   >
                     <el-option
-                      v-for="user in operatorList"
+                      v-for="user in operatorList.filter(user => user && user.id && (user.realName || user.username))"
                       :key="user.id"
                       :label="user.realName || user.username"
                       :value="user.id"
@@ -269,15 +269,21 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="320" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="handleView(row)" v-permission="'customer:view'">
+            <el-button link type="primary" size="small" @click="handleView(row)">
               查看
             </el-button>
-            <el-button link type="primary" size="small" @click="handleEdit(row)" v-permission="'customer:update'">
+            <el-button link type="primary" size="small" @click="handleEdit(row)">
               编辑
             </el-button>
-            <el-button link type="danger" size="small" @click="handleDelete(row)" v-permission="'customer:delete'">
+            <el-button link type="warning" size="small" @click="handleBindOrder(row)">
+              绑定订单
+            </el-button>
+            <el-button link type="success" size="small" @click="handleFollowRecord(row)">
+              跟进记录
+            </el-button>
+            <el-button link type="danger" size="small" @click="handleDelete(row)">
               删除
             </el-button>
           </template>
@@ -334,7 +340,7 @@
         <el-form-item label="流量来源" prop="trafficSource">
           <el-select v-model="formData.trafficSource" placeholder="请选择流量来源" style="width: 100%">
             <el-option
-              v-for="item in trafficSourceOptions"
+              v-for="item in trafficSourceOptions.filter(opt => opt && opt.id && opt.dictLabel && opt.dictValue)"
               :key="item.id"
               :label="item.dictLabel"
               :value="item.dictValue"
@@ -345,7 +351,7 @@
         <el-form-item label="客户意向" prop="customerIntent">
           <el-select v-model="formData.customerIntent" placeholder="请选择客户意向" style="width: 100%">
             <el-option
-              v-for="item in customerIntentOptions"
+              v-for="item in customerIntentOptions.filter(opt => opt && opt.id && opt.dictLabel && opt.dictValue)"
               :key="item.id"
               :label="item.dictLabel"
               :value="item.dictValue"
@@ -393,6 +399,102 @@
       </template>
     </el-dialog>
 
+    <!-- 绑定订单对话框 -->
+    <el-dialog
+      v-model="bindOrderDialogVisible"
+      title="绑定订单"
+      width="800px"
+    >
+      <div v-if="currentCustomer" class="customer-info">
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="客户昵称">{{ currentCustomer.wechatNickname }}</el-descriptions-item>
+          <el-descriptions-item label="客户姓名">{{ currentCustomer.realName || '未填写' }}</el-descriptions-item>
+          <el-descriptions-item label="联系电话">{{ currentCustomer.phone || '未填写' }}</el-descriptions-item>
+          <el-descriptions-item label="微信ID">{{ currentCustomer.wechatId || '未填写' }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+
+      <div class="order-binding" style="margin-top: 20px;">
+        <el-form :model="bindOrderForm" label-width="100px">
+          <el-form-item label="已有关单">
+            <div v-if="customerOrders.length > 0">
+              <el-table :data="customerOrders" style="width: 100%">
+                <el-table-column prop="orderNo" label="订单号" width="150" />
+                <el-table-column prop="paymentAmount" label="金额" width="120">
+                  <template #default="{ row }">
+                    <span class="amount" :class="{ 'amount-high': Number(row.paymentAmount) > 5000 }">
+                      ¥{{ Number(row.paymentAmount || 0).toLocaleString() }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="orderStatus" label="状态" width="100">
+                  <template #default="{ row }">
+                    <el-tag
+                      :type="
+                        row.orderStatus === '待上课' ? 'warning' :
+                        row.orderStatus === '上课中' ? 'primary' :
+                        row.orderStatus === '已完成' ? 'success' :
+                        row.orderStatus === '已退款' ? 'info' : 'danger'
+                      "
+                      size="small"
+                      effect="light"
+                    >
+                      {{ row.orderStatus || '未知状态' }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="createTime" label="创建时间">
+                  <template #default="{ row }">
+                    {{ formatDate(row.createTime) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="100">
+                  <template #default="{ row }">
+                    <el-button link type="danger" size="small" @click="handleUnbindOrder(row)">
+                      解绑
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <div v-else class="empty-state">
+              <el-empty description="暂无订单" />
+            </div>
+          </el-form-item>
+
+          <el-form-item label="绑定新订单">
+            <div style="display: flex; gap: 10px;">
+              <el-input
+                v-model="bindOrderForm.orderNo"
+                placeholder="请输入订单号进行绑定"
+                style="flex: 1"
+                clearable
+              />
+              <el-button type="primary" @click="searchOrderByNo" :loading="searchLoading">
+                搜索
+              </el-button>
+            </div>
+            <div v-if="searchResult.orderNo" style="margin-top: 10px; padding: 10px; background: #f5f7fa; border-radius: 4px;">
+              <p><strong>订单号：</strong>{{ searchResult.orderNo }}</p>
+              <p><strong>课程：</strong>{{ searchResult.courseName }}</p>
+              <p><strong>金额：</strong>¥{{ searchResult.paymentAmount }}</p>
+              <p><strong>状态：</strong>
+                <el-tag :type="getOrderStatusType(searchResult.orderStatus)">{{ searchResult.orderStatus }}</el-tag>
+              </p>
+              <p><strong>支付时间：</strong>{{ formatDate(searchResult.paymentTime) }}</p>
+            </div>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <template #footer>
+        <el-button @click="closeBindOrderDialog">取消</el-button>
+        <el-button type="primary" @click="confirmBindOrder">
+          确定绑定
+        </el-button>
+      </template>
+    </el-dialog>
+
     <!-- 批量分配销售对话框 -->
     <el-dialog
       v-model="batchAssignDialogVisible"
@@ -406,7 +508,7 @@
         <el-form-item label="分配给">
           <el-select v-model="batchAssignSalesId" placeholder="请选择销售人员" style="width: 100%">
             <el-option
-              v-for="user in salesList"
+              v-for="user in salesList.filter(user => user && user.id && (user.realName || user.username))"
               :key="user.id"
               :label="user.realName || user.username"
               :value="user.id"
@@ -436,7 +538,7 @@
         <el-form-item label="客户意向">
           <el-select v-model="batchIntent" placeholder="请选择客户意向" style="width: 100%">
             <el-option
-              v-for="item in customerIntentOptions"
+              v-for="item in customerIntentOptions.filter(opt => opt && opt.id && opt.dictLabel && opt.dictValue)"
               :key="item.id"
               :label="item.dictLabel"
               :value="item.dictValue"
@@ -582,6 +684,13 @@ import {
   type CustomerQuery,
   type CreateCustomerParams,
 } from '@/api/customer'
+import {
+  getCustomerOrders,
+  getAvailableOrders,
+  bindOrderToCustomer,
+  bindOrderByOrderNo,
+  unbindOrderFromCustomer,
+} from '@/api/order'
 import { getDictionaryByType, type Dictionary } from '@/api/dictionary'
 import { getUserList } from '@/api/user'
 import SmartCreateCustomer from '@/components/customer/SmartCreateCustomer.vue'
@@ -635,7 +744,7 @@ const formData = reactive<CreateCustomerParams>({
   trafficSource: '',
   operatorId: undefined,
   salesId: userStore.userInfo?.id || 0,
-  customerIntent: '中',
+  customerIntent: '中意向',
   nextFollowTime: '',
   remark: '',
 })
@@ -1097,7 +1206,7 @@ const resetForm = () => {
     trafficSource: '',
     operatorId: undefined,
     salesId: userStore.userInfo?.id || 0,
-    customerIntent: '中',
+    customerIntent: '中意向',
     nextFollowTime: '',
     remark: '',
   })
@@ -1107,6 +1216,233 @@ const resetForm = () => {
 // 格式化日期
 const formatDate = (date: string) => {
   return dayjs(date).format('YYYY-MM-DD HH:mm:ss')
+}
+
+// 绑定订单相关变量
+const bindOrderDialogVisible = ref(false)
+const currentCustomer = ref<Customer | null>(null)
+const customerOrders = ref<any[]>([])
+const availableOrders = ref<any[]>([])
+const searchLoading = ref(false)
+const bindingCustomerId = ref<number | null>(null)
+const bindOrderForm = reactive({
+  orderNo: ''
+})
+const searchResult = reactive({
+  orderNo: '',
+  courseName: '',
+  paymentAmount: 0,
+  orderId: null as number | null
+})
+
+// 处理绑定订单
+const handleBindOrder = (row: Customer) => {
+  currentCustomer.value = row
+  bindingCustomerId.value = row.id
+  loadCustomerOrders(row.id)
+  bindOrderDialogVisible.value = true
+}
+
+// 加载客户订单
+const loadCustomerOrders = async (customerId: number) => {
+  try {
+    console.log('🚀 List.vue loadCustomerOrders 开始执行')
+    console.log('🆔 客户ID:', customerId)
+
+    // 调用实际的API来获取客户订单
+    const response = await getCustomerOrders(customerId)
+    console.log('=== List.vue API响应 ===')
+    console.log('response:', response)
+    console.log('response.data:', response?.data)
+    console.log('response.success:', response?.success)
+
+    if (response && response.success && response.data) {
+      console.log('✓ 使用 response.data')
+      customerOrders.value = response.data
+    } else if (response && Array.isArray(response.data)) {
+      console.log('✓ 使用 response.data 数组')
+      customerOrders.value = response.data
+    } else if (Array.isArray(response)) {
+      console.log('✓ 使用 response 数组')
+      customerOrders.value = response
+    } else {
+      console.log('✗ 无法识别数据结构，设置为空数组')
+      customerOrders.value = []
+    }
+
+    console.log('=== List.vue 处理后的订单数据 ===')
+    console.log('customerOrders.value:', customerOrders.value)
+    console.log('订单数量:', customerOrders.value.length)
+  } catch (error) {
+    console.error('=== List.vue loadCustomerOrders Error ===')
+    console.error('Error:', error)
+    ElMessage.error('加载客户订单失败')
+    customerOrders.value = []
+  }
+}
+
+// 搜索订单
+const searchOrders = async (query: string) => {
+  if (!query || !bindingCustomerId.value) {
+    availableOrders.value = []
+    return
+  }
+
+  searchLoading.value = true
+  try {
+    // 调用实际的API来搜索可绑定的订单
+    const response = await getAvailableOrders(bindingCustomerId.value, {
+      keyword: query,
+      page: 1,
+      pageSize: 20
+    })
+    availableOrders.value = response.data || []
+  } catch (error) {
+    console.error('Failed to search orders:', error)
+    ElMessage.error('搜索订单失败')
+    availableOrders.value = []
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+// 通过订单号搜索订单
+const searchOrderByNo = async () => {
+  if (!bindOrderForm.orderNo.trim()) {
+    ElMessage.warning('请输入订单号')
+    return
+  }
+
+  searchLoading.value = true
+  try {
+    // 调用API搜索订单，这里需要根据实际API调整
+    const response = await getAvailableOrders(bindingCustomerId.value!, {
+      keyword: bindOrderForm.orderNo.trim(),
+      page: 1,
+      pageSize: 1
+    })
+
+    if (response.data && response.data.length > 0) {
+      const order = response.data[0]
+      searchResult.orderNo = order.orderNo
+      searchResult.courseName = order.courseName
+      searchResult.paymentAmount = order.paymentAmount
+      searchResult.orderId = order.id
+      ElMessage.success('订单搜索成功')
+    } else {
+      ElMessage.error('未找到该订单号的订单')
+      // 清空搜索结果
+      searchResult.orderNo = ''
+      searchResult.courseName = ''
+      searchResult.paymentAmount = 0
+      searchResult.orderId = null
+    }
+  } catch (error) {
+    console.error('Failed to search order by number:', error)
+    ElMessage.error('搜索订单失败')
+    // 清空搜索结果
+    searchResult.orderNo = ''
+    searchResult.courseName = ''
+    searchResult.paymentAmount = 0
+    searchResult.orderId = null
+  } finally {
+    searchLoading.value = false
+  }
+}
+
+// 确认绑定订单
+const confirmBindOrder = async () => {
+  if (!searchResult.orderId) {
+    ElMessage.warning('请先搜索并选择要绑定的订单')
+    return
+  }
+
+  if (!currentCustomer.value) {
+    ElMessage.error('客户信息丢失，请重新操作')
+    return
+  }
+
+  try {
+    // 调用API通过订单号绑定订单
+    await bindOrderByOrderNo(currentCustomer.value.id, searchResult.orderNo)
+    ElMessage.success('订单绑定成功')
+    bindOrderDialogVisible.value = false
+    loadCustomerOrders(currentCustomer.value.id)
+    // 清空表单
+    bindOrderForm.orderNo = ''
+    searchResult.orderNo = ''
+    searchResult.courseName = ''
+    searchResult.paymentAmount = 0
+    searchResult.orderId = null
+  } catch (error) {
+    console.error('Failed to bind order:', error)
+    ElMessage.error('订单绑定失败')
+  }
+}
+
+// 解绑订单
+const handleUnbindOrder = async (order: any) => {
+  try {
+    await ElMessageBox.confirm('确定要解绑此订单吗？', '解绑确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+
+    if (!currentCustomer.value) {
+      ElMessage.error('客户信息丢失，请重新操作')
+      return
+    }
+
+    // 调用实际的API来解绑订单
+    await unbindOrderFromCustomer(currentCustomer.value.id, order.id)
+    ElMessage.success('订单解绑成功')
+    loadCustomerOrders(currentCustomer.value.id)
+  } catch (error: any) {
+    if (error !== 'cancel') {
+      console.error('Failed to unbind order:', error)
+      ElMessage.error('订单解绑失败')
+    }
+  }
+}
+
+// 获取订单状态类型
+const getOrderStatusType = (status: string) => {
+  const statusMap: { [key: string]: string } = {
+    '已完成': 'success',
+    '进行中': 'warning',
+    '待付款': 'info',
+    '已取消': 'danger'
+  }
+  return statusMap[status] || 'info'
+}
+
+// 关闭绑定订单对话框
+const closeBindOrderDialog = () => {
+  bindOrderDialogVisible.value = false
+  currentCustomer.value = null
+  bindingCustomerId.value = null
+  customerOrders.value = []
+  availableOrders.value = []
+  bindOrderForm.orderNo = ''
+  searchResult.orderNo = ''
+  searchResult.courseName = ''
+  searchResult.paymentAmount = 0
+  searchResult.orderId = null
+}
+
+// 处理跟进记录
+const handleFollowRecord = (row: Customer) => {
+  try {
+    // 跳转到客户详情页面，并定位到跟进记录标签页
+    router.push({
+      path: `/customer/detail/${row.id}`,
+      query: { tab: 'follow' }
+    })
+  } catch (error) {
+    console.error('Failed to navigate to follow record:', error)
+    ElMessage.error('页面跳转失败')
+  }
 }
 
 onMounted(() => {

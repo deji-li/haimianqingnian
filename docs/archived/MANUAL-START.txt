@@ -1,0 +1,259 @@
+========================================
+CRM System - Manual Start Guide
+========================================
+
+Configuration has been FIXED:
+  - Username: root
+  - Password: 123456
+  - Auto table creation: enabled
+
+========================================
+MANUAL START STEPS
+========================================
+
+STEP 1: Start MySQL Service
+----------------------------
+Open PowerShell (Run as Administrator)
+
+Command:
+  Start-Service MySQL80
+
+Verify:
+  Get-Service MySQL80
+
+Expected: Status = Running
+
+
+STEP 2: Verify MySQL Connection
+----------------------------
+Open Command Prompt
+
+Command:
+  mysql -u root -p
+
+When prompted, enter password: 123456
+
+If successful, you'll see: mysql>
+
+Type: EXIT
+
+
+STEP 3: Create Database
+----------------------------
+In Command Prompt:
+
+  mysql -u root -p123456 --execute="CREATE DATABASE IF NOT EXISTS education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+OR
+
+  mysql -u root -p
+  (enter password: 123456)
+
+  Then type:
+  CREATE DATABASE IF NOT EXISTS education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  EXIT;
+
+
+STEP 4: Start Backend Server
+----------------------------
+Open Command Prompt Window 1
+
+Commands:
+  cd D:\CC\1.1\backend
+  npm run start:dev
+
+WAIT until you see:
+  "Application is running on: http://localhost:3000"
+  "API Documentation: http://localhost:3000/api"
+
+KEEP THIS WINDOW OPEN!
+
+
+STEP 5: Start Frontend Server
+----------------------------
+Open Command Prompt Window 2
+
+Commands:
+  cd D:\CC\1.1\frontend
+  npm run dev
+
+WAIT until you see:
+  "Local: http://localhost:5174/"
+
+KEEP THIS WINDOW OPEN!
+
+
+STEP 6: Access System
+----------------------------
+Open browser: http://localhost:5174
+
+Login:
+  Username: admin
+  Password: 123456
+
+
+========================================
+VERIFICATION CHECKLIST
+========================================
+
+Before starting, verify:
+
+[ ] MySQL installed
+    Test: mysql --version
+
+[ ] MySQL service running
+    Test: Get-Service MySQL80
+
+[ ] MySQL password is 123456
+    Test: mysql -u root -p123456 --execute="SELECT 1;"
+
+[ ] Database exists
+    Test: mysql -u root -p123456 --execute="SHOW DATABASES;" | findstr education_crm
+
+[ ] Config file correct
+    File: D:\CC\1.1\backend\.env.development
+    Check: DB_USERNAME=root
+           DB_PASSWORD=123456
+           DB_SYNCHRONIZE=true
+
+[ ] Backend dependencies installed
+    Check: D:\CC\1.1\backend\node_modules exists
+
+[ ] Frontend dependencies installed
+    Check: D:\CC\1.1\frontend\node_modules exists
+
+
+========================================
+TROUBLESHOOTING
+========================================
+
+Problem: MySQL command not found
+---------------------------------
+Solution 1: Add MySQL to PATH
+  - Find: C:\Program Files\MySQL\MySQL Server 8.0\bin
+  - Add to System PATH environment variable
+  - Restart Command Prompt
+
+Solution 2: Use full path
+  "C:\Program Files\MySQL\MySQL Server 8.0\bin\mysql.exe" -u root -p
+
+
+Problem: Cannot connect to MySQL
+---------------------------------
+Error: "Access denied"
+  - Password is wrong
+  - Edit: backend\.env.development
+  - Change: DB_PASSWORD=your_actual_password
+
+Error: "Can't connect to MySQL server"
+  - MySQL service not running
+  - Run: Start-Service MySQL80
+
+
+Problem: Backend won't start
+---------------------------------
+Error: "Cannot find module"
+  cd D:\CC\1.1\backend
+  npm install
+  npm run start:dev
+
+Error: "Port 3000 in use"
+  netstat -ano | findstr :3000
+  taskkill /PID [PID] /F
+
+
+Problem: Database connection failed
+---------------------------------
+Check backend\.env.development:
+  DB_HOST=localhost      (should be localhost)
+  DB_PORT=3306          (should be 3306)
+  DB_USERNAME=root      (should be root)
+  DB_PASSWORD=123456    (should be 123456)
+  DB_DATABASE=education_crm
+  DB_SYNCHRONIZE=true   (must be true for first run)
+
+
+Problem: Tables not created
+---------------------------------
+Make sure: DB_SYNCHRONIZE=true
+in backend\.env.development
+
+Restart backend after changing.
+
+
+========================================
+QUICK COMMANDS REFERENCE
+========================================
+
+Start MySQL:
+  Start-Service MySQL80
+
+Check MySQL status:
+  Get-Service MySQL80
+
+Login to MySQL:
+  mysql -u root -p
+  (password: 123456)
+
+Create database:
+  mysql -u root -p123456 --execute="CREATE DATABASE education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+Show databases:
+  mysql -u root -p123456 --execute="SHOW DATABASES;"
+
+Check backend config:
+  type backend\.env.development
+
+Install dependencies:
+  npm run install:all
+
+Start backend:
+  cd backend
+  npm run start:dev
+
+Start frontend:
+  cd frontend
+  npm run dev
+
+
+========================================
+ALTERNATIVE: Use Docker
+========================================
+
+If local MySQL is too problematic:
+
+1. Install Docker Desktop
+2. Run: docker-compose up -d
+3. Start backend and frontend as above
+
+Docker will handle MySQL automatically.
+
+
+========================================
+GET HELP
+========================================
+
+If still not working, provide:
+
+1. MySQL version:
+   mysql --version
+
+2. MySQL service status:
+   Get-Service MySQL80
+
+3. Connection test result:
+   mysql -u root -p123456 --execute="SELECT 1;"
+
+4. Database list:
+   mysql -u root -p123456 --execute="SHOW DATABASES;"
+
+5. Backend config content:
+   type backend\.env.development
+
+6. Backend error (if any):
+   Full error message from backend window
+
+7. Browser console error (if any):
+   Press F12, check Console tab
+
+========================================

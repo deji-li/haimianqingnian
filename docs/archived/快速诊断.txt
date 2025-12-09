@@ -1,0 +1,169 @@
+==============================================
+教育培训CRM系统 - 快速诊断指南
+==============================================
+
+【问题】登录显示"服务器错误"
+
+【最可能的3个原因】
+
+1. MySQL服务未启动（70%）
+2. 数据库不存在（20%）
+3. 后端未启动（10%）
+
+==============================================
+快速检查步骤（请按顺序执行）
+==============================================
+
+步骤1：检查MySQL服务
+----------------------
+打开PowerShell（以管理员身份），输入：
+
+Get-Service MySQL80
+
+【预期结果】应该显示 Running
+
+【如果是Stopped】执行：
+Start-Service MySQL80
+
+
+步骤2：测试MySQL连接
+----------------------
+在命令提示符输入：
+
+mysql -u root -p123456 -e "SELECT 1;"
+
+【预期结果】应该显示一个 1
+
+【如果失败】可能的原因：
+- mysql命令找不到 → MySQL未安装或未加入PATH
+- 密码错误 → 修改backend\.env.development中的DB_PASSWORD
+- 连接失败 → MySQL服务未启动
+
+
+步骤3：检查数据库
+----------------------
+mysql -u root -p123456 -e "SHOW DATABASES;"
+
+【预期结果】应该能看到 education_crm
+
+【如果看不到】创建数据库：
+cd D:\CC\1.1\backend
+mysql -u root -p123456 < init-database.sql
+
+
+步骤4：手动启动后端
+----------------------
+打开新的命令提示符窗口，输入：
+
+cd D:\CC\1.1\backend
+npm run start:dev
+
+【仔细观察输出！】
+
+【成功标志】应该看到：
+- Database connected successfully
+- Application is running on: http://localhost:3000
+
+【如果看到错误】请复制完整的错误信息
+
+
+步骤5：验证后端
+----------------------
+在浏览器访问：http://localhost:3000/api
+
+【预期】应该能看到Swagger API文档页面
+
+【如果打不开】说明后端启动失败
+
+
+步骤6：启动前端
+----------------------
+打开另一个命令提示符窗口，输入：
+
+cd D:\CC\1.1\frontend
+npm run dev
+
+【等待启动完成】看到 Local: http://localhost:5174
+
+
+步骤7：测试登录
+----------------------
+浏览器访问：http://localhost:5174
+
+账号：admin
+密码：123456
+
+==============================================
+一键修复命令（适用于PowerShell管理员）
+==============================================
+
+# 启动MySQL
+Start-Service MySQL80
+
+# 创建数据库
+mysql -u root -p123456 -e "CREATE DATABASE IF NOT EXISTS education_crm CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+
+# 进入项目目录
+cd D:\CC\1.1
+
+# 启动后端（新窗口）
+start cmd /k "cd /d D:\CC\1.1\backend && npm run start:dev"
+
+# 等待5秒
+Start-Sleep -Seconds 5
+
+# 启动前端（新窗口）
+start cmd /k "cd /d D:\CC\1.1\frontend && npm run dev"
+
+# 打开浏览器
+start http://localhost:5174
+
+==============================================
+常见错误代码对照表
+==============================================
+
+错误：connect ECONNREFUSED 127.0.0.1:3306
+原因：MySQL服务未启动
+解决：Start-Service MySQL80
+
+错误：Access denied for user 'root'
+原因：密码错误
+解决：检查backend\.env.development中DB_PASSWORD
+
+错误：Unknown database 'education_crm'
+原因：数据库不存在
+解决：运行 mysql -u root -p123456 < backend\init-database.sql
+
+错误：listen EADDRINUSE :::3000
+原因：3000端口被占用
+解决：netstat -ano | findstr :3000 找到PID，然后 taskkill /PID xxx /F
+
+错误：Cannot find module '@nestjs/...'
+原因：依赖未安装
+解决：cd backend && npm install
+
+==============================================
+需要帮助？
+==============================================
+
+请提供以下信息：
+
+1. MySQL服务状态：
+   Get-Service MySQL80
+
+2. MySQL连接测试：
+   mysql -u root -p123456 -e "SHOW DATABASES;"
+
+3. 后端启动输出：
+   cd D:\CC\1.1\backend
+   npm run start:dev
+   （复制所有输出内容，特别是错误信息）
+
+4. 浏览器控制台错误：
+   - 打开 http://localhost:5174/login
+   - 按F12
+   - 点击Console标签
+   - 尝试登录
+   - 复制红色错误信息
+
+==============================================

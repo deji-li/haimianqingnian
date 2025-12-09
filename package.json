@@ -13,10 +13,26 @@
     "build:mobile:h5": "cd mobile && pnpm build:h5",
     "build:mobile:mp-weixin": "cd mobile && pnpm build:mp-weixin"
   },
-  "keywords": ["crm", "education", "monorepo"],
+  "keywords": [
+    "crm",
+    "education",
+    "monorepo"
+  ],
   "author": "",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
-  }
+  },
+  "main": "create-better-icons.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deji-li/haimianqingnian.git"
+  },
+  "bugs": {
+    "url": "https://github.com/deji-li/haimianqingnian/issues"
+  },
+  "homepage": "https://github.com/deji-li/haimianqingnian#readme"
 }

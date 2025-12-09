@@ -1,0 +1,57 @@
+===============================================
+快速部署 - 复制以下命令执行
+===============================================
+
+=== 步骤1：推送代码到GitHub ===
+
+git add .
+
+git commit -m "feat: 新增AI营销助手、AI人效分析、AI诊断报告、CRM统计功能"
+
+git push origin master
+
+
+=== 步骤2：查看部署进度 ===
+
+访问网址：
+https://github.com/deji-li/haimianqingnian/actions
+
+等待3-5分钟，直到显示绿色对勾✓
+
+
+=== 步骤3：配置API密钥（SSH登录服务器执行）===
+
+cd /var/www/crm
+
+vim .env
+
+# 按 i 进入编辑模式，在文件末尾添加：
+
+# DeepSeek AI配置
+DEEPSEEK_API_KEY=sk-你的密钥
+DEEPSEEK_API_URL=https://api.deepseek.com/v1/chat/completions
+DEEPSEEK_MODEL=deepseek-chat
+
+# 豆包OCR配置
+DOUBAO_API_KEY=你的豆包API密钥
+DOUBAO_API_URL=https://ark.cn-beijing.volces.com/api/v3
+DOUBAO_OCR_MODEL=doubao-vision-pro
+
+# 按 Esc，输入 :wq 保存退出
+
+docker-compose restart backend
+
+
+=== 步骤4：验证部署 ===
+
+docker-compose ps
+
+# 应该看到3个容器都是Up状态
+# 然后访问系统测试新功能
+
+
+===============================================
+获取API密钥：
+  DeepSeek: https://platform.deepseek.com
+  豆包OCR: https://console.volcengine.com/ark
+===============================================

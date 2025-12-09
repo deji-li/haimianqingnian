@@ -70,10 +70,15 @@ export const getConfig = () => {
 
 // 更新同步配置
 export const updateConfig = (data: { configKey: string; configValue: string }) => {
+  console.log('🔄 更新配置请求:', data)
   return request({
     url: '/order-sync/config',
     method: 'put',
     data,
+  }).catch(error => {
+    console.error('❌ 更新配置失败:', error)
+    console.error('❌ 错误详情:', error.response?.data)
+    throw error
   })
 }
 
@@ -88,7 +93,7 @@ export const triggerSync = (data?: TriggerSyncParams) => {
 
 // 获取同步日志
 export const getLogs = (params: SyncLogQuery) => {
-  return request<{ list: OrderSyncLog[]; total: number; page: number; pageSize: number }>({
+  return request<{ logs: OrderSyncLog[]; total: number; page: number; limit: number }>({
     url: '/order-sync/logs',
     method: 'get',
     params,

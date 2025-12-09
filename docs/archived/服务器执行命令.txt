@@ -1,0 +1,12 @@
+========================================
+在服务器上执行这个命令（复制粘贴）
+========================================
+
+打开宝塔面板 → 终端，或者用其他SSH工具连接服务器后，执行：
+
+cd /root/CC/1.1 && mysqldump -uroot -p7821630lideji education_crm > frontend/dist/database-backup.sql && ls -lh frontend/dist/database-backup.sql
+
+执行后应该显示文件大小，例如：
+-rw-r--r-- 1 root root 2.5M Dec 19 15:30 frontend/dist/database-backup.sql
+
+然后运行本地的：download-from-server.bat

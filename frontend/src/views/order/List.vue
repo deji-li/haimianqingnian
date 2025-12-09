@@ -85,62 +85,74 @@
     </el-card>
 
     <!-- 数据表格 -->
-    <el-card shadow="never">
+    <el-card shadow="never" class="table-card">
       <el-table
         v-loading="loading"
         :data="orderList"
         stripe
         style="width: 100%"
+        :row-class-name="tableRowClassName"
       >
-        <el-table-column prop="id" label="ID" width="80" />
-        <el-table-column prop="orderNo" label="订单号" width="160" />
+        <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column prop="orderNo" label="订单号" width="160" show-overflow-tooltip />
         <el-table-column prop="customerName" label="客户姓名" width="120">
           <template #default="{ row }">
-            <el-button
-              v-if="row.customerId"
-              link
-              type="primary"
-              @click="goToCustomerDetail(row.customerId)"
-            >
-              {{ row.customerName || row.wechatNickname || '-' }}
-            </el-button>
-            <span v-else>
-              {{ row.customerName || row.wechatNickname || '-' }}
-            </span>
+            <div class="customer-cell">
+              <el-button
+                v-if="row.customerId"
+                link
+                type="primary"
+                @click="goToCustomerDetail(row.customerId)"
+                class="customer-link"
+              >
+                {{ row.customerName || row.wechatNickname || '-' }}
+              </el-button>
+              <span v-else class="customer-name">
+                {{ row.customerName || row.wechatNickname || '-' }}
+              </span>
+              <div class="customer-phone">{{ row.phone || '-' }}</div>
+            </div>
           </template>
         </el-table-column>
-        <el-table-column prop="phone" label="手机号" width="130" />
-        <el-table-column prop="courseName" label="课程名称" width="140" />
 
-        <el-table-column prop="paymentAmount" label="付款金额" width="120">
+        <el-table-column prop="courseName" label="课程名称" min-width="200" show-overflow-tooltip>
           <template #default="{ row }">
-            <span class="amount">¥{{ row.paymentAmount }}</span>
+            <div class="course-info">
+              <span class="course-name">{{ row.courseName || '-' }}</span>
+              <el-tag v-if="row.isNewStudent === 1" size="small" type="success" class="new-tag">新学员</el-tag>
+            </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="isNewStudent" label="学员类型" width="100">
+        <el-table-column prop="paymentAmount" label="付款金额" width="120" align="right">
           <template #default="{ row }">
-            <el-tag :type="row.isNewStudent === 1 ? 'success' : 'info'">
-              {{ row.isNewStudent === 1 ? '新学员' : '老学员' }}
-            </el-tag>
+            <div class="amount-cell">
+              <span class="amount">¥{{ formatAmount(row.paymentAmount) }}</span>
+              <div v-if="row.commissionAmount" class="commission">
+                提成: ¥{{ formatAmount(row.commissionAmount) }}
+              </div>
+            </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="orderStatus" label="订单状态" width="100">
+        <el-table-column prop="orderStatus" label="订单状态" width="100" align="center">
           <template #default="{ row }">
             <el-tag
-              :type="
-                row.orderStatus === '待上课'
-                  ? 'warning'
-                  : row.orderStatus === '上课中'
-                    ? 'primary'
-                    : row.orderStatus === '已完成'
-                      ? 'success'
-                      : 'danger'
-              "
+              :type="getOrderStatusType(row.orderStatus)"
+              size="small"
+              effect="light"
             >
               {{ row.orderStatus }}
             </el-tag>
+          </template>
+        </el-table-column>
+
+        <el-table-column prop="teacherName" label="授课老师" width="120">
+          <template #default="{ row }">
+            <div class="teacher-cell">
+              <span class="teacher-name">{{ row.teacherName || '-' }}</span>
+              <div class="campus-name">{{ row.campusName || '-' }}</div>
+            </div>
           </template>
         </el-table-column>
 
@@ -151,6 +163,7 @@
               link
               type="primary"
               @click="goToSalesCustomers(row.salesId, row.salesName)"
+              class="sales-link"
             >
               {{ row.salesName || '-' }}
             </el-button>
@@ -159,12 +172,12 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="campusName" label="校区" width="120" />
-        <el-table-column prop="teacherName" label="授课老师" width="100" />
 
-        <el-table-column prop="paymentTime" label="支付时间" width="180">
+        <el-table-column prop="paymentTime" label="支付时间" width="160" align="center">
           <template #default="{ row }">
-            {{ formatDate(row.paymentTime) }}
+            <div class="time-cell">
+              {{ formatDate(row.paymentTime) }}
+            </div>
           </template>
         </el-table-column>
 
@@ -536,9 +549,17 @@ const fetchData = async () => {
       queryParams.endDate = ''
     }
 
+    console.log('发送的查询参数:', JSON.stringify(queryParams, null, 2))
     const res = await getOrderList(queryParams)
-    orderList.value = res.list
-    total.value = res.total
+    console.log('订单列表完整响应:', JSON.stringify(res, null, 2))
+    console.log('订单列表响应keys:', Object.keys(res))
+    console.log('订单列表res.data:', res.data)
+    console.log('订单列表res.list:', res.list)
+    console.log('实际返回的数据条数:', res.list?.length || 0)
+    console.log('期望的数据条数 (pageSize):', queryParams.pageSize)
+    // 修复数据解析：直接使用 res.list 而不是 res.data?.list
+    orderList.value = res.list || []
+    total.value = res.total || 0
   } catch (error) {
     console.error('Failed to fetch orders:', error)
   } finally {
@@ -613,8 +634,7 @@ const handleAdd = () => {
 
 // 查看
 const handleView = (row: Order) => {
-  // TODO: 实现订单详情页
-  ElMessage.info('订单详情页开发中...')
+  router.push(`/order/detail/${row.id}`)
 }
 
 // 跳转到客户详情
@@ -652,6 +672,41 @@ const handleEdit = (row: Order) => {
   })
   formData.id = row.id
   dialogVisible.value = true
+}
+
+// 表格行样式
+const tableRowClassName = ({ row }: { row: Order }) => {
+  if (row.orderStatus === '已完成') {
+    return 'success-row'
+  } else if (row.orderStatus === '已退款') {
+    return 'danger-row'
+  }
+  return ''
+}
+
+// 格式化金额
+const formatAmount = (amount: number | string | null | undefined) => {
+  if (amount === null || amount === undefined) return '0.00'
+  return Number(amount).toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  })
+}
+
+// 获取订单状态类型
+const getOrderStatusType = (status: string) => {
+  switch (status) {
+    case '待上课':
+      return 'warning'
+    case '上课中':
+      return 'primary'
+    case '已完成':
+      return 'success'
+    case '已退款':
+      return 'danger'
+    default:
+      return 'info'
+  }
 }
 
 // 删除
@@ -1106,6 +1161,144 @@ onMounted(() => {
     .el-button--primary {
       @include xhs-button-primary;
     }
+  }
+
+  // 表格优化样式
+  :deep(.el-table) {
+    // 表格行状态样式
+    .success-row {
+      background-color: rgba(103, 194, 58, 0.05);
+    }
+
+    .danger-row {
+      background-color: rgba(245, 108, 108, 0.05);
+    }
+
+    // 表头样式
+    .el-table__header {
+      background-color: #fafafa;
+      th {
+        background-color: #fafafa !important;
+        color: #303133;
+        font-weight: 600;
+        border-bottom: 2px solid #ebeef5;
+        padding: 12px 0;
+      }
+    }
+
+    // 表格行悬停效果
+    .el-table__row {
+      &:hover {
+        background-color: #f8f9ff !important;
+      }
+    }
+
+    // 表格单元格
+    .el-table__cell {
+      padding: 12px 0;
+    }
+  }
+
+  // 客户信息单元格样式
+  .customer-cell {
+    .customer-link {
+      color: #409eff;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 14px;
+
+      &:hover {
+        color: #66b1ff;
+      }
+    }
+
+    .customer-name {
+      color: #303133;
+      font-weight: 500;
+      font-size: 14px;
+    }
+
+    .customer-phone {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 2px;
+    }
+  }
+
+  // 课程信息单元格样式
+  .course-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .course-name {
+      color: #303133;
+      line-height: 1.4;
+      font-size: 14px;
+    }
+
+    .new-tag {
+      align-self: flex-start;
+      font-size: 11px;
+    }
+  }
+
+  // 金额单元格样式
+  .amount-cell {
+    text-align: right;
+
+    .amount {
+      font-size: 16px;
+      font-weight: 600;
+      color: #e6a23c;
+      display: block;
+    }
+
+    .commission {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 2px;
+    }
+  }
+
+  // 老师信息单元格样式
+  .teacher-cell {
+    .teacher-name {
+      color: #303133;
+      font-weight: 500;
+      display: block;
+      font-size: 14px;
+    }
+
+    .campus-name {
+      font-size: 12px;
+      color: #909399;
+      margin-top: 2px;
+    }
+  }
+
+  // 时间单元格样式
+  .time-cell {
+    font-size: 12px;
+    color: #606266;
+    line-height: 1.3;
+  }
+
+  // 销售链接样式
+  .sales-link {
+    color: #409eff;
+    font-weight: 500;
+    font-size: 14px;
+
+    &:hover {
+      color: #66b1ff;
+    }
+  }
+
+  // 订单状态标签优化
+  :deep(.el-tag) {
+    border-radius: 12px;
+    font-weight: 500;
   }
 }
 </style>

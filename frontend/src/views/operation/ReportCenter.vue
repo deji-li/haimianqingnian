@@ -290,7 +290,7 @@ const operatorList = ref<any[]>([])
 const dateRange = ref<[string, string] | null>(null)
 const showCreateDialog = ref(false)
 const showPreviewDialog = ref(false)
-const previewReport = ref<any>(null)
+const previewReportData = ref<any>(null)
 const previewUrl = ref('')
 
 // 筛选表单
@@ -475,7 +475,7 @@ const downloadReport = (row: any) => {
 
 // 预览报表
 const previewReport = (row: any) => {
-  previewReport.value = row
+  previewReportData.value = row
   showPreviewDialog.value = true
   // 模拟预览URL
   previewUrl.value = 'data:text/html,<html><body><h1>报表预览</h1><p>这里是报表内容...</p></body></html>'

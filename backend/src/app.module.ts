@@ -17,16 +17,20 @@ import { TargetModule } from './modules/target/target.module';
 import { TaskModule } from './modules/task/task.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { OperationModule } from './modules/operation/operation.module';
-import { AiChatModule } from './modules/ai-chat/ai-chat.module';
-import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
-import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
-import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
+// import { AiChatModule } from './modules/ai-chat/ai-chat.module';
+// import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
+// import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
+// import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { BusinessConfigModule } from './modules/business-config/business-config.module';
 import { OrderSyncModule } from './modules/order-sync/order-sync.module';
-import { AiMarketingModule } from './modules/ai-marketing/ai-marketing.module';
+import { TeacherModule } from './modules/teacher/teacher.module';
+import { RankingModule } from './modules/ranking/ranking.module';
+// import { AiMarketingModule } from './modules/ai-marketing/ai-marketing.module';
 import { AutomationModule } from './modules/automation/automation.module';
+// import { BaiduOcrModule } from './modules/ai-tools/baidu-ocr.module';
+// import { WeWorkModule } from './modules/wework/wework.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -53,24 +57,30 @@ import { OperationCommissionRecord } from './modules/operation/entities/operatio
 import { AiChatRecord } from './modules/ai-chat/entities/ai-chat-record.entity';
 import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity';
 import { AiFieldMappingConfig } from './modules/ai-config/entities/ai-field-mapping-config.entity';
-import {
-  EnterpriseKnowledgeBase,
-  KnowledgeFeedback,
-  KnowledgePendingReview,
-  EnterpriseBasicInfo,
-  IndustryQuestionLibrary,
-  KnowledgeUsageLog,
-} from './modules/enterprise-knowledge/entities/index';
+// import {
+//   EnterpriseKnowledgeBase,
+//   KnowledgeFeedback,
+//   KnowledgePendingReview,
+//   EnterpriseBasicInfo,
+//   IndustryQuestionLibrary,
+//   KnowledgeUsageLog,
+// } from './modules/enterprise-knowledge/entities/index';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
 import { AiPromptVariable } from './modules/ai-config/entities/ai-prompt-variable.entity';
 import { BusinessConfig } from './modules/business-config/entities/business-config.entity';
 import { OrderSyncLog } from './modules/order-sync/entities/order-sync-log.entity';
+import { Teacher } from './modules/teacher/entities/teacher.entity';
+import { TeacherCampus } from './modules/teacher/entities/teacher-campus.entity';
 import { AiMarketingScenario } from './modules/ai-marketing/entities/ai-marketing-scenario.entity';
 import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing-content.entity';
+import { AiMarketingHistory } from './modules/ai-marketing/entities/ai-marketing-history.entity';
+import { AiMarketingFeedback } from './modules/ai-marketing/entities/ai-marketing-feedback.entity';
+import { AiCustomerInsights } from './modules/ai-marketing/entities/ai-customer-insights.entity';
 import { AutomationRule } from './modules/automation/entities/automation-rule.entity';
 import { AutomationLog } from './modules/automation/entities/automation-log.entity';
+// import { WeWorkConfig, WeWorkContact, WeWorkSyncLog } from './modules/wework/entities/index';
 
 @Module({
   imports: [
@@ -115,12 +125,12 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           OperationCommissionRecord,
           AiChatRecord,
           AiCustomerTag,
-          EnterpriseKnowledgeBase,
-          KnowledgeFeedback,
-          KnowledgePendingReview,
-          EnterpriseBasicInfo,
-          IndustryQuestionLibrary,
-          KnowledgeUsageLog,
+          // EnterpriseKnowledgeBase,
+          // KnowledgeFeedback,
+          // KnowledgePendingReview,
+          // EnterpriseBasicInfo,
+          // IndustryQuestionLibrary,
+          // KnowledgeUsageLog,
           AiScript,
           AiRiskAlert,
           AiTrainingRecord,
@@ -131,10 +141,18 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           AiFieldMappingConfig,
           BusinessConfig,
           OrderSyncLog,
+          Teacher,
+          TeacherCampus,
           AiMarketingScenario,
           AiMarketingContent,
+          AiMarketingHistory,
+          AiMarketingFeedback,
+          AiCustomerInsights,
           AutomationRule,
           AutomationLog,
+          // WeWorkConfig,
+          // WeWorkContact,
+          // WeWorkSyncLog,
         ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -166,16 +184,20 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     TaskModule,
     AnalyticsModule,
     OperationModule,
-    AiChatModule,
-    AiTagsModule,
-    EnterpriseKnowledgeModule,
-    AiToolsModule,
+    // AiChatModule,
+    // AiTagsModule,
+    // EnterpriseKnowledgeModule,
+    // AiToolsModule,
     StatsModule,
     AiConfigModule,
     BusinessConfigModule,
     OrderSyncModule,
-    AiMarketingModule,
+    TeacherModule,
+    RankingModule,
+    // AiMarketingModule,
     AutomationModule,
+    // BaiduOcrModule,
+    // WeWorkModule,
   ],
 })
 export class AppModule {}

@@ -294,7 +294,7 @@ import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import * as echarts from 'echarts'
-import { getDashboardOverview, getWeeklyTrend, getComparisonData, type DashboardOverview, type WeeklyTrend, type ComparisonData } from '@/api/dashboard'
+import { getDashboardOverview, getWeeklyTrend, getComparisonData, getTeamPerformance, type DashboardOverview, type WeeklyTrend, type ComparisonData, type TeamPerformance } from '@/api/dashboard'
 import { Top, Bottom } from '@element-plus/icons-vue'
 import { getPendingFollowUps, type Customer } from '@/api/customer'
 import { formatDateTime } from '@/utils/date'
@@ -398,11 +398,10 @@ const fetchData = async () => {
     weeklyTrend.value = trendData
     Object.assign(comparison, comparisonData)
 
-    // TODO: 从后端API获取团队业绩、校区业绩、课程销售数据
-    // 暂时使用模拟数据
-    fetchTeamRanking()
-    fetchCampusPerformance()
-    fetchCoursePerformance()
+    // 从后端API获取团队业绩、校区业绩、课程销售数据
+    await fetchTeamPerformance()
+    await fetchCampusPerformance()
+    await fetchCoursePerformance()
 
     await nextTick()
     renderTrendChart()
@@ -418,25 +417,64 @@ const fetchData = async () => {
   }
 }
 
-// 获取团队业绩排行（模拟数据）
-const fetchTeamRanking = async () => {
-  // TODO: 调用实际API
-  // const data = await getTeamRanking()
-  // teamRanking.value = data
+// 获取团队业绩数据
+const fetchTeamPerformance = async () => {
+  try {
+    const data = await getTeamPerformance()
 
-  // 模拟数据
-  teamRanking.value = [
-    { salesId: 1, salesName: '张三', departmentName: '销售一部', campusName: '总部校区', orderCount: 45, revenue: 328000, customerCount: 38 },
-    { salesId: 2, salesName: '李四', departmentName: '销售一部', campusName: '分部校区', orderCount: 38, revenue: 295000, customerCount: 32 },
-    { salesId: 3, salesName: '王五', departmentName: '销售二部', campusName: '总部校区', orderCount: 35, revenue: 268000, customerCount: 29 },
-    { salesId: 4, salesName: '赵六', departmentName: '销售二部', campusName: '分部校区', orderCount: 28, revenue: 215000, customerCount: 25 },
-    { salesId: 5, salesName: '钱七', departmentName: '销售一部', campusName: '总部校区', orderCount: 25, revenue: 198000, customerCount: 21 },
-  ]
+    // 转换团队排行数据格式
+    teamRanking.value = data.teamRanking.map(item => ({
+      salesId: item.id,
+      salesName: item.name,
+      departmentName: item.department,
+      campusName: item.role.includes('校长') ? '总部校区' : '分部校区',
+      orderCount: item.orders,
+      revenue: item.totalRevenue,
+      customerCount: item.newCustomers
+    }))
+
+    // 转换校区业绩数据格式
+    campusPerformance.value = data.campusRanking.map(item => ({
+      campusName: item.name,
+      revenue: item.totalRevenue,
+      orderCount: item.orders
+    }))
+
+    // 转换课程销售数据格式
+    coursePerformance.value = data.courseRanking.map(item => ({
+      courseName: item.courseName,
+      revenue: item.totalRevenue,
+      count: item.enrollmentCount
+    }))
+
+  } catch (error) {
+    console.error('获取团队业绩数据失败:', error)
+
+    // 降级到模拟数据
+    teamRanking.value = [
+      { salesId: 1, salesName: '张三', departmentName: '销售一部', campusName: '总部校区', orderCount: 45, revenue: 328000, customerCount: 38 },
+      { salesId: 2, salesName: '李四', departmentName: '销售一部', campusName: '分部校区', orderCount: 38, revenue: 295000, customerCount: 32 },
+      { salesId: 3, salesName: '王五', departmentName: '销售二部', campusName: '总部校区', orderCount: 35, revenue: 268000, customerCount: 29 },
+      { salesId: 4, salesName: '赵六', departmentName: '销售二部', campusName: '分部校区', orderCount: 28, revenue: 215000, customerCount: 25 },
+      { salesId: 5, salesName: '钱七', departmentName: '销售一部', campusName: '总部校区', orderCount: 25, revenue: 198000, customerCount: 21 },
+    ]
+  }
 }
 
-// 获取校区业绩数据（模拟数据）
+// 获取校区业绩数据
 const fetchCampusPerformance = async () => {
-  // TODO: 调用实际API
+  try {
+    const data = await getTeamPerformance()
+
+    campusPerformance.value = data.campusRanking.map(item => ({
+      campusName: item.name,
+      revenue: item.totalRevenue,
+      orderCount: item.orders
+    }))
+  } catch (error) {
+    console.error('获取校区业绩数据失败:', error)
+
+    // 降级到模拟数据
   campusPerformance.value = [
     { campusName: '总部校区', revenue: 856000, orderCount: 128 },
     { campusName: '分部校区', revenue: 642000, orderCount: 95 },

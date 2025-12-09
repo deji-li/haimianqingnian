@@ -366,6 +366,18 @@ const filterForm = reactive({
   keyword: '',
 })
 
+// 查询参数
+const queryParams = reactive({
+  contentType: '',
+  isFavorite: undefined,
+  category: '',
+  keyword: '',
+  sortBy: '',
+  sortOrder: '',
+  page: 1,
+  limit: 20,
+})
+
 // 分类列表
 const categories = ref<string[]>([])
 
@@ -415,12 +427,14 @@ const loadCategories = async () => {
 const loadContentList = async () => {
   loading.value = true
   try {
-    const params = {
+    // 同步查询参数
+    Object.assign(queryParams, {
       page: pagination.page,
       limit: pagination.limit,
       ...filterForm,
-    }
-    const res = await getMarketingContentList(params)
+    })
+
+    const res = await getMarketingContentList(queryParams)
     contentList.value = res.list || []
     pagination.total = res.total || 0
   } catch (error: any) {
@@ -450,8 +464,17 @@ const handlePageSizeChange = (size: number) => {
 
 // 排序改变
 const handleSortChange = ({ prop, order }: any) => {
-  // TODO: 实现排序功能
-  console.log('排序:', prop, order)
+  if (!order) {
+    queryParams.sortBy = ''
+    queryParams.sortOrder = ''
+  } else {
+    queryParams.sortBy = prop
+    queryParams.sortOrder = order === 'ascending' ? 'asc' : 'desc'
+  }
+
+  // 重置到第一页
+  queryParams.page = 1
+  loadContentList()
 }
 
 // 查看

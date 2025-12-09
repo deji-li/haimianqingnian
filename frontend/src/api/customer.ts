@@ -206,6 +206,48 @@ export function importCustomersFromExcel(file: File) {
   })
 }
 
+// 绑定订单到客户
+export function bindOrderToCustomer(customerId: number, orderId: number) {
+  return request({
+    url: `/customer/${customerId}/orders/bind`,
+    method: 'post',
+    data: { orderId },
+  })
+}
+
+// 通过订单号绑定订单到客户
+export function bindOrderByOrderNo(customerId: number, orderNo: string) {
+  return request({
+    url: `/customer/${customerId}/orders/bind-by-order-no`,
+    method: 'post',
+    data: { orderNo },
+  })
+}
+
+// 解绑客户订单
+export function unbindOrderFromCustomer(customerId: number, orderId: number) {
+  return request({
+    url: `/customer/${customerId}/orders/${orderId}/unbind`,
+    method: 'delete',
+  })
+}
+
+// 获取客户订单列表
+export function getCustomerOrders(customerId: number) {
+  return request({
+    url: `/customer/${customerId}/orders`,
+    method: 'get',
+  })
+}
+
+// 获取客户可用订单
+export function getCustomerAvailableOrders(customerId: number) {
+  return request({
+    url: `/customer/${customerId}/available-orders`,
+    method: 'get',
+  })
+}
+
 // 导出API对象（用于兼容旧代码）
 export const customerApi = {
   getCustomerList,
@@ -223,4 +265,9 @@ export const customerApi = {
   exportCustomersToExcel,
   downloadImportTemplate,
   importCustomersFromExcel,
+  bindOrderToCustomer,
+  bindOrderByOrderNo,
+  unbindOrderFromCustomer,
+  getCustomerOrders,
+  getCustomerAvailableOrders,
 }

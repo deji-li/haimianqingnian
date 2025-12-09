@@ -47,6 +47,54 @@ export interface ComparisonData {
   }
 }
 
+export interface TeamPerformance {
+  teamRanking: Array<{
+    id: number
+    name: string
+    role: string
+    department: string
+    totalRevenue: number
+    newCustomers: number
+    orders: number
+    completionRate: number
+    avatar?: string
+  }>
+  campusRanking: Array<{
+    id: number
+    name: string
+    totalRevenue: number
+    newCustomers: number
+    orders: number
+    targetCompletion: number
+    growth: number
+  }>
+  courseRanking: Array<{
+    courseId: number
+    courseName: string
+    category: string
+    totalRevenue: number
+    enrollmentCount: number
+    averagePrice: number
+    growth: number
+  }>
+}
+
+export interface MonthlyStats {
+  currentMonth: {
+    customers: number
+    orders: number
+    revenue: number
+    followRecords: number
+    conversionRate: number
+  }
+  trend: Array<{
+    date: string
+    customers: number
+    orders: number
+    revenue: number
+  }>
+}
+
 // 获取管理看板概览
 export const getDashboardOverview = () => {
   return request<DashboardOverview>({
@@ -67,6 +115,30 @@ export const getWeeklyTrend = () => {
 export const getComparisonData = () => {
   return request<ComparisonData>({
     url: '/dashboard/comparison',
+    method: 'get',
+  })
+}
+
+// 获取团队业绩数据
+export const getTeamPerformance = () => {
+  return request<TeamPerformance>({
+    url: '/dashboard/team-performance',
+    method: 'get',
+  })
+}
+
+// 获取个人月度统计数据
+export const getMonthlyStats = (userId?: number) => {
+  return request<MonthlyStats>({
+    url: `/dashboard/monthly-stats${userId ? `?userId=${userId}` : ''}`,
+    method: 'get',
+  })
+}
+
+// 获取实时数据更新
+export const getRealtimeData = () => {
+  return request({
+    url: '/dashboard/realtime',
     method: 'get',
   })
 }

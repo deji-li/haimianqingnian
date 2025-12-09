@@ -1,119 +1,103 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, HttpException, HttpStatus, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like } from 'typeorm';
-import { v4 as uuidv4 } from 'uuid';
-import { HaimianApiService } from './haimian-api.service';
-import { BusinessConfigService } from '../business-config/business-config.service';
-import { OrderSyncLog } from './entities/order-sync-log.entity';
+import { Repository, Between, LessThanOrEqual, MoreThanOrEqual, Like } from 'typeorm';
 import { Order } from '../order/entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { Campus } from '../system/entities/campus.entity';
-import { HaimianOrder } from './interfaces/haimian-order.interface';
-import { SyncResultDto, SyncLogQueryDto } from './dto/sync-result.dto';
+import { TemporaryOrder } from '../customer/entities/temporary-order.entity';
+import { BusinessConfigService } from '../business-config/business-config.service';
+import { TeacherService } from '../teacher/teacher.service';
+import { OrderSyncLog } from './entities/order-sync-log.entity';
+import {
+  HaimianOrder,
+  HaimianApiResponse,
+  HaimianOrderMember,
+} from './interfaces/haimian-order.interface';
+import { HaimianApiService } from './haimian-api.service';
 
 @Injectable()
 export class OrderSyncService {
   private readonly logger = new Logger(OrderSyncService.name);
 
   constructor(
-    @InjectRepository(OrderSyncLog)
-    private readonly syncLogRepository: Repository<OrderSyncLog>,
     @InjectRepository(Order)
     private readonly orderRepository: Repository<Order>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
     @InjectRepository(Campus)
     private readonly campusRepository: Repository<Campus>,
+    @InjectRepository(OrderSyncLog)
+    private readonly syncLogRepository: Repository<OrderSyncLog>,
+    @InjectRepository(TemporaryOrder)
+    private readonly temporaryOrderRepository: Repository<TemporaryOrder>,
     private readonly haimianApiService: HaimianApiService,
     private readonly businessConfigService: BusinessConfigService,
+    private readonly teacherService: TeacherService,
   ) {}
 
   /**
-   * 手动触发同步
+   * 同步海绵订单
    */
-  async triggerSync(params?: {
+  async syncOrders(params: {
     startTime?: string;
     endTime?: string;
     status?: number;
-  }): Promise<SyncResultDto> {
-    const syncBatchId = uuidv4();
-    const startTime = Date.now();
+    syncCustomerInfo?: boolean;
+    autoCreateCampus?: boolean;
+    updateExisting?: boolean;
+  }): Promise<{
+    total: number;
+    success: number;
+    failed: number;
+    skipped: number;
+    updated: number;
+    created: number;
+    errors: Array<{ orderNo: string; message: string }>;
+  }> {
+    const {
+      startTime,
+      endTime,
+      status,
+      syncCustomerInfo = true,
+      autoCreateCampus = true,
+      updateExisting = false,
+    } = params;
 
-    this.logger.log(`开始手动同步，批次ID: ${syncBatchId}`);
+    // 生成同步批次ID
+    const syncBatchId = `SYNC_${Date.now()}`;
 
-    try {
-      // 获取配置
-      const syncRangeDays = parseInt(
-        await this.businessConfigService.getConfig('order_sync.sync_range_days') || '7',
-      );
+    this.logger.log(`开始同步海绵订单，批次ID: ${syncBatchId}`);
+    this.logger.log(`同步参数: ${JSON.stringify(params)}`);
 
-      // 计算时间范围（如果未指定）
-      const endDate = params?.endTime || this.formatDate(new Date());
-      const startDate =
-        params?.startTime ||
-        this.formatDate(new Date(Date.now() - syncRangeDays * 24 * 60 * 60 * 1000));
+    // 从海绵API获取订单数据
+    const haimianOrders = await this.haimianApiService.getAllOrders({
+      startTime,
+      endTime,
+      status,
+    });
 
-      // 获取海绵订单数据
-      const haimianOrders = await this.haimianApiService.getAllOrders({
-        startTime: startDate,
-        endTime: endDate,
-        status: params?.status,
-      });
+    this.logger.log(`从海绵API获取到 ${haimianOrders.length} 条订单`);
 
-      // 过滤掉status=1（未支付）的订单
-      const ordersToSync = haimianOrders.filter(order => order.status !== 1);
-
-      this.logger.log(`获取到 ${ordersToSync.length} 条待同步订单（已过滤未支付订单）`);
-
-      // 执行同步
-      const result = await this.syncOrders(ordersToSync, syncBatchId);
-
-      const executionTime = Date.now() - startTime;
-      result.executionTime = executionTime;
-
-      this.logger.log(
-        `同步完成，批次ID: ${syncBatchId}，` +
-          `成功: ${result.successCount}，失败: ${result.failedCount}，` +
-          `耗时: ${executionTime}ms`,
-      );
-
-      return result;
-    } catch (error) {
-      this.logger.error(`同步失败: ${error.message}`, error.stack);
-      throw error;
-    }
-  }
-
-  /**
-   * 执行订单同步
-   */
-  private async syncOrders(
-    haimianOrders: HaimianOrder[],
-    syncBatchId: string,
-  ): Promise<SyncResultDto> {
-    const result: SyncResultDto = {
-      syncBatchId,
-      totalProcessed: haimianOrders.length,
-      successCount: 0,
-      failedCount: 0,
-      skippedCount: 0,
-      createdCount: 0,
-      updatedCount: 0,
-      deletedCount: 0,
-      executionTime: 0,
-      errors: [],
+    // 处理订单同步
+    const result = {
+      total: haimianOrders.length,
+      success: 0,
+      failed: 0,
+      skipped: 0,
+      updated: 0,
+      created: 0,
+      errors: [] as Array<{ orderNo: string; message: string }>,
     };
-
-    const updateExisting = (await this.businessConfigService.getConfig('order_sync.update_existing')) === 'true';
-    const syncCustomerInfo = (await this.businessConfigService.getConfig('order_sync.sync_customer_info')) === 'true';
-    const autoCreateCampus = (await this.businessConfigService.getConfig('order_sync.auto_create_campus')) === 'true';
 
     for (const haimianOrder of haimianOrders) {
       const orderStartTime = Date.now();
+
       try {
+        this.logger.log(`开始处理订单: ${haimianOrder.order_id}`);
+
         // 查找本地订单
         const existingOrder = await this.orderRepository.findOne({
-          where: { orderNo: haimianOrder.order_id },
+          where: { orderNo: haimianOrder.order_id.toString() },
         });
 
         if (existingOrder) {
@@ -122,7 +106,7 @@ export class OrderSyncService {
             // 跳过已存在的订单
             await this.logSync({
               syncBatchId,
-              orderNo: haimianOrder.order_id,
+              orderNo: haimianOrder.order_id.toString(),
               syncType: 'skip',
               oldStatus: existingOrder.orderStatus,
               newStatus: null,
@@ -130,19 +114,19 @@ export class OrderSyncService {
               result: 'success',
               executionTime: Date.now() - orderStartTime,
             });
-            result.skippedCount++;
-            result.successCount++;
+            result.skipped++;
+            result.success++;
             continue;
           }
 
           // 更新订单
           const updated = await this.updateOrder(existingOrder, haimianOrder, syncBatchId, orderStartTime);
           if (updated) {
-            result.updatedCount++;
-            result.successCount++;
+            result.updated++;
+            result.success++;
           } else {
-            result.skippedCount++;
-            result.successCount++;
+            result.skipped++;
+            result.success++;
           }
         } else {
           // 创建新订单
@@ -150,20 +134,20 @@ export class OrderSyncService {
             syncCustomerInfo,
             autoCreateCampus,
           });
-          result.createdCount++;
-          result.successCount++;
+          result.created++;
+          result.success++;
         }
       } catch (error) {
         this.logger.error(`处理订单 ${haimianOrder.order_id} 失败: ${error.message}`);
-        result.failedCount++;
+        result.failed++;
         result.errors.push({
-          orderNo: haimianOrder.order_id,
+          orderNo: haimianOrder.order_id.toString(),
           message: error.message,
         });
 
         await this.logSync({
           syncBatchId,
-          orderNo: haimianOrder.order_id,
+          orderNo: haimianOrder.order_id.toString(),
           syncType: 'create',
           result: 'failed',
           errorMessage: error.message,
@@ -172,6 +156,10 @@ export class OrderSyncService {
         });
       }
     }
+
+    // 处理临时订单
+    const syncedOrderNos = haimianOrders.map(order => order.order_id.toString());
+    await this.handleTemporaryOrdersOnSync(syncedOrderNos);
 
     return result;
   }
@@ -185,7 +173,7 @@ export class OrderSyncService {
     startTime: number,
     options: { syncCustomerInfo: boolean; autoCreateCampus: boolean },
   ): Promise<void> {
-    // 查找或创建校区
+    // 查找或��建校区
     let campus = await this.campusRepository.findOne({
       where: { campusName: haimianOrder.store_name },
     });
@@ -205,24 +193,18 @@ export class OrderSyncService {
       throw new Error(`校区不存在: ${haimianOrder.store_name}`);
     }
 
-    // 查找客户（通过external_order_ids字段）
-    const customer = await this.findCustomerByOrderId(haimianOrder.order_id);
+    // 直接创建或查找客户（简化逻辑）
+    const customer = await this.findOrCreateCustomer(haimianOrder, options);
 
-    if (!customer) {
-      throw new Error(
-        `未找到关联客户，订单号: ${haimianOrder.order_id}，请先在客户档案中绑定此订单号`,
-      );
-    }
-
-    // 同步客户信息（如果启用）
-    if (options.syncCustomerInfo) {
-      if (haimianOrder.member_mobile && !customer.phone) {
-        customer.phone = haimianOrder.member_mobile;
-      }
-      if (haimianOrder.member_nickname && !customer.wechatNickname) {
-        customer.wechatNickname = haimianOrder.member_nickname;
-      }
-      await this.customerRepository.save(customer);
+    // 创建或查找老师
+    let teacher = null;
+    if (haimianOrder.coach_name) {
+      teacher = await this.teacherService.findOrCreateTeacher({
+        teacherId: haimianOrder.coach_id.toString(),
+        teacherName: haimianOrder.coach_name,
+        campusName: haimianOrder.store_name,
+        sourceSystem: '海绵青年GO',
+      });
     }
 
     // 计算订单状态
@@ -232,27 +214,46 @@ export class OrderSyncService {
     const courseName = haimianOrder.skus.map(sku => sku.goods_name).join('、');
 
     // 获取默认销售ID
-    const defaultSalesId = parseInt(
-      await this.businessConfigService.getConfig('order_sync.default_sales_id') || '1',
-    );
+    const defaultSalesIdConfig = await this.businessConfigService.getConfig('order_sync.default_sales_id') || '1';
+    const defaultSalesId = !isNaN(parseInt(defaultSalesIdConfig)) ? parseInt(defaultSalesIdConfig) : 1;
+
+    // 计算老师提成 - 使用课程差异化提成逻辑
+    let teacherCommission = 0;
+    if (haimianOrder.amount && haimianOrder.is_commission === 1 && !isNaN(parseFloat(haimianOrder.amount))) {
+      // 如果API返回了提成金额，优先使用API的金额
+      teacherCommission = parseFloat(haimianOrder.amount);
+    } else {
+      // 否则根据课程类型计算差异化提成
+      teacherCommission = this.calculateCommissionByCourse(courseName);
+    }
 
     // 创建订单
     const order = this.orderRepository.create({
-      orderNo: haimianOrder.order_id,
+      // id: undefined, // 让数据库自动生成 - 不需要显式设置
+      orderNo: haimianOrder.order_id.toString(),
       customerId: customer.id,
       campusId: campus.id,
       courseName,
-      teacherName: '', // 外部订单暂无教师信息
-      paymentAmount: parseFloat(haimianOrder.pay_price),
-      paymentTime: new Date(haimianOrder.pay_time),
+      teacherName: haimianOrder.coach_name || '', // 使用海绵的老师姓名
+      teacherId: haimianOrder.coach_id && !isNaN(parseInt(haimianOrder.coach_id.toString())) ? parseInt(haimianOrder.coach_id.toString()) : null, // 设置老师ID
+      paymentAmount: haimianOrder.need_pay && !isNaN(parseFloat(haimianOrder.need_pay)) ? parseFloat(haimianOrder.need_pay) : 0,
+      paymentTime: this.parseHaimianDateTime(haimianOrder.pay_time.toString()),
       orderStatus,
       salesId: defaultSalesId,
+      isNewStudent: 1,
+      region: '',
+      orderTag: '',
+      salesCommissionAmount: teacherCommission, // 修复：老师提成应该存储到commissionAmount字段
+      // 添加客户信息字段
+      wechatId: `HM_${haimianOrder.member_id}_${Date.now()}`,
+      wechatNickname: haimianOrder.member?.nick_name || '',
+      phone: haimianOrder.member?.mobile || '',
       dataSource: '海绵青年GO',
       isExternal: 1,
       externalSystem: 'HAIMIAN',
-      externalStatus: haimianOrder.status,
-      externalRefund: haimianOrder.refund,
-      externalRefundStatus: haimianOrder.refund_status,
+      externalStatus: haimianOrder.status != null ? haimianOrder.status : null,
+      externalRefund: haimianOrder.refund != null ? haimianOrder.refund : null,
+      externalRefundStatus: haimianOrder.refund_status != null ? haimianOrder.refund_status : null,
       syncStatus: '已同步',
       lastSyncTime: new Date(),
       isDeleted: 0,
@@ -261,10 +262,9 @@ export class OrderSyncService {
 
     await this.orderRepository.save(order);
 
-    // 记录日志
     await this.logSync({
       syncBatchId,
-      orderNo: haimianOrder.order_id,
+      orderNo: haimianOrder.order_id.toString(),
       syncType: 'create',
       newStatus: orderStatus,
       externalData: haimianOrder,
@@ -272,53 +272,32 @@ export class OrderSyncService {
       executionTime: Date.now() - startTime,
     });
 
-    this.logger.log(`创建订单成功: ${haimianOrder.order_id}`);
+    this.logger.log(`订单创建成功: ${haimianOrder.order_id}`);
   }
 
   /**
-   * 更新订单
+   * 更新现有订单
    */
   private async updateOrder(
-    existingOrder: Order,
+    order: Order,
     haimianOrder: HaimianOrder,
     syncBatchId: string,
     startTime: number,
   ): Promise<boolean> {
+    const oldStatus = order.orderStatus;
     const newStatus = this.mapOrderStatus(haimianOrder);
-    const oldStatus = existingOrder.orderStatus;
 
-    // 检测变更
-    const changes: any = {};
-    let hasChanges = false;
+    // 检查是否需要更新
+    const needsUpdate =
+      oldStatus !== newStatus ||
+      order.externalStatus !== haimianOrder.status ||
+      order.externalRefund !== haimianOrder.refund ||
+      order.externalRefundStatus !== haimianOrder.refund_status;
 
-    if (newStatus !== oldStatus) {
-      changes.orderStatus = { old: oldStatus, new: newStatus };
-      hasChanges = true;
-    }
-
-    if (haimianOrder.status !== existingOrder.externalStatus) {
-      changes.externalStatus = { old: existingOrder.externalStatus, new: haimianOrder.status };
-      hasChanges = true;
-    }
-
-    if (haimianOrder.refund !== existingOrder.externalRefund) {
-      changes.externalRefund = { old: existingOrder.externalRefund, new: haimianOrder.refund };
-      hasChanges = true;
-    }
-
-    if (haimianOrder.refund_status !== existingOrder.externalRefundStatus) {
-      changes.externalRefundStatus = {
-        old: existingOrder.externalRefundStatus,
-        new: haimianOrder.refund_status,
-      };
-      hasChanges = true;
-    }
-
-    if (!hasChanges) {
-      // 无变化，跳过
+    if (!needsUpdate) {
       await this.logSync({
         syncBatchId,
-        orderNo: haimianOrder.order_id,
+        orderNo: haimianOrder.order_id.toString(),
         syncType: 'skip',
         oldStatus,
         newStatus: oldStatus,
@@ -329,85 +308,173 @@ export class OrderSyncService {
       return false;
     }
 
-    // 更新订单
-    existingOrder.orderStatus = newStatus;
-    existingOrder.externalStatus = haimianOrder.status;
-    existingOrder.externalRefund = haimianOrder.refund;
-    existingOrder.externalRefundStatus = haimianOrder.refund_status;
-    existingOrder.lastSyncTime = new Date();
-    existingOrder.syncStatus = '已同步';
+    // 更新订单状态
+    order.orderStatus = newStatus;
+    order.externalStatus = haimianOrder.status;
+    order.externalRefund = haimianOrder.refund;
+    order.externalRefundStatus = haimianOrder.refund_status;
+    order.syncStatus = '已更新';
+    order.lastSyncTime = new Date();
 
-    await this.orderRepository.save(existingOrder);
+    await this.orderRepository.save(order);
 
-    // 记录日志
     await this.logSync({
       syncBatchId,
-      orderNo: haimianOrder.order_id,
+      orderNo: haimianOrder.order_id.toString(),
       syncType: 'update',
       oldStatus,
       newStatus,
-      changes,
       externalData: haimianOrder,
       result: 'success',
       executionTime: Date.now() - startTime,
     });
 
-    this.logger.log(`更新订单成功: ${haimianOrder.order_id}，状态: ${oldStatus} -> ${newStatus}`);
+    this.logger.log(`订单更新成功: ${haimianOrder.order_id}`);
     return true;
   }
 
   /**
-   * 映射订单状态
-   * 规则：
-   * - status=1: 不同步（未支付）
-   * - status=2-6 且无退款: 待上课
-   * - status=7 且无退款: 已完成
-   * - status=8,9,-1 或 refund=2 或 refund_status=1: 已退款
+   * 查找或创建客户
    */
-  private mapOrderStatus(haimianOrder: HaimianOrder): string {
-    // 检查退款状态
-    if (
-      haimianOrder.refund === 2 || // 已退款
-      haimianOrder.refund_status === 1 || // 退款通过
-      [8, 9, -1].includes(haimianOrder.status) // 订单关闭/取消
-    ) {
-      return '已退款';
+  private async findOrCreateCustomer(
+    haimianOrder: HaimianOrder,
+    options: { syncCustomerInfo: boolean; autoCreateCampus: boolean },
+  ): Promise<Customer> {
+    // 首先尝试通过订单号查找已存在的客户
+    let customer = await this.findCustomerByOrderId(
+      haimianOrder.order_id.toString(),
+      haimianOrder.member?.mobile,
+      haimianOrder.member?.nick_name
+    );
+
+    if (!customer && options.syncCustomerInfo) {
+      // 如果没找到客户且允许同步客户信息，则创建新客户
+      const defaultSalesIdConfig = await this.businessConfigService.getConfig('order_sync.default_sales_id') || '1';
+      const defaultSalesId = !isNaN(parseInt(defaultSalesIdConfig)) ? parseInt(defaultSalesIdConfig) : 1;
+
+      customer = this.customerRepository.create({
+        wechatId: `HM_${haimianOrder.member_id}_${Date.now()}`, // 生成唯一微信ID
+        wechatNickname: haimianOrder.member?.nick_name || `海绵用户_${haimianOrder.member?.mobile?.slice(-4) || '未知'}`,
+        phone: haimianOrder.member?.mobile || '',
+        realName: haimianOrder.member?.realname || haimianOrder.member?.nick_name || '',
+        source: '海绵青年GO',
+        customerIntent: '中意向',
+        lifecycleStage: '线索',
+        salesId: defaultSalesId,
+      });
+
+      await this.customerRepository.save(customer);
+      this.logger.log(`创建新客户: ${customer.wechatNickname}`);
     }
 
-    // 根据订单状态映射
-    if (haimianOrder.status === 7) {
-      return '已完成';
+    if (!customer) {
+      throw new Error('无法创建或找到客户信息');
     }
 
-    if ([2, 3, 4, 5, 6].includes(haimianOrder.status)) {
-      return '待上课';
-    }
-
-    // 默认
-    return '待上课';
+    return customer;
   }
 
   /**
-   * 通过订单号查找客户
+   * 通过订单信息查找客户
    */
-  private async findCustomerByOrderId(orderId: string): Promise<Customer | null> {
-    // 使用JSON_CONTAINS查找（MySQL 5.7+）
-    // 由于TypeORM对JSON_CONTAINS支持有限，使用LIKE模糊查询
-    const customers = await this.customerRepository.find({
-      where: {
-        // @ts-ignore
-        externalOrderIds: Like(`%${orderId}%`),
-      },
-    });
+  private async findCustomerByOrderId(
+    orderId: string,
+    mobile?: string,
+    nickname?: string,
+  ): Promise<Customer | null> {
+    // 首先通过手机号查找
+    if (mobile) {
+      const customerByPhone = await this.customerRepository.findOne({
+        where: { phone: mobile },
+      });
+      if (customerByPhone) {
+        this.logger.log(`通过手机号找到客户: ${customerByPhone.wechatNickname}, 订单: ${orderId}`);
+        return customerByPhone;
+      }
+    }
 
-    // 进一步精确匹配（避免误匹配）
-    for (const customer of customers) {
-      if (Array.isArray(customer.externalOrderIds) &&customer.externalOrderIds.includes(orderId)) {
-        return customer;
+    // 通过微信昵称查找
+    if (nickname) {
+      const customerByNickname = await this.customerRepository.findOne({
+        where: { wechatNickname: nickname },
+      });
+      if (customerByNickname) {
+        this.logger.log(`通过昵称找到客户: ${customerByNickname.wechatNickname}, 订单: ${orderId}`);
+        return customerByNickname;
       }
     }
 
     return null;
+  }
+
+  /**
+   * 映射订单状态
+   */
+  private mapOrderStatus(haimianOrder: HaimianOrder): string {
+    // 根据海绵订单状态映射到本地订单状态
+    if (haimianOrder.refund === 1 || haimianOrder.refund_status === 1) {
+      return '已退款';
+    }
+
+    switch (haimianOrder.status) {
+      case 1:
+      case 2:
+        return '待上课';
+      case 3:
+      case 4:
+        return '上课中';
+      case 5:
+      case 6:
+      case 7:
+      case 8:
+        return '已完成';
+      case 0:
+      default:
+        return '待上课';
+    }
+  }
+
+  /**
+   * 解析海绵时间格式
+   */
+  private parseHaimianDateTime(timeValue: string | number): Date | null {
+    if (!timeValue) return null;
+
+    try {
+      // 如果是时间戳（秒）
+      if (typeof timeValue === 'number') {
+        // 检查是否是秒级时间戳（10位数）
+        if (timeValue < 10000000000) {
+          return new Date(timeValue * 1000);
+        }
+        // 毫秒级时间戳
+        return new Date(timeValue);
+      }
+
+      // 如果是字符串，尝试解析
+      const timeStr = timeValue.toString();
+
+      // 尝试直接解析日期格式
+      const parsedDate = new Date(timeStr);
+      if (!isNaN(parsedDate.getTime())) {
+        return parsedDate;
+      }
+
+      // 尝试解析时间戳字符串
+      const timestamp = parseInt(timeStr);
+      if (!isNaN(timestamp)) {
+        if (timestamp < 10000000000) {
+          return new Date(timestamp * 1000);
+        }
+        return new Date(timestamp);
+      }
+
+      this.logger.warn(`无法解析时间格式: ${timeValue}`);
+      return null;
+    } catch (error) {
+      this.logger.warn(`解析时间失败: ${timeValue}, 错误: ${error.message}`);
+      return null;
+    }
   }
 
   /**
@@ -416,69 +483,257 @@ export class OrderSyncService {
   private async logSync(data: {
     syncBatchId: string;
     orderNo: string;
-    syncType: string;
+    syncType: 'create' | 'update' | 'skip';
     oldStatus?: string;
     newStatus?: string;
-    changes?: any;
     externalData?: any;
-    result: string;
+    result: 'success' | 'failed';
     errorMessage?: string;
     executionTime: number;
   }): Promise<void> {
-    const log = this.syncLogRepository.create(data);
-    await this.syncLogRepository.save(log);
+    const syncLog = this.syncLogRepository.create({
+      syncBatchId: data.syncBatchId,
+      orderNo: data.orderNo,
+      syncType: data.syncType,
+      oldStatus: data.oldStatus,
+      newStatus: data.newStatus,
+      externalData: data.externalData,
+      result: data.result,
+      errorMessage: data.errorMessage,
+      executionTime: data.executionTime,
+      syncTime: new Date(),
+    });
+
+    await this.syncLogRepository.save(syncLog);
   }
 
   /**
-   * 查询同步日志
+   * 获取同步统计
    */
-  async getSyncLogs(query: SyncLogQueryDto) {
-    const page = query.page || 1;
-    const pageSize = query.pageSize || 20;
+  async getSyncStatistics(params: {
+    startDate?: string;
+    endDate?: string;
+    batchId?: string;
+  }): Promise<{
+    totalSyncs: number;
+    successCount: number;
+    failedCount: number;
+    averageExecutionTime: number;
+    recentLogs: OrderSyncLog[];
+  }> {
+    const whereCondition: any = {};
 
-    const where: any = {};
-    if (query.syncBatchId) where.syncBatchId = query.syncBatchId;
-    if (query.orderNo) where.orderNo = Like(`%${query.orderNo}%`);
-    if (query.syncType) where.syncType = query.syncType;
-    if (query.result) where.result = query.result;
+    if (params.startDate && params.endDate) {
+      whereCondition.syncTime = Between(
+        new Date(params.startDate),
+        new Date(params.endDate),
+      );
+    }
 
-    const [logs, total] = await this.syncLogRepository.findAndCount({
-      where,
+    if (params.batchId) {
+      whereCondition.syncBatchId = params.batchId;
+    }
+
+    const [logs, totalSyncs] = await this.syncLogRepository.findAndCount({
+      where: whereCondition,
       order: { syncTime: 'DESC' },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
+      take: 10,
     });
 
+    const successCount = logs.filter(log => log.result === 'success').length;
+    const failedCount = logs.filter(log => log.result === 'failed').length;
+    const averageExecutionTime = logs.length > 0
+      ? logs.reduce((sum, log) => sum + log.executionTime, 0) / logs.length
+      : 0;
+
     return {
-      list: logs,
-      total,
-      page,
-      pageSize,
+      totalSyncs,
+      successCount,
+      failedCount,
+      averageExecutionTime,
+      recentLogs: logs,
     };
   }
 
   /**
-   * 获取同步配置
+   * 获取业务配置服务（用于控制器访问）
    */
-  async getSyncConfig() {
-    const config = await this.businessConfigService.findAll('order_sync');
-    return config;
+  getBusinessConfigService() {
+    return this.businessConfigService;
   }
 
   /**
-   * 更新同步配置
+   * 获取同步日志
    */
-  async updateSyncConfig(configKey: string, configValue: string) {
-    return this.businessConfigService.updateConfig(configKey, configValue);
+  async getSyncLogs(params: {
+    page: number;
+    limit: number;
+    batchId?: string;
+    orderNo?: string;
+    syncType?: string;
+    result?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<{
+    logs: OrderSyncLog[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const whereCondition: any = {};
+
+    if (params.batchId) {
+      whereCondition.syncBatchId = params.batchId;
+    }
+
+    if (params.orderNo) {
+      whereCondition.orderNo = Like(`%${params.orderNo}%`);
+    }
+
+    if (params.syncType) {
+      whereCondition.syncType = params.syncType;
+    }
+
+    if (params.result) {
+      whereCondition.result = params.result;
+    }
+
+    if (params.startDate && params.endDate) {
+      whereCondition.syncTime = Between(
+        new Date(params.startDate),
+        new Date(params.endDate),
+      );
+    }
+
+    const [logs, total] = await this.syncLogRepository.findAndCount({
+      where: whereCondition,
+      order: { syncTime: 'DESC' },
+      skip: (params.page - 1) * params.limit,
+      take: params.limit,
+    });
+
+    return {
+      logs,
+      total,
+      page: params.page,
+      limit: params.limit,
+    };
   }
 
   /**
-   * 格式化日期为 YYYY-MM-DD
+   * 处理临时订单（在同步完成后调用）
    */
-  private formatDate(date: Date): string {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  async handleTemporaryOrdersOnSync(syncedOrderNos: string[]): Promise<void> {
+    if (!syncedOrderNos || syncedOrderNos.length === 0) {
+      return;
+    }
+
+    this.logger.log(`开始处理 ${syncedOrderNos.length} 个订单的临时记录`);
+
+    for (const orderNo of syncedOrderNos) {
+      await this.processTemporaryOrder(orderNo);
+    }
+  }
+
+  /**
+   * 处理单个临时订单
+   */
+  private async processTemporaryOrder(orderNo: string): Promise<void> {
+    try {
+      // 查找该订单号的临时记录
+      const tempOrders = await this.temporaryOrderRepository.find({
+        where: {
+          orderNo: orderNo,
+          status: 'pending' as any
+        }
+      });
+
+      if (tempOrders.length === 0) {
+        return; // 没有临时记录，跳过
+      }
+
+      // 查找实际订单
+      const actualOrder = await this.orderRepository.findOne({
+        where: { orderNo: orderNo }
+      });
+
+      if (!actualOrder) {
+        this.logger.warn(`订单 ${orderNo} 已同步但未找到实际订单，跳过临时订单处理`);
+        return;
+      }
+
+      // 处理每个临时记录
+      for (const tempOrder of tempOrders) {
+        await this.syncOrderToCustomer(tempOrder.customerId, actualOrder);
+
+        // 更新临时订单状态
+        await this.temporaryOrderRepository.update(tempOrder.id, {
+          status: 'synced' as any,
+          orderId: actualOrder.id,
+          syncedAt: new Date()
+        });
+
+        this.logger.log(`临时订单 ${orderNo} 已同步到客户 ${tempOrder.customerId}`);
+      }
+    } catch (error) {
+      this.logger.error(`处理临时订单 ${orderNo} 失败:`, error);
+    }
+  }
+
+  /**
+   * 同步订单到客户（从临时订单创建正式绑定）
+   */
+  private async syncOrderToCustomer(customerId: number, order: Order): Promise<void> {
+    try {
+      const customer = await this.customerRepository.findOne({
+        where: { id: customerId, isDeleted: false }
+      });
+
+      if (!customer) {
+        this.logger.warn(`客户 ${customerId} 不存在或已删除，跳过订单同步`);
+        return;
+      }
+
+      // 检查客户是否已有该订单
+      const existingOrder = await this.orderRepository.findOne({
+        where: {
+          orderNo: order.orderNo,
+          customerId: customerId
+        }
+      });
+
+      if (existingOrder) {
+        this.logger.log(`客户 ${customerId} 已有订单 ${order.orderNo}，跳过重复绑定`);
+        return;
+      }
+
+      // 更新订单的客户ID
+      await this.orderRepository.update(order.id, {
+        customerId: customerId
+      });
+
+      // 更新客户的订单列表
+      const currentOrderIds = customer.externalOrderIds || [];
+      if (!currentOrderIds.includes(order.orderNo)) {
+        currentOrderIds.push(order.orderNo);
+        await this.customerRepository.update(customerId, {
+          externalOrderIds: currentOrderIds,
+          updateTime: new Date()
+        });
+      }
+
+      this.logger.log(`订单 ${order.orderNo} 已同步到客户 ${customerId}`);
+    } catch (error) {
+      this.logger.error(`同步订单到客户失败:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * 根据课程名称计算差异化提成
+   */
+  private calculateCommissionByCourse(courseName: string): number {
+    // 如果订单没有返回提成数据，默认就写300元
+    return 300;
   }
 }

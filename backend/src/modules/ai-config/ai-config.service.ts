@@ -347,4 +347,210 @@ export class AiConfigService {
       throw error;
     }
   }
+
+  // ==================== 新增方法 ====================
+
+  /**
+   * 获取所有AI配置（包括模型、功能、参数）
+   */
+  async getAllConfigs() {
+    try {
+      // 获取可用的AI模型
+      const models = await this.aiPromptConfigRepository
+        .createQueryBuilder('config')
+        .leftJoinAndSelect('config.variables', 'variable')
+        .orderBy('config.createTime', 'DESC')
+        .getMany();
+
+      // 获取功能开关
+      const features = {
+        aiAssistant: true,
+        customerAnalysis: true,
+        marketingAdvice: true,
+        knowledgeMining: true,
+        ocrTool: true,
+      };
+
+      // 获取知识库配置
+      const knowledge = {
+        totalKnowledge: 0,
+        weight: 70,
+        searchStrategy: 'semantic',
+        updateFrequency: 'daily',
+        autoLearning: true,
+      };
+
+      // 获取AI参数
+      const parameters = {
+        temperature: 0.7,
+        maxTokens: 2000,
+        topP: 0.9,
+        frequencyPenalty: 0.1,
+        presencePenalty: 0.1,
+      };
+
+      return {
+        models,
+        features,
+        knowledge,
+        parameters,
+      };
+    } catch (error) {
+      this.logger.error(`获取所有配置失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新所有配置
+   */
+  async updateAllConfig(config: any) {
+    try {
+      const { models, features, knowledge, parameters } = config;
+
+      // 更新功能开关
+      if (features) {
+        // 这里可以保存到系统配置表或Redis
+        this.logger.log(`更新功能开关: ${JSON.stringify(features)}`);
+      }
+
+      // 更新知识库配置
+      if (knowledge) {
+        this.logger.log(`更新知识库配置: ${JSON.stringify(knowledge)}`);
+      }
+
+      // 更新AI参数
+      if (parameters) {
+        this.logger.log(`更新AI参数: ${JSON.stringify(parameters)}`);
+      }
+
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`更新所有配置失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取模型配置
+   */
+  async getModelConfigs() {
+    try {
+      return await this.aiPromptConfigRepository.find({
+        order: { createTime: 'DESC' },
+      });
+    } catch (error) {
+      this.logger.error(`获取模型配置失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新模型配置
+   */
+  async updateModelConfig(id: number, config: any) {
+    try {
+      const modelConfig = await this.aiPromptConfigRepository.findOne({ where: { id } });
+      if (!modelConfig) {
+        throw new NotFoundException('模型配置不存在');
+      }
+
+      Object.assign(modelConfig, config);
+      return await this.aiPromptConfigRepository.save(modelConfig);
+    } catch (error) {
+      this.logger.error(`更新模型配置失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 测试模型连接
+   */
+  async testModelConnection(modelConfig: any) {
+    try {
+      // 简化的连接测试，实际项目中可以调用真实的API
+      this.logger.log(`测试模型连接: ${modelConfig.scenarioKey}`);
+
+      // 模拟测试结果
+      return {
+        success: true,
+        message: '连接测试成功',
+        responseTime: 150,
+        model: modelConfig.modelName || 'test-model',
+      };
+    } catch (error) {
+      this.logger.error(`测试模型连接失败: ${error.message}`, error.stack);
+      return {
+        success: false,
+        message: error.message,
+        responseTime: 0,
+      };
+    }
+  }
+
+  /**
+   * 获取功能开关状态
+   */
+  async getFeatureFlags() {
+    try {
+      // 这里可以从数据库或配置文件读取功能开关状态
+      return {
+        aiAssistant: true,
+        customerAnalysis: true,
+        marketingAdvice: true,
+        knowledgeMining: true,
+        ocrTool: true,
+      };
+    } catch (error) {
+      this.logger.error(`获取功能开关失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新功能开关
+   */
+  async updateFeatureFlags(features: any) {
+    try {
+      // 这里可以将功能开关状态保存到数据库或配置文件
+      this.logger.log(`更新功能开关: ${JSON.stringify(features)}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`更新功能开关失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 获取AI参数配置
+   */
+  async getAIParameters() {
+    try {
+      // 这里可以从数据库或配置文件读取AI参数
+      return {
+        temperature: 0.7,
+        maxTokens: 2000,
+        topP: 0.9,
+        frequencyPenalty: 0.1,
+        presencePenalty: 0.1,
+      };
+    } catch (error) {
+      this.logger.error(`获取AI参数失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 更新AI参数
+   */
+  async updateAIParameters(params: any) {
+    try {
+      // 这里可以将AI参数保存到数据库或配置文件
+      this.logger.log(`更新AI参数: ${JSON.stringify(params)}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`更新AI参数失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
 }

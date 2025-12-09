@@ -14,6 +14,9 @@
         <el-tab-pane label="AI字段映射配置" name="field-mapping">
           <FieldMappingConfig />
         </el-tab-pane>
+        <el-tab-pane label="知识库配置" name="knowledge">
+          <KnowledgeConfiguration />
+        </el-tab-pane>
         <el-tab-pane label="提示词配置" name="prompt">
           <div class="config-layout-inner">
       <!-- 左侧：场景列表 -->
@@ -363,6 +366,7 @@ import { Search, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utils/request'
 import ApiKeyManagement from '@/components/system/ApiKeyManagement.vue'
 import FieldMappingConfig from '@/components/system/FieldMappingConfig.vue'
+import KnowledgeConfiguration from '@/views/ai/components/KnowledgeConfiguration.vue'
 
 // Tab切换
 const activeTab = ref('api-key')

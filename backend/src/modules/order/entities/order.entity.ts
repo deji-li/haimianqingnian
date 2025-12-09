@@ -8,6 +8,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { Customer } from '../../customer/entities/customer.entity';
+import { Campus } from '../../system/entities/campus.entity';
+import { Teacher } from '../../teacher/entities/teacher.entity';
 
 @Entity('orders')
 export class Order {
@@ -55,9 +57,6 @@ export class Order {
   })
   orderStatus: string;
 
-  @Column({ name: 'teacher_name', length: 50, nullable: true })
-  teacherName: string;
-
   @Column({ length: 50, nullable: true })
   region: string;
 
@@ -82,17 +81,55 @@ export class Order {
   @Column({ name: 'commission_scheme_id', nullable: true })
   commissionSchemeId: number;
 
+  // @Column({
+  //   name: 'commission_amount',
+  //   type: 'decimal',
+  //   precision: 10,
+  //   scale: 2,
+  //   default: 0,
+  //   comment: '销售提成金额',
+  // })
+  // salesCommissionAmount: number;
+
   @Column({
     name: 'commission_amount',
     type: 'decimal',
     precision: 10,
     scale: 2,
     default: 0,
+    comment: '销售提成金额',
   })
-  commissionAmount: number;
+  salesCommissionAmount: number;
 
   @Column({ name: 'commission_calculated_at', type: 'datetime', nullable: true })
   commissionCalculatedAt: Date;
+
+  // 老师提成相关字段
+  @Column({ name: 'teacher_name', nullable: true, length: 200, comment: '老师姓名（来自海绵系统）' })
+  teacherName: string;
+
+  @Column({ name: 'teacher_id', nullable: true, comment: '老师ID（关联teachers表id字段）' })
+  teacherId: number;
+
+  @Column({
+    name: 'teacher_commission_amount',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    comment: '老师提成金额',
+  })
+  teacherCommissionAmount: number;
+
+  @Column({
+    name: 'teacher_cost',
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    default: 0,
+    comment: '老师成本',
+  })
+  teacherCost: number;
 
   // ========== 订单同步字段 ==========
   @Column({ name: 'is_external', type: 'tinyint', default: 0, comment: '是否外部订单：0=否，1=是' })
@@ -136,6 +173,16 @@ export class Order {
   @ManyToOne(() => Customer)
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
+
+  // 关联校区
+  @ManyToOne(() => Campus, { nullable: true })
+  @JoinColumn({ name: 'campus_id' })
+  campus?: Campus;
+
+  // 关联���师
+  @ManyToOne(() => Teacher, { nullable: true })
+  @JoinColumn({ name: 'teacher_id', referencedColumnName: 'id' })
+  teacher?: Teacher;
 
   // 虚拟字段
   salesName?: string;

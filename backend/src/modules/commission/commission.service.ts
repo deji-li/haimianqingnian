@@ -80,7 +80,7 @@ export class CommissionService {
 
     await this.orderRepository.update(orderId, {
       commissionSchemeId: matchedScheme.id,
-      commissionAmount,
+      salesCommissionAmount: commissionAmount,
       commissionCalculatedAt: new Date(),
     });
 

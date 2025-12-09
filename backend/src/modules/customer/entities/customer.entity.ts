@@ -36,6 +36,9 @@ export class Customer {
   @Column({ type: 'int', nullable: true, comment: '年龄' })
   age: number;
 
+  @Column({ length: 255, nullable: true, comment: '地址' })
+  address: string;
+
   @Column({ name: 'intent_product', length: 100, nullable: true, comment: '意向产品' })
   intentProduct: string;
 
@@ -183,6 +186,40 @@ export class Customer {
   @UpdateDateColumn({ name: 'update_time' })
   updateTime: Date;
 
+  // ========== 软删除字段 ==========
+  @Column({ name: 'is_deleted', type: 'tinyint', default: 0, comment: '是否删除: 0-未删除, 1-已删除' })
+  isDeleted: boolean;
+
+  @Column({ name: 'deleted_at', type: 'datetime', nullable: true, comment: '删除时间' })
+  deletedAt: Date;
+
+  @Column({ name: 'deleted_reason', type: 'varchar', length: 255, nullable: true, comment: '删除原因' })
+  deletedReason: string;
+
+  @Column({ name: 'deleted_by', type: 'int', nullable: true, comment: '删除人ID' })
+  deletedBy: number;
+  // ========== 软删除字段结束 ==========
+
+  // ========== 企业微信集成字段 ==========
+  @Column({ name: 'wework_external_userid', type: 'varchar', length: 64, nullable: true, comment: '企业微信外部联系人ID', unique: true })
+  weworkExternalUserId: string;
+
+  @Column({ name: 'wework_follow_userid', type: 'varchar', length: 64, nullable: true, comment: '企业微信跟进成员userid' })
+  weworkFollowUserid: string;
+
+  @Column({ name: 'wework_tags', type: 'json', nullable: true, comment: '企业微信客户标签' })
+  weworkTags: string[];
+
+  @Column({ name: 'wework_sync_time', type: 'datetime', nullable: true, comment: '企业微信数据同步时间' })
+  weworkSyncTime: Date;
+
+  @Column({ name: 'wework_chat_count', type: 'int', default: 0, comment: '企业微信聊天记录数量' })
+  weworkChatCount: number;
+
+  @Column({ name: 'wework_last_chat_time', type: 'datetime', nullable: true, comment: '最后企业微信聊天时间' })
+  weworkLastChatTime: Date;
+  // ========== 企业微信集成字段结束 ==========
+
   // 关联跟进记录
   @OneToMany(() => CustomerFollowRecord, (record) => record.customer)
   followRecords: CustomerFollowRecord[];
@@ -202,7 +239,12 @@ export class Customer {
   @JoinColumn({ name: 'campus_id' })
   campus?: Campus;
 
-  // 虚拟字段（从关联表查询）
+  // 关联删除人
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'deleted_by' })
+  deletedByUser?: User;
+
+  // 虚拟字段（从��联表查询）
   operatorName?: string;
   salesName?: string;
   followRecordCount?: number;
