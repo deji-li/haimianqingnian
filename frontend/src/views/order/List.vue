@@ -471,7 +471,7 @@ const dateRange = ref<string[]>([])
 
 const queryParams = reactive<OrderQuery>({
   page: 1,
-  pageSize: 20,
+  pageSize: 100,
   keyword: '',
   orderStatus: '',
   isNewStudent: undefined,
