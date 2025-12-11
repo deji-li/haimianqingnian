@@ -167,7 +167,7 @@
                 <div class="rank" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
                 <div class="content">
                   <div class="name">{{ item.campusName }}</div>
-                  <div class="value">¥{{ item.totalRevenue?.toFixed(2) || '0.00' }}</div>
+                  <div class="value">¥{{ parseFloat(item.totalAmount || '0').toFixed(2) }}</div>
                 </div>
               </div>
             </div>
@@ -197,7 +197,7 @@
                 <div class="rank" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
                 <div class="content">
                   <div class="name">{{ item.teacherName }}</div>
-                  <div class="value">¥{{ item.commission?.toFixed(2) || '0.00' }}</div>
+                  <div class="value">¥{{ parseFloat(item.commission || '0').toFixed(2) }}</div>
                 </div>
               </div>
             </div>
@@ -221,13 +221,13 @@
             <div v-else class="ranking-list">
               <div
                 v-for="(item, index) in salesRanking.slice(0, 5)"
-                :key="item.salesId"
+                :key="item.userId"
                 class="ranking-item"
               >
                 <div class="rank" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
                 <div class="content">
-                  <div class="name">{{ item.salesName }}</div>
-                  <div class="value">¥{{ item.totalRevenue?.toFixed(2) || '0.00' }}</div>
+                  <div class="name">{{ item.realName || item.userName }}</div>
+                  <div class="value">¥{{ parseFloat(item.totalAmount || '0').toFixed(2) }}</div>
                 </div>
               </div>
             </div>
@@ -235,29 +235,29 @@
         </el-card>
       </el-col>
 
-      <!-- 订单排行榜 -->
+      <!-- 商品排行榜 -->
       <el-col :span="12">
         <el-card class="ranking-card">
           <template #header>
             <div class="card-header-content">
-              <h3>订单排行榜</h3>
-              <el-button type="text" @click="goToOrderRanking">查看详情 →</el-button>
+              <h3>商品排行榜</h3>
+              <el-button type="text" @click="goToProductRanking">查看详情 →</el-button>
             </div>
           </template>
-          <div v-loading="orderLoading">
-            <div v-if="orderRanking.length === 0" class="empty-state">
+          <div v-loading="productLoading">
+            <div v-if="productRanking.length === 0" class="empty-state">
               <el-empty description="暂无数据" />
             </div>
             <div v-else class="ranking-list">
               <div
-                v-for="(item, index) in orderRanking.slice(0, 5)"
-                :key="item.orderNo"
+                v-for="(item, index) in productRanking.slice(0, 5)"
+                :key="item.courseName"
                 class="ranking-item"
               >
                 <div class="rank" :class="getRankClass(index + 1)">{{ index + 1 }}</div>
                 <div class="content">
-                  <div class="name">{{ item.customerName }}</div>
-                  <div class="value">¥{{ item.paymentAmount?.toFixed(2) || '0.00' }}</div>
+                  <div class="name">{{ item.courseName }}</div>
+                  <div class="value">¥{{ parseFloat(item.totalAmount || '0').toFixed(2) }}</div>
                 </div>
               </div>
             </div>
@@ -274,12 +274,11 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Refresh, OfficeBuilding, User, Trophy, Document } from '@element-plus/icons-vue'
 import {
-  campusRankingApi,
   teacherRankingApi,
-  salesRankingApi,
-  orderRankingApi,
   rankingOverviewApi
 } from '@/api/ranking'
+import { getCampusRanking } from '@/api/order'
+import { getTeamMemberPerformance } from '@/api/team-stats'
 
 const router = useRouter()
 
@@ -295,18 +294,19 @@ const customDateRange = ref<[string, string]>([])
 const campusRanking = ref<any[]>([])
 const teacherRanking = ref<any[]>([])
 const salesRanking = ref<any[]>([])
-const orderRanking = ref<any[]>([])
+const productRanking = ref<any[]>([])
+const allOrders = ref<any[]>([])
 
 // 加载状态
 const globalLoading = ref(false)
 const campusLoading = ref(false)
 const teacherLoading = ref(false)
 const salesLoading = ref(false)
-const orderLoading = ref(false)
+const productLoading = ref(false)
 
 // 计算属性
 const totalCampusRevenue = computed(() => {
-  return campusRanking.value.reduce((sum, item) => sum + (item.totalRevenue || 0), 0).toFixed(2)
+  return campusRanking.value.reduce((sum, item) => sum + parseFloat(item.totalAmount || '0'), 0).toFixed(2)
 })
 
 const campusCount = computed(() => campusRanking.value.length)
@@ -318,7 +318,7 @@ const avgCampusRevenue = computed(() => {
 })
 
 const totalTeacherCommission = computed(() => {
-  return teacherRanking.value.reduce((sum, item) => sum + (item.commission || 0), 0).toFixed(2)
+  return teacherRanking.value.reduce((sum, item) => sum + parseFloat(item.commission || '0'), 0).toFixed(2)
 })
 
 const teacherCount = computed(() => teacherRanking.value.length)
@@ -330,7 +330,7 @@ const avgTeacherCommission = computed(() => {
 })
 
 const totalSalesRevenue = computed(() => {
-  return salesRanking.value.reduce((sum, item) => sum + (item.totalRevenue || 0), 0).toFixed(2)
+  return salesRanking.value.reduce((sum, item) => sum + parseFloat(item.totalAmount || '0'), 0).toFixed(2)
 })
 
 const salesCount = computed(() => salesRanking.value.length)
@@ -341,18 +341,18 @@ const avgSalesRevenue = computed(() => {
   return `¥${parseFloat(avg).toFixed(2)}`
 })
 
-const totalOrderCount = computed(() => orderRanking.value.length)
+const totalOrderCount = computed(() => allOrders.value.length)
 
 const avgOrderAmount = computed(() => {
   if (totalOrderCount.value === 0) return '¥0.00'
-  const total = orderRanking.value.reduce((sum, item) => sum + (item.paymentAmount || 0), 0)
+  const total = allOrders.value.reduce((sum, item) => sum + (item.paymentAmount || 0), 0)
   const avg = total / totalOrderCount.value
   return `¥${parseFloat(avg).toFixed(2)}`
 })
 
 const orderCompletionRate = computed(() => {
   if (totalOrderCount.value === 0) return 0
-  const completedOrders = orderRanking.value.filter(order =>
+  const completedOrders = allOrders.value.filter(order =>
     ['已完成', '已支付'].includes(order.orderStatus)
   ).length
   return Math.round((completedOrders / totalOrderCount.value) * 100)
@@ -380,13 +380,14 @@ const handleCustomDateChange = (dates: [string, string]) => {
 const loadCampusRanking = async () => {
   try {
     campusLoading.value = true
+    // 将 timeRange 转换为 period
     const params = {
-      type: 'revenue',
-      timeRange: globalParams.timeRange,
-      ...globalParams
+      period: globalParams.timeRange,
+      ...(globalParams.startDate && { startDate: globalParams.startDate }),
+      ...(globalParams.endDate && { endDate: globalParams.endDate })
     }
-    const response = await campusRankingApi(params)
-    campusRanking.value = response.data.data || []
+    const response = await getCampusRanking(params)
+    campusRanking.value = Array.isArray(response) ? response : []
   } catch (error) {
     console.error('获取校区排行榜失败:', error)
   } finally {
@@ -403,7 +404,7 @@ const loadTeacherRanking = async () => {
       ...globalParams
     }
     const response = await teacherRankingApi(params)
-    teacherRanking.value = response.data.data || []
+    teacherRanking.value = Array.isArray(response.data) ? response.data : []
   } catch (error) {
     console.error('获取老师排行榜失败:', error)
   } finally {
@@ -414,12 +415,26 @@ const loadTeacherRanking = async () => {
 const loadSalesRanking = async () => {
   try {
     salesLoading.value = true
-    const params = {
-      timeRange: globalParams.timeRange,
-      ...globalParams
+    // 根据 timeRange 计算 startDate 和 endDate
+    const now = new Date()
+    let startDate: string | undefined
+    let endDate: string | undefined
+
+    if (globalParams.timeRange === 'month') {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = firstDay.toISOString().split('T')[0]
+      endDate = now.toISOString().split('T')[0]
+    } else if (globalParams.timeRange === 'custom') {
+      startDate = globalParams.startDate
+      endDate = globalParams.endDate
     }
-    const response = await salesRankingApi(params)
-    salesRanking.value = response.data.data || []
+
+    const params: any = {
+      ...(startDate && { startDate }),
+      ...(endDate && { endDate })
+    }
+    const response = await getTeamMemberPerformance(params)
+    salesRanking.value = Array.isArray(response) ? response : []
   } catch (error) {
     console.error('获取销售排行榜失败:', error)
   } finally {
@@ -427,20 +442,74 @@ const loadSalesRanking = async () => {
   }
 }
 
-const loadOrderRanking = async () => {
+const loadProductRanking = async () => {
   try {
-    orderLoading.value = true
-    const params = {
-      type: 'amount',
-      timeRange: globalParams.timeRange,
-      ...globalParams
+    productLoading.value = true
+    // 计算日期范围
+    const now = new Date()
+    let startDate = globalParams.startDate
+    let endDate = globalParams.endDate
+
+    if (globalParams.timeRange === 'month' && !startDate) {
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
+      startDate = firstDay.toISOString().split('T')[0]
+      endDate = now.toISOString().split('T')[0]
+    } else if (globalParams.timeRange === 'day' && !startDate) {
+      const today = now.toISOString().split('T')[0]
+      startDate = today
+      endDate = today
+    } else if (globalParams.timeRange === 'week' && !startDate) {
+      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+      startDate = weekAgo.toISOString().split('T')[0]
+      endDate = now.toISOString().split('T')[0]
+    } else if (globalParams.timeRange === 'year' && !startDate) {
+      const yearAgo = new Date(now.getFullYear(), 0, 1)
+      startDate = yearAgo.toISOString().split('T')[0]
+      endDate = now.toISOString().split('T')[0]
     }
-    const response = await orderRankingApi(params)
-    orderRanking.value = response.data.data || []
+
+    // 获取订单数据
+    const url = `/api/order?startDate=${startDate}&endDate=${endDate}`
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token') || ''}`
+      }
+    })
+    const result = await response.json()
+
+    if (result.code === 200 && result.data && result.data.list) {
+      // 存储所有订单用于统计
+      allOrders.value = result.data.list
+
+      // 按课程聚合数据
+      const courseMap = new Map<string, any>()
+
+      result.data.list.forEach((order: any) => {
+        const courseName = order.courseName || '未知课程'
+        if (!courseMap.has(courseName)) {
+          courseMap.set(courseName, {
+            courseName,
+            campusName: order.campusName || '',
+            quantity: 0,
+            totalAmount: 0
+          })
+        }
+
+        const course = courseMap.get(courseName)!
+        course.quantity += 1
+        course.totalAmount += parseFloat(order.paymentAmount || '0')
+      })
+
+      // 转换为数组并按销售额排序
+      let products = Array.from(courseMap.values())
+      products.sort((a, b) => b.totalAmount - a.totalAmount)
+
+      productRanking.value = products
+    }
   } catch (error) {
-    console.error('获取订单排行榜失败:', error)
+    console.error('获取商品排行榜失败:', error)
   } finally {
-    orderLoading.value = false
+    productLoading.value = false
   }
 }
 
@@ -451,7 +520,7 @@ const refreshAllData = async () => {
       loadCampusRanking(),
       loadTeacherRanking(),
       loadSalesRanking(),
-      loadOrderRanking()
+      loadProductRanking()
     ])
   } catch (error) {
     ElMessage.error('刷新数据失败')
@@ -473,8 +542,8 @@ const goToSalesRanking = () => {
   router.push('/analytics/leaderboard')
 }
 
-const goToOrderRanking = () => {
-  router.push('/order/ranking')
+const goToProductRanking = () => {
+  router.push('/order/product-ranking')
 }
 
 // 生命周期
