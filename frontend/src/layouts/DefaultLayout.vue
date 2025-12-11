@@ -34,7 +34,7 @@
           <el-menu-item index="/order/list">订单列表</el-menu-item>
           <el-menu-item index="/order/sync-config">订单同步</el-menu-item>
           <el-menu-item index="/order/campus-ranking">校区排行榜</el-menu-item>
-          <el-menu-item index="/order/order-ranking">订单排行榜</el-menu-item>
+          <el-menu-item index="/order/product-ranking">商品排行榜</el-menu-item>
           <el-menu-item index="/order/sales-ranking">销售排行榜</el-menu-item>
           <el-menu-item index="/order/ranking-overview">排行榜总览</el-menu-item>
         </el-sub-menu>

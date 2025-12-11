@@ -127,17 +127,17 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'order-ranking',
-            name: 'OrderRanking',
-            component: () => import('@/views/order/Ranking.vue'),
+            path: 'product-ranking',
+            name: 'ProductRanking',
+            component: () => import('@/views/order/ProductRanking.vue'),
             meta: {
-              title: '订单排行榜',
+              title: '商品排行榜',
             },
           },
           {
             path: 'sales-ranking',
             name: 'SalesRanking',
-            component: () => import('@/views/team/Leaderboard.vue'),
+            component: () => import('@/views/order/SalesRankingOptimized.vue'),
             meta: {
               title: '销售排行榜',
             },
@@ -256,7 +256,7 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'enterprise-knowledge',
         name: 'EnterpriseKnowledge',
-        redirect: '/ai/enterprise-knowledge/management',
+        redirect: '/enterprise-knowledge/management',
         meta: {
           title: '企业知识库',
           icon: 'Reading',
@@ -397,7 +397,7 @@ const routes: RouteRecordRaw[] = [
           {
             path: 'leaderboard',
             name: 'TeamLeaderboard',
-            component: () => import('@/views/team/Leaderboard.vue'),
+            component: () => import('@/views/order/SalesRankingOptimized.vue'),
             meta: {
               title: '团队排行榜',
             },
