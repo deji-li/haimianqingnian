@@ -429,6 +429,35 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
+      // ========== AI老板助手 ==========
+      {
+        path: 'ai-assistant',
+        name: 'AIAssistant',
+        redirect: '/ai-assistant/customer-insights',
+        meta: {
+          title: 'AI老板助手',
+          icon: 'UserFilled',
+        },
+        children: [
+          {
+            path: 'customer-insights',
+            name: 'CustomerInsights',
+            component: () => import('@/views/ai-assistant/CustomerInsights.vue'),
+            meta: {
+              title: '客户洞察',
+            }
+          },
+          {
+            path: 'staff-quality',
+            name: 'StaffQuality',
+            component: () => import('@/views/ai-assistant/StaffQuality.vue'),
+            meta: {
+              title: '员工质检',
+            }
+          },
+        ]
+      },
+
       // ========== 财务提成（整合财务和提成） ==========
       {
         path: 'finance',

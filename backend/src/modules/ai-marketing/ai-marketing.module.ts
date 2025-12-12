@@ -6,6 +6,7 @@ import { MarketingAssistantController } from './marketing-assistant.controller';
 import { MarketingAssistantService } from './marketing-assistant.service';
 import { MarketingContentController } from './marketing-content.controller';
 import { MarketingContentService } from './marketing-content.service';
+import { CustomerInsightsController } from './customer-insights.controller';
 import { AiMarketingScenario } from './entities/ai-marketing-scenario.entity';
 import { AiMarketingContent } from './entities/ai-marketing-content.entity';
 import { AiMarketingHistory } from './entities/ai-marketing-history.entity';
@@ -32,7 +33,7 @@ import { KnowledgeIntegrationService } from './knowledge-integration.service';
     AiConfigModule,
     EnterpriseKnowledgeModule,
   ],
-  controllers: [AiMarketingController, MarketingAssistantController, MarketingContentController],
+  controllers: [AiMarketingController, MarketingAssistantController, MarketingContentController, CustomerInsightsController],
   providers: [AiMarketingService, MarketingAssistantService, MarketingContentService, DeepseekAnalysisService, KnowledgeIntegrationService],
   exports: [AiMarketingService, MarketingContentService, KnowledgeIntegrationService],
 })

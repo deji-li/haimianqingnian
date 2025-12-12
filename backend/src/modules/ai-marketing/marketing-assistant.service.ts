@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, In, Like, Between } from 'typeorm';
+import { Repository, In, Like, Between, MoreThanOrEqual } from 'typeorm';
 import { AiMarketingHistory } from './entities/ai-marketing-history.entity';
 import { AiMarketingFeedback } from './entities/ai-marketing-feedback.entity';
 import { AiCustomerInsights } from './entities/ai-customer-insights.entity';
@@ -206,17 +206,9 @@ export class MarketingAssistantService {
     try {
       this.logger.log(`开始生成营销文案, 场景: ${dto.contentType}, 用户: ${userId}`);
 
-      // 1. 场景映射
-      const scenarioKeyMap = {
-        moments: 'marketing_moments',
-        wechat: 'marketing_wechat',
-        douyin: 'marketing_douyin',
-        xiaohongshu: 'marketing_xiaohongshu',
-        video_script: 'marketing_video_script',
-        official: 'marketing_official',
-      };
-
-      const scenarioKey = scenarioKeyMap[dto.contentType] || 'marketing_moments';
+      // 1. 场景映射 - 直接使用前端传来的contentType作为scenarioKey
+      // 前端已经发送了完整的场景标识（marketing_moments、marketing_wechat等）
+      const scenarioKey = dto.contentType || 'marketing_moments';
 
       // 2. 获取客户洞察数据（如果提供了客户ID）
       let customerInsights = null;
@@ -697,6 +689,104 @@ export class MarketingAssistantService {
       return JSON.stringify(value, null, 2);
     }
     return String(value);
+  }
+
+  // ==================== 客户洞察相关 ====================
+
+  async getInsightsList(query: any, userId: number) {
+    const { insightType, customerId, page = 1, limit = 20 } = query;
+
+    const queryBuilder = this.insightsRepository
+      .createQueryBuilder('insight')
+      .leftJoin('insight.customer', 'customer')
+      .leftJoin('insight.user', 'user')
+      .select([
+        'insight.id',
+        'insight.insightType',
+        'insight.content',
+        'insight.mentionCount',
+        'insight.source',
+        'insight.createdAt',
+        'customer.realName as customerName',
+        'customer.id as customerId',
+        'user.userName as userName'
+      ])
+      .where('insight.isActive = :isActive', { isActive: 1 })
+      .andWhere('insight.source = :source', { source: 'chat_analysis' });
+
+    // 添加洞察类型筛选
+    if (insightType) {
+      queryBuilder.andWhere('insight.insightType = :insightType', { insightType });
+    }
+
+    // 添加客户筛选
+    if (customerId) {
+      queryBuilder.andWhere('insight.customerId = :customerId', { customerId });
+    }
+
+    // 获取总数
+    const total = await queryBuilder.getCount();
+
+    // 获取分页数据
+    const list = await queryBuilder
+      .orderBy('insight.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getRawMany();
+
+    return {
+      list,
+      total,
+      page: parseInt(page),
+      pageSize: parseInt(limit),
+    };
+  }
+
+  async getInsightStats(userId: number) {
+    // 获取总洞察数
+    const totalInsights = await this.insightsRepository.count({
+      where: {
+        isActive: 1,
+        source: 'chat_analysis'
+      }
+    });
+
+    // 获取涉及客户数
+    const customerCount = await this.insightsRepository
+      .createQueryBuilder('insight')
+      .select('COUNT(DISTINCT insight.customerId)')
+      .where('insight.isActive = :isActive', { isActive: 1 })
+      .andWhere('insight.customerId IS NOT NULL')
+      .andWhere('insight.source = :source', { source: 'chat_analysis' })
+      .getRawOne();
+
+    // 获取本周新增
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    const weeklyNew = await this.insightsRepository.count({
+      where: {
+        isActive: 1,
+        source: 'chat_analysis',
+        createdAt: MoreThanOrEqual(weekAgo)
+      }
+    });
+
+    // 获取高价值洞察（提及次数大于等于3）
+    const highValue = await this.insightsRepository.count({
+      where: {
+        isActive: 1,
+        source: 'chat_analysis',
+        mentionCount: MoreThanOrEqual(3)
+      }
+    });
+
+    return {
+      totalInsights,
+      customerCount: customerCount['COUNT(DISTINCT insight.customerId)'] || 0,
+      weeklyNew,
+      highValue,
+    };
   }
 }
 

@@ -19,7 +19,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { OperationModule } from './modules/operation/operation.module';
 // import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 // import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
-// import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
+import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
 // import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
@@ -27,10 +27,11 @@ import { BusinessConfigModule } from './modules/business-config/business-config.
 import { OrderSyncModule } from './modules/order-sync/order-sync.module';
 import { TeacherModule } from './modules/teacher/teacher.module';
 import { RankingModule } from './modules/ranking/ranking.module';
-// import { AiMarketingModule } from './modules/ai-marketing/ai-marketing.module';
+import { AiMarketingModule } from './modules/ai-marketing/ai-marketing.module';
 import { AutomationModule } from './modules/automation/automation.module';
+import { AiQualityModule } from './modules/ai-quality/ai-quality.module';
 // import { BaiduOcrModule } from './modules/ai-tools/baidu-ocr.module';
-// import { WeWorkModule } from './modules/wework/wework.module';
+import { WeWorkBasicModule } from './modules/wework/wework-basic.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -54,17 +55,19 @@ import { Notification } from './modules/notification/entities/notification.entit
 import { OperationAccount } from './modules/operation/entities/operation-account.entity';
 import { OperationDailyRecord } from './modules/operation/entities/operation-daily-record.entity';
 import { OperationCommissionRecord } from './modules/operation/entities/operation-commission-record.entity';
+import { OperationCustomerConversion } from './modules/operation/entities/operation-customer-conversion.entity';
+import { OperationNotification } from './modules/operation/entities/operation-notification.entity';
 import { AiChatRecord } from './modules/ai-chat/entities/ai-chat-record.entity';
 import { AiCustomerTag } from './modules/ai-tags/entities/ai-customer-tag.entity';
 import { AiFieldMappingConfig } from './modules/ai-config/entities/ai-field-mapping-config.entity';
-// import {
-//   EnterpriseKnowledgeBase,
-//   KnowledgeFeedback,
-//   KnowledgePendingReview,
-//   EnterpriseBasicInfo,
-//   IndustryQuestionLibrary,
-//   KnowledgeUsageLog,
-// } from './modules/enterprise-knowledge/entities/index';
+import {
+  EnterpriseKnowledgeBase,
+  KnowledgeFeedback,
+  KnowledgePendingReview,
+  EnterpriseBasicInfo,
+  IndustryQuestionLibrary,
+  KnowledgeUsageLog,
+} from './modules/enterprise-knowledge/entities/index';
 import { AiScript, AiRiskAlert, AiTrainingRecord, AiReport } from './modules/ai-tools/entities/index';
 import { AiPromptConfig } from './modules/ai-config/entities/ai-prompt-config.entity';
 import { AiApiKey } from './modules/ai-config/entities/ai-api-key.entity';
@@ -78,9 +81,11 @@ import { AiMarketingContent } from './modules/ai-marketing/entities/ai-marketing
 import { AiMarketingHistory } from './modules/ai-marketing/entities/ai-marketing-history.entity';
 import { AiMarketingFeedback } from './modules/ai-marketing/entities/ai-marketing-feedback.entity';
 import { AiCustomerInsights } from './modules/ai-marketing/entities/ai-customer-insights.entity';
+import { AiStaffQualityRecord } from './modules/ai-marketing/entities/ai-staff-quality-record.entity';
+import { AiSopRule } from './modules/ai-marketing/entities/ai-sop-rule.entity';
+import { AiViolationRule } from './modules/ai-marketing/entities/ai-violation-rule.entity';
 import { AutomationRule } from './modules/automation/entities/automation-rule.entity';
 import { AutomationLog } from './modules/automation/entities/automation-log.entity';
-// import { WeWorkConfig, WeWorkContact, WeWorkSyncLog } from './modules/wework/entities/index';
 
 @Module({
   imports: [
@@ -123,14 +128,16 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           OperationAccount,
           OperationDailyRecord,
           OperationCommissionRecord,
+          OperationCustomerConversion,
+          OperationNotification,
           AiChatRecord,
           AiCustomerTag,
-          // EnterpriseKnowledgeBase,
-          // KnowledgeFeedback,
-          // KnowledgePendingReview,
-          // EnterpriseBasicInfo,
-          // IndustryQuestionLibrary,
-          // KnowledgeUsageLog,
+          EnterpriseKnowledgeBase,
+          KnowledgeFeedback,
+          KnowledgePendingReview,
+          EnterpriseBasicInfo,
+          IndustryQuestionLibrary,
+          KnowledgeUsageLog,
           AiScript,
           AiRiskAlert,
           AiTrainingRecord,
@@ -148,12 +155,12 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           AiMarketingHistory,
           AiMarketingFeedback,
           AiCustomerInsights,
+          AiStaffQualityRecord,
+          AiSopRule,
+          AiViolationRule,
           AutomationRule,
           AutomationLog,
-          // WeWorkConfig,
-          // WeWorkContact,
-          // WeWorkSyncLog,
-        ],
+              ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
         timezone: '+08:00',
@@ -186,7 +193,7 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     OperationModule,
     // AiChatModule,
     // AiTagsModule,
-    // EnterpriseKnowledgeModule,
+    EnterpriseKnowledgeModule,
     // AiToolsModule,
     StatsModule,
     AiConfigModule,
@@ -194,10 +201,11 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     OrderSyncModule,
     TeacherModule,
     RankingModule,
-    // AiMarketingModule,
+    AiMarketingModule,
     AutomationModule,
+    AiQualityModule,
     // BaiduOcrModule,
-    // WeWorkModule,
+    WeWorkBasicModule,
   ],
 })
 export class AppModule {}
