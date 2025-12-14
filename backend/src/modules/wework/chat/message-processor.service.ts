@@ -1,9 +1,11 @@
-import { Injectable, Logger } from '@nestjs/common'
+import { Injectable, Logger, forwardRef, Inject } from '@nestjs/common'
 import { InjectRepository } from '@nestjs/typeorm'
 import { Repository } from 'typeorm'
+import { ModuleRef } from '@nestjs/core'
 import { WeWorkChatRecord } from '../entities/wework-chat-record.entity'
 import { WeWorkArchiveConfig } from '../entities/wework-archive-config.entity'
 import { WeWorkVoiceToTextService } from './voice-to-text.service'
+import { WeWorkAITriggerEngine } from '../ai/trigger-engine.service'
 import { DoubaoOcrService } from '../../../common/services/ai/doubao-ocr.service'
 import { AiCacheService } from '../../../common/services/ai/ai-cache.service'
 import * as fs from 'fs'
@@ -34,6 +36,7 @@ export class WeWorkMessageProcessor {
     private readonly voiceToTextService: WeWorkVoiceToTextService,
     private readonly ocrService: DoubaoOcrService,
     private readonly cacheService: AiCacheService,
+    private readonly moduleRef: ModuleRef,
   ) {}
 
   /**
@@ -105,7 +108,16 @@ export class WeWorkMessageProcessor {
       chatRecord.archiveTime = new Date(message.timestamp)
       chatRecord.webhookReceivedTime = new Date()
 
-      return chatRecord
+      // 保存聊天记录
+      const savedRecord = await this.chatRecordRepository.save(chatRecord)
+
+      // 触发AI分析和质检
+      await this.triggerAIAnalysis(savedRecord).catch((error) => {
+        this.logger.error(`AI分析触发失败: ${error.message}`, error)
+        // 不抛出错误，避免影响主流程
+      })
+
+      return savedRecord
     } catch (error) {
       this.logger.error(`处理消息失败 ${message.msgid}:`, error)
 
@@ -432,6 +444,40 @@ export class WeWorkMessageProcessor {
       return Buffer.from(await response.arrayBuffer())
     } catch (error) {
       this.logger.error('下载文件失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 触发AI分析
+   */
+  private async triggerAIAnalysis(chatRecord: WeWorkChatRecord): Promise<void> {
+    try {
+      this.logger.log(`触发AI分析: ${chatRecord.msgid}, 外部用户: ${chatRecord.externalUserId}`)
+
+      // 获取WeWorkAITriggerEngine服务
+      const triggerEngine = this.moduleRef.get(WeWorkAITriggerEngine, { strict: false })
+
+      if (triggerEngine) {
+        // 确保有文本内容用于分析
+        const textContent = chatRecord.ocrResult || chatRecord.voiceText ||
+                          (chatRecord.msgcontent?.content || chatRecord.msgcontent?.text || '')
+        if (!textContent) {
+          this.logger.log(`跳过AI分析: ${chatRecord.msgid} 无可用文本内容`)
+          return
+        }
+
+        // 设置文本内容供AI分析使用
+        chatRecord.textContent = textContent
+
+        // 异步触发AI分析
+        await triggerEngine.processMessageTrigger(chatRecord)
+        this.logger.log(`AI分析触发成功: ${chatRecord.msgid}`)
+      } else {
+        this.logger.warn('WeWorkAITriggerEngine服务未找到，跳过AI分析')
+      }
+    } catch (error) {
+      this.logger.error(`触发AI分析失败 ${chatRecord.msgid}:`, error)
       throw error
     }
   }

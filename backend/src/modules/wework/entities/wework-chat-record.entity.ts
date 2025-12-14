@@ -47,6 +47,9 @@ export class WeWorkChatRecord {
   @Column({ type: 'text', name: 'voice_text', nullable: true })
   voiceText: string
 
+  @Column({ type: 'text', name: 'text_content', nullable: true })
+  textContent: string
+
   @Column({ type: 'text', name: 'file_content', nullable: true })
   fileContent: string
 

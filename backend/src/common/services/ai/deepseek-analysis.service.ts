@@ -3,6 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import axios, { AxiosInstance } from 'axios';
 import { AiConfigService } from '../../../modules/ai-config/ai-config.service';
 import { AiApiKeyService } from '../../../modules/ai-config/ai-api-key.service';
+import { KnowledgeIntegrationService } from '../../../modules/enterprise-knowledge/knowledge-integration.service';
 
 /**
  * AI分析结果接口（20+维度）
@@ -86,6 +87,8 @@ export class DeepseekAnalysisService {
     private readonly aiConfigService: AiConfigService,
     @Inject(forwardRef(() => AiApiKeyService))
     private readonly aiApiKeyService: AiApiKeyService,
+    @Inject(forwardRef(() => KnowledgeIntegrationService))
+    private readonly knowledgeIntegrationService: KnowledgeIntegrationService,
   ) {}
 
   /**
@@ -147,7 +150,22 @@ export class DeepseekAnalysisService {
 
       const scenarioKey = 'chat_deep_analysis';
       const systemPrompt = await this.getSystemPrompt(scenarioKey);
-      const userPrompt = await this.buildAnalysisPrompt(scenarioKey, chatText, customerInfo);
+
+      // 搜索企业知识库获取相关上下文
+      let knowledgeContext = '';
+      try {
+        const knowledgeResult = await this.knowledgeIntegrationService.searchAndAnswer(
+          chatText,
+          { scenario: 'chat_analysis', customerInfo }
+        );
+        if (knowledgeResult && knowledgeResult.answer) {
+          knowledgeContext = `\n\n企业知识库参考信息：\n${knowledgeResult.answer}\n相关来源：${(knowledgeResult.sources || []).map(s => s.title).join(', ')}`;
+        }
+      } catch (error) {
+        this.logger.warn('企业知识库搜索失败，继续使用基础分析', error);
+      }
+
+      const userPrompt = await this.buildAnalysisPrompt(scenarioKey, chatText, customerInfo) + (knowledgeContext || '');
 
       // 获取配置的模型参数
       const promptConfig = await this.aiConfigService.getPromptConfig(scenarioKey, 'deepseek');

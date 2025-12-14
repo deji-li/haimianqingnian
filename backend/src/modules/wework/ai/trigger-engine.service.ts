@@ -6,6 +6,7 @@ import { WeWorkTriggerRule } from '../entities/wework-trigger-rule.entity'
 import { WeWorkInsightUpdater } from './insight-updater.service'
 import { DeepseekAnalysisService } from '../../../common/services/ai/deepseek-analysis.service'
 import { CustomerService } from '../../customer/customer.service'
+import { AiQualityService } from '../../ai-quality/ai-quality.service'
 
 export interface TriggerEvaluation {
   ruleId: number
@@ -36,6 +37,7 @@ export class WeWorkAITriggerEngine {
     private readonly insightUpdater: WeWorkInsightUpdater,
     private readonly deepSeekService: DeepseekAnalysisService,
     private readonly customerService: CustomerService,
+    private readonly aiQualityService: AiQualityService,
   ) {}
 
   /**
@@ -364,7 +366,7 @@ export class WeWorkAITriggerEngine {
       await this.chatRecordRepository.save(message)
 
       // 调用AI分析服务
-      const analysisResult = await this.deepSeekService.analyzeCustomerChat(analysisData)
+      const analysisResult = await this.deepSeekService.analyzeChat(analysisData)
 
       // 更新分析结果
       message.aiAnalysisResult = analysisResult
@@ -374,6 +376,13 @@ export class WeWorkAITriggerEngine {
       // 更新客户洞察
       if (message.customerId) {
         await this.insightUpdater.updateCustomerInsights(message.externalUserId, analysisResult)
+      }
+
+      // 触发AI质检
+      if (message.customerId) {
+        await this.triggerQualityCheck(message, analysisResult).catch((error) => {
+          this.logger.error(`AI质检触发失败: ${error.message}`, error)
+        })
       }
 
       this.logger.log(`AI分析完成: ${message.externalUserId}, 痛点数: ${analysisResult.customerPainPoints?.length || 0}`)
@@ -632,6 +641,40 @@ export class WeWorkAITriggerEngine {
       link: '链接'
     }
     return mapping[msgtype] || msgtype
+  }
+
+  /**
+   * 触发AI质检
+   */
+  private async triggerQualityCheck(message: WeWorkChatRecord, analysisResult: any): Promise<void> {
+    try {
+      this.logger.log(`触发AI质检: ${message.externalUserId}`)
+
+      // 构建质检所需的数据格式
+      const qualityCheckData = {
+        id: message.id, // 使用企业微信消息ID
+        userId: message.userid ? parseInt(message.userid) : 1, // 销售员ID
+        customerId: message.customerId,
+        chatContent: JSON.stringify({
+          textContent: message.textContent,
+          msgtype: message.msgtype,
+          analysisResult: analysisResult
+        }),
+        messageCount: 1,
+        chatDate: new Date(message.msgtime),
+        intentionScore: analysisResult.intentionScore || 0,
+        riskLevel: analysisResult.riskLevel || '低',
+        analysisTime: new Date(),
+      }
+
+      // 调用AI质检服务
+      await this.aiQualityService.performQualityCheck(qualityCheckData)
+
+      this.logger.log(`AI质检触发成功: ${message.externalUserId}`)
+    } catch (error) {
+      this.logger.error(`AI质检触发失败 ${message.externalUserId}:`, error)
+      throw error
+    }
   }
 
   /**
