@@ -53,4 +53,13 @@ export class AiQualityController {
   async batchQualityCheck(@Body() body: { chatRecords: any[] }) {
     return this.aiQualityService.batchQualityCheck(body.chatRecords)
   }
+
+  @Post('trigger-from-chats')
+  @ApiOperation({ summary: '从聊天记录触发质检检查' })
+  @RequirePermissions('ai-quality:manage')
+  async triggerQualityCheckFromChats(@Body() body: { startDate?: string, endDate?: string }) {
+    const startDate = body.startDate ? new Date(body.startDate) : undefined;
+    const endDate = body.endDate ? new Date(body.endDate) : undefined;
+    return this.aiQualityService.triggerQualityCheckFromChats(startDate, endDate)
+  }
 }

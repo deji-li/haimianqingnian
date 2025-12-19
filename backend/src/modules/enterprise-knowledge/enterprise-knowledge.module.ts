@@ -15,8 +15,8 @@ import { KnowledgeIntegrationService } from './knowledge-integration.service';
 import { KnowledgeCreationService } from './knowledge-creation.service';
 import { KnowledgeLearningService } from './knowledge-learning.service';
 import { KnowledgeEnhancedAIService } from './knowledge-enhanced-ai.service';
-import { KnowledgeSearchService } from './knowledge-search.service';
-import { KnowledgeMiningOptimizerService } from './knowledge-mining-optimizer.service';
+// import { KnowledgeSearchService } from './knowledge-search.service';
+// import { KnowledgeMiningOptimizerService } from './knowledge-mining-optimizer.service';
 import {
   EnterpriseKnowledgeBase,
   KnowledgeFeedback,
@@ -64,8 +64,8 @@ import { Customer } from '../customer/entities/customer.entity';
     KnowledgeCreationService,
     KnowledgeLearningService,
     KnowledgeEnhancedAIService,
-    KnowledgeSearchService,
-    KnowledgeMiningOptimizerService,
+    // KnowledgeSearchService,
+    // KnowledgeMiningOptimizerService,
   ],
   exports: [
     EnterpriseKnowledgeService,
@@ -78,8 +78,8 @@ import { Customer } from '../customer/entities/customer.entity';
     KnowledgeCreationService,
     KnowledgeLearningService,
     KnowledgeEnhancedAIService,
-    KnowledgeSearchService,
-    KnowledgeMiningOptimizerService,
+    // KnowledgeSearchService,
+    // KnowledgeMiningOptimizerService,
   ],
 })
 export class EnterpriseKnowledgeModule {}

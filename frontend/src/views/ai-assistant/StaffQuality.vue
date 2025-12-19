@@ -49,6 +49,9 @@
         <el-form-item>
           <el-button type="primary" @click="handleFilter">查询</el-button>
           <el-button @click="resetFilter">重置</el-button>
+          <el-button type="success" @click="triggerQualityCheck" :loading="triggering">
+            {{ triggering ? '质检中...' : '触发质检' }}
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -151,6 +154,7 @@ import {
   getReportList,
   getUserList,
 } from '@/api/ai-assistant'
+import request from '@/utils/request'
 
 // 数据定义
 const loading = ref(false)
@@ -168,6 +172,9 @@ const filter = reactive({
   userId: null,
   dateRange: [],
 })
+
+// 触发状态
+const triggering = ref(false)
 
 // 工具方法
 const getSopStatusName = (status: string) => {
@@ -329,6 +336,34 @@ onMounted(async () => {
 
   await fetchAllData()
 })
+
+// 触发质检检查
+const triggerQualityCheck = async () => {
+  triggering.value = true
+  try {
+    ElMessage.info('开始从聊天记录触发质检检查，请稍候...')
+
+    const result = await request({
+      url: '/ai-quality/trigger-from-chats',
+      method: 'post',
+      data: {
+        startDate: filter.dateRange?.[0],
+        endDate: filter.dateRange?.[1],
+      }
+    })
+
+    ElMessage.success(`成功完成 ${result.processedCount || 0} 条聊天记录的质检检查`)
+
+    // 刷新数据
+    await fetchAllData()
+
+  } catch (error) {
+    console.error('触发质检失败:', error)
+    ElMessage.error('触发质检失败，请稍后重试')
+  } finally {
+    triggering.value = false
+  }
+}
 </script>
 
 <style scoped lang="scss">

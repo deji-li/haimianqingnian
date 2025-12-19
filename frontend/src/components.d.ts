@@ -8,6 +8,8 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     ApiKeyManagement: typeof import('./components/system/ApiKeyManagement.vue')['default']
+    ConversationMode: typeof import('./components/ai-script-assistant/ConversationMode.vue')['default']
+    CustomerSelector: typeof import('./components/CustomerSelector.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
     ElAvatar: typeof import('element-plus/es')['ElAvatar']
@@ -51,6 +53,7 @@ declare module 'vue' {
     ElResult: typeof import('element-plus/es')['ElResult']
     ElRow: typeof import('element-plus/es')['ElRow']
     ElSelect: typeof import('element-plus/es')['ElSelect']
+    ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSlider: typeof import('element-plus/es')['ElSlider']
     ElSpace: typeof import('element-plus/es')['ElSpace']
     ElStatistic: typeof import('element-plus/es')['ElStatistic']
@@ -72,9 +75,13 @@ declare module 'vue' {
     ElUpload: typeof import('element-plus/es')['ElUpload']
     FieldMappingConfig: typeof import('./components/system/FieldMappingConfig.vue')['default']
     FileUpload: typeof import('./components/FileUpload.vue')['default']
+    OpeningLinesPanel: typeof import('./components/ai-script-assistant/OpeningLinesPanel.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ScriptPolishPanel: typeof import('./components/ai-script-assistant/ScriptPolishPanel.vue')['default']
     SmartCreateCustomer: typeof import('./components/customer/SmartCreateCustomer.vue')['default']
+    ThinkingProcess: typeof import('./components/ai-script-assistant/ThinkingProcess.vue')['default']
+    ToolMode: typeof import('./components/ai-script-assistant/ToolMode.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']

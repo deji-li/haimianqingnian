@@ -224,7 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, nextTick, markRaw } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Refresh, Document, MagicStick, Upload, Edit } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
@@ -268,10 +268,10 @@ const trendPeriod = ref('7days')
 
 // Source distribution
 const sourceDistribution = ref([
-  { type: 'manual', name: '手动创建', count: 0, percentage: 0, color: '#409EFF', icon: Edit },
-  { type: 'ai_mining', name: 'AI挖掘', count: 0, percentage: 0, color: '#67C23A', icon: MagicStick },
-  { type: 'industry_import', name: '行业导入', count: 0, percentage: 0, color: '#E6A23C', icon: Document },
-  { type: 'batch_import', name: '批量导入', count: 0, percentage: 0, color: '#909399', icon: Upload }
+  { type: 'manual', name: '手动创建', count: 0, percentage: 0, color: '#409EFF', icon: markRaw(Edit) },
+  { type: 'ai_mining', name: 'AI挖掘', count: 0, percentage: 0, color: '#67C23A', icon: markRaw(MagicStick) },
+  { type: 'industry_import', name: '行业导入', count: 0, percentage: 0, color: '#E6A23C', icon: markRaw(Document) },
+  { type: 'batch_import', name: '批量导入', count: 0, percentage: 0, color: '#909399', icon: markRaw(Upload) }
 ])
 
 // Load overview

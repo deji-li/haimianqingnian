@@ -480,8 +480,8 @@ const loadFeedbackList = async () => {
   loading.value = true
   try {
     const res = await getFeedbackList(filterForm)
-    feedbackList.value = res.data.items || []
-    total.value = res.data.total || 0
+    feedbackList.value = res?.list || []
+    total.value = res?.total || 0
   } catch (error) {
     ElMessage.error('加载反馈列表失败')
   } finally {
@@ -555,7 +555,7 @@ const viewKnowledge = (knowledge: KnowledgeBase) => {
 const editKnowledge = () => {
   if (currentKnowledge.value) {
     router.push({
-      path: '/knowledge/list',
+      path: '/enterprise-knowledge/management',
       query: { editId: currentKnowledge.value.id }
     })
   }

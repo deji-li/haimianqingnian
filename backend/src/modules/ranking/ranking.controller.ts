@@ -79,6 +79,21 @@ export class RankingController {
   }
 
   /**
+   * 获取商品排行榜（按课程销量/金额）
+   */
+  @Get('product')
+  async getProductRanking(@Query() query: any) {
+    return await this.rankingService.getProductRanking({
+      timeRange: query.timeRange || 'month',
+      startDate: query.startDate,
+      endDate: query.endDate,
+      campusId: query.campusId ? parseInt(query.campusId) : undefined,
+      sortBy: query.sortBy || 'quantity', // quantity, amount
+      limit: query.limit ? parseInt(query.limit) : 50,
+    });
+  }
+
+  /**
    * 测试端点 - 简单的健康检查
    */
   @Get('health')

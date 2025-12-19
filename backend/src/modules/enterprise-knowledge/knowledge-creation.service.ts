@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { EnterpriseKnowledgeBase, EnterpriseBasicInfo } from '../entities/index';
+import { EnterpriseKnowledgeBase, EnterpriseBasicInfo, IndustryQuestionLibrary } from './entities/index';
 import { AiConfigCallerService } from '../../common/services/ai/ai-config-caller.service';
-import { MiningKnowledgeService } from '../mining-knowledge.service';
-import { IndustryQuestionService } from '../industry-question.service';
+import { MiningKnowledgeService } from './mining-knowledge.service';
+import { IndustryQuestionService } from './industry-question.service';
+import { TriggerMiningDto } from './dto/mining-review.dto';
 
 /**
  * 企业知识库创建服务
@@ -20,8 +21,7 @@ export interface CreateEnterpriseKnowledgeDTO {
     inputMethod: 'MANUAL' | 'FILE_UPLOAD' | 'AI_ASSIST';
     companyName?: string;
     industry?: string;
-    businessScope?: string;
-    products?: string[];
+    companyIntro?: string;
     manualContent?: string; // 手动输入的内容
     uploadedFiles?: Express.Multer.File[]; // 上传的文件
   };
@@ -83,6 +83,8 @@ export class KnowledgeCreationService {
     private readonly knowledgeRepository: Repository<EnterpriseKnowledgeBase>,
     @InjectRepository(EnterpriseBasicInfo)
     private readonly enterpriseInfoRepository: Repository<EnterpriseBasicInfo>,
+    @InjectRepository(IndustryQuestionLibrary)
+    private readonly industryQuestionRepository: Repository<IndustryQuestionLibrary>,
     private readonly aiConfigCallerService: AiConfigCallerService,
     private readonly miningKnowledgeService: MiningKnowledgeService,
     private readonly industryQuestionService: IndustryQuestionService,
@@ -224,10 +226,10 @@ export class KnowledgeCreationService {
     const enterpriseInfo = this.enterpriseInfoRepository.create({
       companyName: enterpriseData.companyName,
       industry: enterpriseData.industry,
-      businessScope: enterpriseData.businessScope,
-      products: enterpriseData.products,
-      basicInfo: processedContent,
-      creatorId: userId,
+      companyIntro: enterpriseData.companyIntro || '',
+      inputMethod: 'manual',
+      isCompleted: false,
+      completionStep: 1,
     });
 
     return await this.enterpriseInfoRepository.save(enterpriseInfo);
@@ -247,10 +249,10 @@ export class KnowledgeCreationService {
       const result = await this.aiConfigCallerService.callAI(
         'enterprise_info_qa_extraction',
         {
-          enterpriseInfo: enterpriseInfo.basicInfo,
+          enterpriseInfo: enterpriseInfo.companyIntro,
           companyName: enterpriseInfo.companyName,
           industry: enterpriseInfo.industry,
-          products: JSON.stringify(enterpriseInfo.products || []),
+          coreAdvantages: enterpriseInfo.coreAdvantages || '',
         },
       );
 
@@ -367,7 +369,7 @@ export class KnowledgeCreationService {
       }
 
       // 构建挖掘参数
-      const miningParams = {
+      const miningParams: TriggerMiningDto = {
         startDate: miningConfig.dateRange?.startDate,
         endDate: miningConfig.dateRange?.endDate,
         customerIds: miningConfig.customerIds,
@@ -407,7 +409,10 @@ export class KnowledgeCreationService {
   ): Promise<EnterpriseKnowledgeBase[]> {
     try {
       // 获取行业问题库
-      const industryQuestions = await this.industryQuestionService.getQuestionsByIndustry(industry);
+      const industryQuestions = await this.industryQuestionRepository.find({
+        where: { industryName: industry },
+        take: 20,
+      });
 
       const recommendedKnowledge: EnterpriseKnowledgeBase[] = [];
 

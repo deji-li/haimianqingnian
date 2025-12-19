@@ -2,10 +2,12 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity';
-import { EnterpriseKnowledgeBase, KnowledgePendingReview } from '../entities/index';
-import { RedisService } from '@nestjs-modules/ioredis';
+import { EnterpriseKnowledgeBase, KnowledgePendingReview } from './entities/index';
+import { Redis } from 'ioredis';
+import { ConfigService } from '@nestjs/config';
 import { Queue } from 'bull';
 import { InjectQueue } from '@nestjs/bull';
+import { InjectRedis } from '@nestjs-modules/ioredis';
 
 /**
  * 知识挖掘性能优化服务
@@ -56,7 +58,7 @@ export class KnowledgeMiningOptimizerService {
     private readonly pendingReviewRepository: Repository<KnowledgePendingReview>,
     @InjectRepository(EnterpriseKnowledgeBase)
     private readonly knowledgeRepository: Repository<EnterpriseKnowledgeBase>,
-    private readonly redisService: RedisService,
+    @InjectRedis() private readonly redis: Redis,
     @InjectQueue('knowledge-mining') private readonly miningQueue: Queue,
   ) {}
 
@@ -214,7 +216,7 @@ export class KnowledgeMiningOptimizerService {
    */
   async getJobStatus(jobId: string): Promise<MiningJob | null> {
     try {
-      const cached = await this.redisService.get(`${this.CACHE_PREFIX}job:${jobId}`);
+      const cached = await this.redis.get(`${this.CACHE_PREFIX}job:${jobId}`);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
       this.logger.warn(`获取任务状态失败: ${error.message}`);
@@ -313,8 +315,10 @@ export class KnowledgeMiningOptimizerService {
         },
         {
           attempts: 3,
-          backoff: 'exponential',
-          delay: 1000, // 1秒延迟避免过载
+          backoff: {
+            type: 'exponential',
+            delay: 1000,
+          },
           removeOnComplete: 20,
           removeOnFail: 10,
         }
@@ -327,7 +331,7 @@ export class KnowledgeMiningOptimizerService {
    */
   private async cacheJobStatus(job: MiningJob): Promise<void> {
     try {
-      await this.redisService.setex(
+      await this.redis.setex(
         `${this.CACHE_PREFIX}job:${job.id}`,
         3600, // 1小时缓存
         JSON.stringify(job)
@@ -363,7 +367,7 @@ export class KnowledgeMiningOptimizerService {
    */
   private async getLastScheduledMiningTime(): Promise<Date> {
     try {
-      const cached = await this.redisService.get(`${this.CACHE_PREFIX}last_scheduled`);
+      const cached = await this.redis.get(`${this.CACHE_PREFIX}last_scheduled`);
       return cached ? new Date(cached) : new Date(Date.now() - 24 * 60 * 60 * 1000); // 默认24小时前
     } catch (error) {
       this.logger.warn(`获取上次定时挖掘时间失败: ${error.message}`);
@@ -376,7 +380,7 @@ export class KnowledgeMiningOptimizerService {
    */
   private async updateLastScheduledMiningTime(time: Date): Promise<void> {
     try {
-      await this.redisService.set(`${this.CACHE_PREFIX}last_scheduled`, time.toISOString());
+      await this.redis.set(`${this.CACHE_PREFIX}last_scheduled`, time.toISOString());
     } catch (error) {
       this.logger.warn(`更新最后定时挖掘时间失败: ${error.message}`);
     }
@@ -387,7 +391,7 @@ export class KnowledgeMiningOptimizerService {
    */
   private async getMiningStatisticsFromCache(): Promise<any> {
     try {
-      const cached = await this.redisService.get(`${this.CACHE_PREFIX}stats`);
+      const cached = await this.redis.get(`${this.CACHE_PREFIX}stats`);
       return cached ? JSON.parse(cached) : {};
     } catch (error) {
       this.logger.warn(`获取挖掘统计缓存失败: ${error.message}`);
@@ -400,18 +404,18 @@ export class KnowledgeMiningOptimizerService {
    */
   private async cleanupOldCache(): Promise<void> {
     try {
-      const keys = await this.redisService.keys(`${this.CACHE_PREFIX}job:*`);
+      const keys = await this.redis.keys(`${this.CACHE_PREFIX}job:*`);
       const now = Date.now();
 
       for (const key of keys) {
-        const ttl = await this.redisService.ttl(key);
+        const ttl = await this.redis.ttl(key);
         if (ttl === -1) { // 没有过期时间的键
-          const cached = await this.redisService.get(key);
+          const cached = await this.redis.get(key);
           if (cached) {
             const job: MiningJob = JSON.parse(cached);
             // 清理24小时前的已完成任务
             if (job.status === 'completed' && now - new Date(job.createdAt).getTime() > 24 * 60 * 60 * 1000) {
-              await this.redisService.del(key);
+              await this.redis.del(key);
             }
           }
         }
@@ -431,7 +435,7 @@ export class KnowledgeMiningOptimizerService {
     try {
       const currentStats = await this.getMiningStatisticsFromCache();
       const updatedStats = { ...currentStats, ...stats };
-      await this.redisService.setex(`${this.CACHE_PREFIX}stats`, 3600, JSON.stringify(updatedStats));
+      await this.redis.setex(`${this.CACHE_PREFIX}stats`, 3600, JSON.stringify(updatedStats));
     } catch (error) {
       this.logger.warn(`更新挖掘统计失败: ${error.message}`);
     }

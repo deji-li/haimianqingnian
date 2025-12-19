@@ -30,19 +30,32 @@ export class AiConfigCallerService {
     try {
       // 1. 获取配置
       const provider = preferProvider || 'deepseek';
+      this.logger.log(`步骤1: 获取AI配置 - scenarioKey=${scenarioKey}, provider=${provider}`);
+
       const config = await this.aiConfigService.getPromptConfig(scenarioKey, provider);
 
       if (!config || !config.isActive) {
+        this.logger.error(`AI配置不存在或未启用 - scenarioKey=${scenarioKey}, provider=${provider}`);
         throw new NotFoundException(
           `场景 ${scenarioKey} 的 ${provider} AI配置不存在或未启用`,
         );
       }
+
+      this.logger.log(`AI配置获取成功: ${JSON.stringify({
+        scenarioKey,
+        provider,
+        hasPromptContent: !!config.promptContent,
+        hasSystemPrompt: !!config.systemPrompt,
+        temperature: config.temperature,
+        maxTokens: config.maxTokens
+      })}`);
 
       this.logger.log(
         `调用AI配置: scenarioKey=${scenarioKey}, provider=${provider}, variables=${JSON.stringify(variables)}`,
       );
 
       // 2. 替换变量
+      this.logger.log('步骤2: 替换变量...');
       let promptContent = config.promptContent;
       let systemPrompt = config.systemPrompt || '';
 
@@ -54,16 +67,24 @@ export class AiConfigCallerService {
         systemPrompt = systemPrompt.replace(new RegExp(placeholder, 'g'), stringValue);
       }
 
+      this.logger.log(`变量替换完成 - prompt内容长度: ${promptContent?.length || 0}, systemPrompt长度: ${systemPrompt?.length || 0}`);
+
       // 3. 获取API密钥
+      this.logger.log('步骤3: 获取API密钥...');
       const apiKey = await this.aiApiKeyService.getActiveKey(provider);
       if (!apiKey) {
+        this.logger.error(`${provider} API密钥未配置或未启用`);
         throw new NotFoundException(`${provider} API密钥未配置或未启用`);
       }
 
+      this.logger.log(`API密钥获取成功 - provider: ${provider}, apiUrl: ${apiKey.apiUrl}`);
+
       // 4. 调用AI
+      this.logger.log('步骤4: 调用AI服务...');
       let result: string;
 
       if (provider === 'deepseek') {
+        this.logger.log('使用DeepSeek API');
         result = await this.callDeepSeek(
           apiKey,
           promptContent,
@@ -72,6 +93,7 @@ export class AiConfigCallerService {
           config.maxTokens || 2000,
         );
       } else if (provider === 'doubao') {
+        this.logger.log('使用豆包API');
         result = await this.callDoubao(
           apiKey,
           promptContent,
@@ -83,11 +105,16 @@ export class AiConfigCallerService {
         throw new Error(`不支持的AI供应商: ${provider}`);
       }
 
+      this.logger.log(`AI调用成功 - 响应长度: ${result?.length || 0}`);
+
       // 5. 尝试解析JSON结果
+      this.logger.log('步骤5: 解析响应结果...');
       try {
         const jsonResult = JSON.parse(result.trim());
+        this.logger.log('JSON解析成功');
         return jsonResult;
       } catch {
+        this.logger.log('响应不是JSON格式，返回原文');
         // 如果不是JSON格式，返回原文
         return result;
       }
@@ -96,6 +123,11 @@ export class AiConfigCallerService {
         `AI调用失败: scenarioKey=${scenarioKey}, error=${error.message}`,
         error.stack,
       );
+      this.logger.error(`失败详情: ${JSON.stringify({
+        errorName: error.name,
+        errorMessage: error.message,
+        errorStack: error.stack
+      }, null, 2)}`);
       throw error;
     }
   }
@@ -141,7 +173,7 @@ export class AiConfigCallerService {
         {
           model: apiKey.modelName || 'deepseek-chat',
           messages,
-          temperature,
+          temperature: parseFloat(temperature.toString()),
           max_tokens: maxTokens,
         },
         {
@@ -156,10 +188,14 @@ export class AiConfigCallerService {
       if (response.data?.choices?.[0]?.message?.content) {
         return response.data.choices[0].message.content;
       } else {
+        this.logger.error(`DeepSeek API返回格式异常 - 响应数据: ${JSON.stringify(response.data)}`);
         throw new Error('DeepSeek API返回格式异常');
       }
     } catch (error) {
-      this.logger.error(`DeepSeek API调用失败: ${error.message}`, error.stack);
+      this.logger.error(`DeepSeek API调用失败: ${error.message}`);
+      if (error.response) {
+        this.logger.error(`DeepSeek API错误响应 - 状态码: ${error.response.status}, 数据: ${JSON.stringify(error.response.data)}`);
+      }
       throw new Error(`DeepSeek调用失败: ${error.message}`);
     }
   }

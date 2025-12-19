@@ -38,7 +38,7 @@ service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
 
-    // 业务成功
+    // 业务成功 - 处理TransformInterceptor包装的响应格式
     if (res.code === 200) {
       return res.data
     }

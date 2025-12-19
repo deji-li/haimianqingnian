@@ -14,6 +14,7 @@ import { AiTagsModule } from '../ai-tags/ai-tags.module';
 import { AiToolsModule } from '../ai-tools/ai-tools.module';
 import { AiConfigModule } from '../ai-config/ai-config.module';
 import { AiMarketingModule } from '../ai-marketing/ai-marketing.module';
+import { AiQualityModule } from '../ai-quality/ai-quality.module';
 import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-knowledge.module';
 
 @Module({
@@ -24,6 +25,7 @@ import { EnterpriseKnowledgeModule } from '../enterprise-knowledge/enterprise-kn
     AiToolsModule,
     AiConfigModule,
     AiMarketingModule,
+    AiQualityModule,
     EnterpriseKnowledgeModule, // 导入企业知识库模块
   ],
   controllers: [AiChatController, AiAssistantController],

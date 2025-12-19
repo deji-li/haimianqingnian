@@ -290,10 +290,10 @@ const fetchAccountData = async () => {
   try {
     const response = await operationApi.getAccountList({
       page: 1,
-      pageSize: 10,
-      sortBy: 'performance'
+      pageSize: 10
+      // sortBy: 'performance' // 暂时移除，避免后端报错
     })
-    topAccounts.value = response.list
+    topAccounts.value = response?.list || []
   } catch (error) {
     console.error('获取账号数据失败:', error)
   }

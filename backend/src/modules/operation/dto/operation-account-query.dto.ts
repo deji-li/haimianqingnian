@@ -34,4 +34,12 @@ export class OperationAccountQueryDto {
   @IsOptional()
   @IsString({ message: '搜索关键词必须是字符串' })
   keyword?: string;
+
+  @IsOptional()
+  @IsEnum(['performance', 'name', 'createTime'], { message: '排序字段只能是：performance、name、createTime' })
+  sortBy?: string;
+
+  @IsOptional()
+  @IsEnum(['asc', 'desc'], { message: '排序方向只能是：asc、desc' })
+  sortOrder?: 'asc' | 'desc';
 }

@@ -1,8 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like, SelectQueryBuilder } from 'typeorm';
-import { EnterpriseKnowledgeBase } from '../entities/index';
-import { RedisService } from '@nestjs-modules/ioredis';
+import { EnterpriseKnowledgeBase } from './entities/index';
+import { InjectRedis } from '@nestjs-modules/ioredis';
+import { Redis } from 'ioredis';
 
 /**
  * 知识库搜索优化服务
@@ -51,7 +52,7 @@ export class KnowledgeSearchService {
   constructor(
     @InjectRepository(EnterpriseKnowledgeBase)
     private readonly knowledgeRepository: Repository<EnterpriseKnowledgeBase>,
-    private readonly redisService: RedisService,
+    @InjectRedis() private readonly redis: Redis,
   ) {}
 
   /**
@@ -549,7 +550,7 @@ export class KnowledgeSearchService {
    */
   private async getFromCache(key: string): Promise<SearchResponse | null> {
     try {
-      const cached = await this.redisService.get(key);
+      const cached = await this.redis.get(key);
       return cached ? JSON.parse(cached) : null;
     } catch (error) {
       this.logger.warn(`获取缓存失败: ${error.message}`);
@@ -562,7 +563,7 @@ export class KnowledgeSearchService {
    */
   private async setCache(key: string, result: SearchResponse): Promise<void> {
     try {
-      await this.redisService.setex(
+      await this.redis.setex(
         key,
         this.CACHE_TTL,
         JSON.stringify(result)
@@ -577,9 +578,9 @@ export class KnowledgeSearchService {
    */
   async clearSearchCache(): Promise<void> {
     try {
-      const keys = await this.redisService.keys('knowledge:search:*');
+      const keys = await this.redis.keys('knowledge:search:*');
       if (keys.length > 0) {
-        await this.redisService.del(...keys);
+        await this.redis.del(...keys);
         this.logger.log(`清除了${keys.length}个搜索缓存`);
       }
     } catch (error) {

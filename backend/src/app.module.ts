@@ -20,7 +20,7 @@ import { OperationModule } from './modules/operation/operation.module';
 // import { AiChatModule } from './modules/ai-chat/ai-chat.module';
 // import { AiTagsModule } from './modules/ai-tags/ai-tags.module';
 import { EnterpriseKnowledgeModule } from './modules/enterprise-knowledge/enterprise-knowledge.module';
-// import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
+import { AiToolsModule } from './modules/ai-tools/ai-tools.module';
 import { StatsModule } from './modules/stats/stats.module';
 import { AiConfigModule } from './modules/ai-config/ai-config.module';
 import { BusinessConfigModule } from './modules/business-config/business-config.module';
@@ -32,6 +32,7 @@ import { AutomationModule } from './modules/automation/automation.module';
 import { AiQualityModule } from './modules/ai-quality/ai-quality.module';
 // import { BaiduOcrModule } from './modules/ai-tools/baidu-ocr.module';
 import { WeWorkBasicModule } from './modules/wework/wework-basic.module';
+import { AiScriptAssistantModule } from './modules/ai-script-assistant/ai-script-assistant.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -86,6 +87,13 @@ import { AiSopRule } from './modules/ai-marketing/entities/ai-sop-rule.entity';
 import { AiViolationRule } from './modules/ai-marketing/entities/ai-violation-rule.entity';
 import { AutomationRule } from './modules/automation/entities/automation-rule.entity';
 import { AutomationLog } from './modules/automation/entities/automation-log.entity';
+import {
+  AiScriptConversation,
+  AiScriptMessage,
+  AiScriptScenario,
+  AiScriptTechnique,
+  AiScriptFeedback,
+} from './modules/ai-script-assistant/entities/index';
 
 @Module({
   imports: [
@@ -160,6 +168,11 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
           AiViolationRule,
           AutomationRule,
           AutomationLog,
+          AiScriptConversation,
+          AiScriptMessage,
+          AiScriptScenario,
+          AiScriptTechnique,
+          AiScriptFeedback,
               ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -194,7 +207,7 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     // AiChatModule,
     // AiTagsModule,
     EnterpriseKnowledgeModule,
-    // AiToolsModule,
+    AiToolsModule,
     StatsModule,
     AiConfigModule,
     BusinessConfigModule,
@@ -206,6 +219,7 @@ import { AutomationLog } from './modules/automation/entities/automation-log.enti
     AiQualityModule,
     // BaiduOcrModule,
     WeWorkBasicModule,
+    AiScriptAssistantModule,
   ],
 })
 export class AppModule {}

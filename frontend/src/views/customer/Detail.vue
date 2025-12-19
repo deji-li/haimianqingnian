@@ -277,7 +277,7 @@
             异议处理话术
           </el-button>
           <el-button
-            @click="router.push('/ai/knowledge')"
+            @click="router.push('/enterprise-knowledge')"
             size="default"
           >
             <el-icon><Reading /></el-icon>
@@ -1303,7 +1303,7 @@ const handleGenerateScript = async (scriptType: string) => {
 // 跳转到AI聊天分析页面（带客户ID筛选）
 const goToAiChatAnalysis = () => {
   const customerId = Number(route.params.id)
-  router.push(`/ai/chat-analysis?customerId=${customerId}`)
+  router.push(`/sales-tools/chat-analysis?customerId=${customerId}`)
 }
 
 // 返回

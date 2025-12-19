@@ -10,6 +10,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { AiTagsService } from '../ai-tags/ai-tags.service';
 import { AiToolsService } from '../ai-tools/ai-tools.service';
 import { AiMarketingService } from '../ai-marketing/ai-marketing.service';
+import { AiQualityService } from '../ai-quality/ai-quality.service';
 
 @Injectable()
 export class AiChatService {
@@ -26,6 +27,7 @@ export class AiChatService {
     private readonly aiTagsService: AiTagsService,
     private readonly aiToolsService: AiToolsService,
     private readonly aiMarketingService: AiMarketingService,
+    private readonly aiQualityService: AiQualityService,
   ) {}
 
   /**
@@ -245,6 +247,9 @@ export class AiChatService {
 
       // 9. 风险预警
       await this.aiToolsService.createRiskAlert(customer.id, analysisResult, recordId);
+
+      // 10. AI质检（新增）
+      await this.triggerQualityCheck(recordId, customer.id, record.userId, analysisResult);
 
       this.logger.log(`AI分析完成，记录ID: ${recordId}`);
     } catch (error) {
@@ -718,6 +723,45 @@ export class AiChatService {
     } catch (error) {
       this.logger.error(`获取统计数据失败: ${error.message}`, error.stack);
       throw error;
+    }
+  }
+
+  /**
+   * 触发AI质检检查
+   * 在聊天记录AI分析完成后自动执行
+   */
+  private async triggerQualityCheck(
+    chatRecordId: number,
+    customerId: number,
+    userId: number,
+    analysisResult: any
+  ): Promise<void> {
+    try {
+      this.logger.log(`开始触发AI质检，聊天记录ID: ${chatRecordId}`);
+
+      // 构建质检所需的聊天记录数据
+      const chatRecordForQuality = {
+        id: chatRecordId,
+        userId,
+        customerId,
+        chatContent: JSON.stringify(analysisResult),
+        messageCount: analysisResult.messageCount || 1,
+        chatDate: new Date(),
+        intentionScore: analysisResult.intentionScore || 0,
+        riskLevel: analysisResult.riskLevel || '低',
+        analysisTime: new Date(),
+      };
+
+      // 异步执行质检，不阻塞主流程
+      this.aiQualityService.performQualityCheck(chatRecordForQuality).catch((error) => {
+        this.logger.error(`AI质检失败，聊天记录ID: ${chatRecordId}: ${error.message}`, error.stack);
+        // 不抛出错误，避免影响主流程
+      });
+
+      this.logger.log(`AI质检触发成功，聊天记录ID: ${chatRecordId}`);
+    } catch (error) {
+      this.logger.error(`触发AI质检失败，聊天记录ID: ${chatRecordId}: ${error.message}`, error.stack);
+      // 不抛出错误，避免影响主流程
     }
   }
 }

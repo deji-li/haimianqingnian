@@ -2,11 +2,13 @@ import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } fro
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
 import { WeWorkService } from './wework.service'
 import { WeWorkConfigService } from './config/wework-config.service'
-import { WeWorkWebhookService } from './api/webhook.service'
-import { WeWorkMessageProcessor } from './chat/message-processor.service'
-import { WeWorkAITriggerEngine } from './ai/trigger-engine.service'
-import { WeWorkSyncService } from './sync/wework-sync.service'
-import { WeWorkSchedulerService } from './sync/scheduler.service'
+// AI services temporarily commented out due to compilation errors
+// import { WeWorkWebhookService } from './api/webhook.service'
+// import { WeWorkMessageProcessor } from './chat/message-processor.service'
+// import { WeWorkAITriggerEngine } from './ai/trigger-engine.service'
+// Sync services temporarily commented out due to compilation errors
+// import { WeWorkSyncService } from './sync/wework-sync.service'
+// import { WeWorkSchedulerService } from './sync/scheduler.service'
 
 @ApiTags('企业微信管理')
 @ApiBearerAuth()
@@ -15,11 +17,13 @@ export class WeWorkController {
   constructor(
     private readonly weworkService: WeWorkService,
     private readonly configService: WeWorkConfigService,
-    private readonly webhookService: WeWorkWebhookService,
-    private readonly messageProcessor: WeWorkMessageProcessor,
-    private readonly triggerEngine: WeWorkAITriggerEngine,
-    private readonly syncService: WeWorkSyncService,
-    private readonly schedulerService: WeWorkSchedulerService,
+    // AI services temporarily commented out
+    // private readonly webhookService: WeWorkWebhookService,
+    // private readonly messageProcessor: WeWorkMessageProcessor,
+    // private readonly triggerEngine: WeWorkAITriggerEngine,
+    // Sync services temporarily commented out
+    // private readonly syncService: WeWorkSyncService,
+    // private readonly schedulerService: WeWorkSchedulerService,
   ) {}
 
   @Get('config')
@@ -119,20 +123,7 @@ export class WeWorkController {
     return this.weworkService.disassociateFromCustomer(id)
   }
 
-  @Get('sync/status')
-  @ApiOperation({ summary: '获取同步状态' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  async getSyncStatus() {
-    return this.weworkService.checkSyncStatus()
-  }
-
-  @Get('sync/logs')
-  @ApiOperation({ summary: '获取同步日志' })
-  @ApiResponse({ status: 200, description: '获取成功' })
-  async getSyncLogs(@Query() query: any) {
-    return this.weworkService.getSyncLogs(query)
-  }
-
+  
   @Post('sync/single-contact')
   @ApiOperation({ summary: '同步单个联系人' })
   @ApiResponse({ status: 200, description: '同步成功' })

@@ -249,6 +249,84 @@ const routes: RouteRecordRaw[] = [
               title: 'AI营销场景',
             },
           },
+          {
+            path: 'script-assistant',
+            name: 'ScriptAssistant',
+            component: () => import('@/views/ai/ScriptAssistant.vue'),
+            meta: {
+              title: 'AI话术助手',
+              icon: 'ChatDotRound',
+            },
+          },
+          {
+            path: 'recommendation-management',
+            name: 'RecommendationManagement',
+            component: () => import('@/views/ai/RecommendationManagement.vue'),
+            meta: {
+              title: '话术推荐审核',
+              icon: 'Star',
+              requiresAdmin: true,
+            },
+          },
+          {
+            path: 'ai-config',
+            name: 'AiConfigManagement',
+            component: () => import('@/views/ai/AiConfigManagement.vue'),
+            meta: {
+              title: 'AI配置管理',
+              icon: 'Setting',
+              requiresAdmin: true,
+            },
+          },
+        ],
+      },
+
+      // ========== AI话术助手 ==========
+      {
+        path: 'ai-script',
+        name: 'AIScript',
+        redirect: '/ai-script/conversation',
+        meta: {
+          title: 'AI话术助手',
+          icon: 'ChatDotRound',
+        },
+        children: [
+          {
+            path: 'conversation',
+            name: 'ScriptConversation',
+            component: () => import('@/views/ai-script/conversation/Index.vue'),
+            meta: {
+              title: '会话模式',
+              permissions: ['ai:script:use'],
+            },
+          },
+          {
+            path: 'conversation-history',
+            name: 'ConversationHistory',
+            component: () => import('@/views/ai-script/conversation/History.vue'),
+            meta: {
+              title: '对话记录',
+              permissions: ['ai:script:view'],
+            },
+          },
+          {
+            path: 'opening-lines',
+            name: 'ScriptOpeningLines',
+            component: () => import('@/views/ai-script/tools/OpeningLines.vue'),
+            meta: {
+              title: '开场白生成',
+              permissions: ['ai:script:use'],
+            },
+          },
+          {
+            path: 'script-polish',
+            name: 'ScriptPolishTool',
+            component: () => import('@/views/ai-script/tools/Polish.vue'),
+            meta: {
+              title: '话术润色',
+              permissions: ['ai:script:use'],
+            },
+          },
         ],
       },
 

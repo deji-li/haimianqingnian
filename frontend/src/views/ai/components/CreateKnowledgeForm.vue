@@ -148,7 +148,7 @@
           <el-alert
             title="提示"
             type="info"
-            description="选择"否"将在后续步骤中通过AI挖掘自动生成FAQ"
+            description="选择「否」将在后续步骤中通过AI挖掘自动生成FAQ"
             :closable="false"
           />
         </div>
@@ -277,7 +277,7 @@
             </el-descriptions-item>
             <el-descriptions-item label="挖掘方式">
               {{ getMiningMethodText(formData.miningConfig.miningMethod) }}
-            </elights-descriptions-item>
+            </el-descriptions-item>
             <el-descriptions-item label="预计处理量">
               {{ getEstimatedCount() }} 条记录
             </el-descriptions-item>
@@ -364,6 +364,9 @@ import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { enterpriseKnowledgeApi } from '@/api/enterprise-knowledge'
 import { UploadFilled, Delete, Plus } from '@element-plus/icons-vue'
+
+// 定义事件
+const emit = defineEmits(['success', 'cancel'])
 
 const router = useRouter()
 
@@ -555,16 +558,15 @@ const prevStep = () => {
 const submitForm = async () => {
   creating.value = true
   try {
-    const result = await enterpriseKnowledgeApi.create({
-      enterpriseInfo: formData.enterpriseInfo,
-      customerFAQ: formData.customerFAQ,
-      miningConfig: formData.miningConfig,
-    })
+    // 将复杂的表单数据转换为后端期望的格式
+    const transformedData = transformFormDataToBackendFormat(formData)
 
-    creationResult.value = result.data
+    const result = await enterpriseKnowledgeApi.create(transformedData)
+
+    creationResult.value = result
     showResultDialog.value = true
 
-    if (result.success) {
+    if (result) {
       ElMessage.success('知识库创建成功')
     }
   } catch (error) {
@@ -580,8 +582,52 @@ const submitForm = async () => {
   }
 }
 
+// 将表单数据转换为后端API格式
+const transformFormDataToBackendFormat = (formData: any) => {
+  const knowledgeItems = []
+
+  // 从企业信息生成知识条目
+  if (formData.enterpriseInfo.manualContent) {
+    knowledgeItems.push({
+      title: `${formData.enterpriseInfo.companyName || '企业'}基本信息`,
+      content: formData.enterpriseInfo.manualContent,
+      sceneCategory: '企业介绍',
+      sourceType: 'manual',
+      priority: 80,
+      keywords: `${formData.enterpriseInfo.companyName || ''},企业介绍,基本信息`.trim()
+    })
+  }
+
+  // 从FAQ生成知识条目
+  formData.customerFAQ.faqData.forEach((faq: any) => {
+    if (faq.question && faq.answer) {
+      knowledgeItems.push({
+        title: faq.question,
+        content: faq.answer,
+        sceneCategory: faq.category || '产品咨询',
+        sourceType: 'manual',
+        priority: 90,
+        keywords: faq.keywords || ''
+      })
+    }
+  })
+
+  // 返回第一个知识条目用于创建（后续可以扩展为批量创建）
+  return knowledgeItems[0] || {
+    title: '默认知识条目',
+    content: '请填写具体内容',
+    sceneCategory: '其他',
+    sourceType: 'manual'
+  }
+}
+
 const goToKnowledgeManagement = () => {
-  router.push('/ai/enterprise-knowledge/management')
+  emit('success', creationResult.value)
+  router.push('/enterprise-knowledge/management')
+}
+
+const cancel = () => {
+  emit('cancel')
 }
 
 onMounted(() => {

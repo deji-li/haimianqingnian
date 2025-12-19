@@ -135,7 +135,7 @@
         <el-table-column prop="qualityScore" label="质量评分" width="100" align="center">
           <template #default="{ row }">
             <el-rate
-              v-model="row.qualityScore"
+              :model-value="Number(row.qualityScore)"
               disabled
               show-score
               text-color="#ff9900"
@@ -146,11 +146,12 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="usageCount" label="使用次数" width="100" align="center">
+        <el-table-column prop="usageCount" label="使用次数" width="120" align="center">
           <template #default="{ row }">
-            <el-badge :value="row.usageCount" :max="999" type="primary">
-              <span>{{ row.usageCount }}</span>
-            </el-badge>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <span style="color: #409EFF; font-size: 16px; font-weight: 500;">{{ row.usageCount }}</span>
+              <span style="color: #909399; font-size: 12px;">次</span>
+            </div>
           </template>
         </el-table-column>
 
@@ -234,7 +235,7 @@
           </el-descriptions-item>
           <el-descriptions-item label="质量评分">
             <el-rate
-              v-model="currentKnowledge.qualityScore"
+              :model-value="Number(currentKnowledge.qualityScore)"
               disabled
               show-score
               :max="100"
@@ -248,6 +249,7 @@
               v-for="keyword in currentKnowledge.keywords?.split(',')"
               :key="keyword"
               size="small"
+              type="info"
               style="margin-right: 5px"
             >
               {{ keyword.trim() }}
@@ -383,12 +385,15 @@ const loadKnowledgeList = async () => {
     const params = {
       page: pagination.page,
       limit: pagination.limit,
-      ...searchForm
+      keyword: searchForm.query,
+      sceneCategory: searchForm.sceneCategory,
+      sourceType: searchForm.sourceType,
+      status: searchForm.status
     }
 
-    const response = await enterpriseKnowledgeApi.search(params)
-    knowledgeList.value = response.data.results
-    pagination.total = response.data.total
+    const response = await enterpriseKnowledgeApi.getKnowledgeList(params)
+    knowledgeList.value = response?.list || []
+    pagination.total = response?.total || 0
   } catch (error) {
     ElMessage.error('加载知识库列表失败')
     console.error('Load knowledge list error:', error)
@@ -429,7 +434,7 @@ const handleCurrentChange = (page: number) => {
 }
 
 const goToCreate = () => {
-  router.push('/ai/enterprise-knowledge/create')
+  router.push('/enterprise-knowledge/create')
 }
 
 const handleView = (row: any) => {
@@ -438,7 +443,9 @@ const handleView = (row: any) => {
 }
 
 const handleEdit = (row: any) => {
-  router.push(`/ai/enterprise-knowledge/edit/${row.id}`)
+  // 暂时禁用编辑功能，因为路由配置中没有编辑页面
+  ElMessage.info('编辑功能暂未开放')
+  // router.push(`/enterprise-knowledge/edit/${row.id}`)
 }
 
 const handleFeedback = (row: any) => {
@@ -485,7 +492,7 @@ const handleDelete = async (row: any) => {
       }
     )
 
-    await enterpriseKnowledgeApi.delete(row.id)
+    await enterpriseKnowledgeApi.deleteKnowledge(row.id)
     ElMessage.success('删除成功')
     loadKnowledgeList()
   } catch (error) {
@@ -551,7 +558,7 @@ const getSceneCategoryType = (category: string) => {
     '服务咨询': 'info',
     '技术支持': 'danger'
   }
-  return typeMap[category] || ''
+  return typeMap[category] || 'info'
 }
 
 const getSourceTypeType = (type: string) => {
@@ -561,7 +568,7 @@ const getSourceTypeType = (type: string) => {
     'industry_recommend': 'warning',
     'file_import': 'info'
   }
-  return typeMap[type] || ''
+  return typeMap[type] || 'info'
 }
 
 const getSourceTypeText = (type: string) => {
@@ -580,7 +587,7 @@ const getStatusType = (status: string) => {
     'inactive': 'info',
     'pending_review': 'warning'
   }
-  return typeMap[status] || ''
+  return typeMap[status] || 'info'
 }
 
 const getStatusText = (status: string) => {

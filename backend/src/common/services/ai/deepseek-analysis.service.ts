@@ -154,12 +154,15 @@ export class DeepseekAnalysisService {
       // 搜索企业知识库获取相关上下文
       let knowledgeContext = '';
       try {
-        const knowledgeResult = await this.knowledgeIntegrationService.searchAndAnswer(
-          chatText,
-          { scenario: 'chat_analysis', customerInfo }
-        );
-        if (knowledgeResult && knowledgeResult.answer) {
-          knowledgeContext = `\n\n企业知识库参考信息：\n${knowledgeResult.answer}\n相关来源：${(knowledgeResult.sources || []).map(s => s.title).join(', ')}`;
+        const knowledgeResult = await this.knowledgeIntegrationService.queryKnowledgeForAnalysis({
+          topic: chatText,
+          customerId: customerInfo?.customerId,
+          userId: customerInfo?.userId
+        });
+        if (knowledgeResult && knowledgeResult.length > 0) {
+          const knowledgeContent = knowledgeResult.slice(0, 3).map(k => k.content).join('\n');
+          const knowledgeTitles = knowledgeResult.slice(0, 3).map(k => k.title).join(', ');
+          knowledgeContext = `\n\n企业知识库参考信息：\n${knowledgeContent}\n相关来源：${knowledgeTitles}`;
         }
       } catch (error) {
         this.logger.warn('企业知识库搜索失败，继续使用基础分析', error);

@@ -115,27 +115,7 @@ export class WeWorkChatRecord {
   @UpdateDateColumn({ name: 'updated_time' })
   updatedTime: Date
 
-  // 虚拟字段 - 方便访问文本内容
-  get textContent(): string {
-    if (this.msgtype === 'text') {
-      return this.msgcontent?.content || ''
-    }
-
-    if (this.ocrResult && this.msgtype === 'image') {
-      return this.ocrResult
-    }
-
-    if (this.voiceText && this.msgtype === 'voice') {
-      return this.voiceText
-    }
-
-    if (this.fileContent && ['file', 'doc'].includes(this.msgtype)) {
-      return this.fileContent
-    }
-
-    return ''
-  }
-
+  
   // 获取消息发送时间
   get messageTime(): Date {
     return new Date(this.msgtime)

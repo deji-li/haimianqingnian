@@ -75,6 +75,17 @@
           <el-menu-item index="/sales-tools/marketing-scenarios">AI营销场景</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="/ai-script">
+          <template #title>
+            <el-icon><ChatDotRound /></el-icon>
+            <span>AI话术助手</span>
+          </template>
+          <el-menu-item index="/ai-script/conversation">会话模式</el-menu-item>
+          <el-menu-item index="/ai-script/conversation-history">对话记录</el-menu-item>
+          <el-menu-item index="/ai-script/opening-lines">开场白生成</el-menu-item>
+          <el-menu-item index="/ai-script/script-polish">话术润色</el-menu-item>
+        </el-sub-menu>
+
         <el-sub-menu index="/ai-marketing">
           <template #title>
             <el-icon><MagicStick /></el-icon>
@@ -113,6 +124,15 @@
           <el-menu-item index="/analytics/ai-reports">AI诊断报告</el-menu-item>
         </el-sub-menu>
 
+        <el-sub-menu index="/ai-assistant">
+          <template #title>
+            <el-icon><UserFilled /></el-icon>
+            <span>AI老板助手</span>
+          </template>
+          <el-menu-item index="/ai-assistant/customer-insights">客户洞察</el-menu-item>
+          <el-menu-item index="/ai-assistant/staff-quality">员工质检</el-menu-item>
+        </el-sub-menu>
+
         <el-menu-item index="/datascreen">
           <el-icon><DataAnalysis /></el-icon>
           <span>数据大屏</span>
@@ -136,7 +156,7 @@
           <span>自动化工作流</span>
         </el-menu-item>
 
-        <el-sub-menu index="/system">
+        <el-sub-menu index="/system" v-if="userStore.isAdmin">
           <template #title>
             <el-icon><Setting /></el-icon>
             <span>系统管理</span>
@@ -234,7 +254,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation, Reading } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation, Reading, UserFilled, ChatDotRound } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()

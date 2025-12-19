@@ -1,0 +1,28 @@
+-- 创建话术推荐表
+CREATE TABLE IF NOT EXISTS `ai_script_recommendation` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT '推荐ID',
+  `conversation_id` int NOT NULL COMMENT '来源对话ID',
+  `message_id` int NOT NULL COMMENT '来源消息ID',
+  `script_content` text NOT NULL COMMENT '话术内容',
+  `function_type` enum('deal_assist','reply_assist','script_polish','opening_lines') NOT NULL COMMENT '功能类型',
+  `scenario_id` int DEFAULT NULL COMMENT '场景ID',
+  `technique_id` int DEFAULT NULL COMMENT '技巧ID',
+  `ai_quality_score` decimal(3,2) DEFAULT '0.00' COMMENT 'AI质量评分',
+  `user_feedback` enum('like','dislike','neutral') DEFAULT 'neutral' COMMENT '用户反馈',
+  `usage_count` int DEFAULT '0' COMMENT '使用次数',
+  `recommend_reason` varchar(500) DEFAULT NULL COMMENT '推荐原因',
+  `status` enum('pending','approved','rejected') DEFAULT 'pending' COMMENT '审核状态',
+  `approved_by` int DEFAULT NULL COMMENT '审核人',
+  `approved_at` datetime DEFAULT NULL COMMENT '审核时间',
+  `user_id` int NOT NULL COMMENT '推荐用户ID',
+  `create_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '创建时间',
+  `update_time` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6) COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_conversation_id` (`conversation_id`),
+  KEY `idx_message_id` (`message_id`),
+  KEY `idx_function_type` (`function_type`),
+  KEY `idx_status` (`status`),
+  KEY `idx_user_id` (`user_id`),
+  CONSTRAINT `fk_recommendation_conversation` FOREIGN KEY (`conversation_id`) REFERENCES `ai_script_conversation` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_recommendation_message` FOREIGN KEY (`message_id`) REFERENCES `ai_script_message` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI话术推荐表';

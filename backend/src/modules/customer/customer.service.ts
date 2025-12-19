@@ -2376,4 +2376,31 @@ export class CustomerService {
       throw new Error(`触发订单同步检查失败: ${error.message}`);
     }
   }
+
+  /**
+   * 通过企业微信外部用户ID查找客户
+   */
+  async findByWeWorkExternalId(externalUserId: string): Promise<Customer | null> {
+    try {
+      this.logger.log(`通过企业微信外部用户ID查找客户: ${externalUserId}`);
+
+      const customer = await this.customerRepository.findOne({
+        where: {
+          weworkExternalUserId: externalUserId,
+          isDeleted: false
+        }
+      });
+
+      if (customer) {
+        this.logger.log(`找到客户: ${customer.id} - ${customer.realName}`);
+      } else {
+        this.logger.warn(`未找到对应的企业微信客户: ${externalUserId}`);
+      }
+
+      return customer;
+    } catch (error) {
+      this.logger.error(`查找企业微信客户失败: ${error.message}`);
+      return null;
+    }
+  }
 }

@@ -15,7 +15,7 @@
           <FieldMappingConfig />
         </el-tab-pane>
         <el-tab-pane label="知识库配置" name="knowledge">
-          <KnowledgeConfiguration />
+          <KnowledgeConfiguration v-model="knowledgeData" />
         </el-tab-pane>
         <el-tab-pane label="提示词配置" name="prompt">
           <div class="config-layout-inner">
@@ -364,15 +364,21 @@ import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Search, InfoFilled } from '@element-plus/icons-vue'
 import request from '@/utils/request'
+import { useUserStore } from '@/store/user'
 import ApiKeyManagement from '@/components/system/ApiKeyManagement.vue'
 import FieldMappingConfig from '@/components/system/FieldMappingConfig.vue'
 import KnowledgeConfiguration from '@/views/ai/components/KnowledgeConfiguration.vue'
+
+const userStore = useUserStore()
 
 // Tab切换
 const activeTab = ref('api-key')
 
 // 搜索关键词
 const searchKeyword = ref('')
+
+// 知识库配置数据
+const knowledgeData = ref({})
 
 // 场景列表
 const scenarios = ref<any[]>([])
@@ -431,6 +437,63 @@ const createForm = ref({
   modelProvider: 'deepseek',
 })
 
+// 英文标识符中文映射
+const scenarioKeyMapping = {
+  // 营销相关
+  social_media: '社交媒体营销',
+  video_content: '视频内容创作',
+  content_marketing: '内容营销',
+  content_generation: '内容生成',
+  marketing_content_generate: '营销文案生成',
+  marketing_moments: '朋友圈文案生成',
+  marketing_wechat: '微信群发文案生成',
+  marketing_douyin: '抖音营销文案生成',
+  marketing_xiaohongshu: '小红书营销文案生成',
+  marketing_video_script: '短视频拍摄脚本生成',
+  marketing_official: '公众号推文生成',
+  marketing_pure_ai: '纯AI营销文案生成',
+
+  // 聊天分析相关
+  chat_deep_analysis: '聊天深度分析',
+  chat_ocr_extract: '聊天OCR识别',
+  pain_point_analysis: '客户痛点分析',
+  interest_point_mining: '客户兴趣点挖掘',
+
+  // 客户管理相关
+  customer_recovery_script: '客户复苏话术',
+  customer_info_extract: '客户信息提取',
+
+  // 销售话术相关
+  sales_script_opening: '开场白话术生成',
+  sales_script_value: '价值主张话术生成',
+  sales_script_objection: '异议处理话术生成',
+  sales_script_closing: '促成话术生成',
+
+  // AI助手相关
+  ai_training_conversation: 'AI对话训练',
+  ai_script_mixed: '混合话术生成（知识库+AI）',
+  ai_script_pure: '纯AI话术生成',
+  ai_boss_comprehensive_analysis: 'AI老板综合分析',
+
+  // CRM分析相关
+  crm_problem_diagnosis: 'CRM问题诊断',
+  crm_improvement_recommendation: 'CRM改进建议',
+  ai_efficiency_analysis: 'AI人效分析报告',
+
+  // 企业知识库相关
+  knowledge_semantic_scoring: '知识语义评分',
+  knowledge_company_info_generate: '生成企业基础信息',
+  knowledge_qa_extraction: 'Q&A提取',
+  knowledge_classification: '知识自动分类',
+  knowledge_quality_scoring: '知识质量评分',
+  knowledge_industry_questions: '生成行业常见问题',
+  knowledge_optimization: '知识反馈优化',
+  knowledge_usage_decision: '知识使用决策',
+
+  // 通用分析
+  analysis: '分析工具'
+}
+
 // 场景树结构
 const scenarioTree = computed(() => {
   const categories: any = {}
@@ -451,8 +514,11 @@ const scenarioTree = computed(() => {
     )
 
     if (!existing) {
+      // 使用映射的显示名称，如果没有映射则使用原始名称
+      const displayName = scenarioKeyMapping[scenario.scenarioKey] || scenario.scenarioName
+
       categories[category].children.push({
-        name: scenario.scenarioName,
+        name: displayName,
         key: scenario.scenarioKey,
         ...scenario,
       })
@@ -465,11 +531,20 @@ const scenarioTree = computed(() => {
 // 加载场景列表
 async function loadScenarios() {
   try {
+    console.log('Loading AI config scenarios...')
+    console.log('Current user:', userStore.userInfo)
+    console.log('User permissions:', userStore.permissions)
+    console.log('Has system:ai-config permission:', userStore.hasPermission('system:ai-config'))
+
     const data = await request.get('/ai-config', {
       params: { limit: 1000 },
     })
+    console.log('AI config data received:', data)
     scenarios.value = data.list || []
   } catch (error: any) {
+    console.error('Load scenarios error:', error)
+    console.error('Error response:', error.response)
+    console.error('Error data:', error.response?.data)
     ElMessage.error(error.response?.data?.message || '加载场景列表失败')
   }
 }
@@ -789,38 +864,80 @@ onMounted(() => {
 
   .config-layout-inner {
     display: flex;
-    gap: 20px;
+    gap: 24px;
     height: calc(100vh - 320px);
 
     .scenario-list {
-      width: 300px;
+      width: 320px;
       flex-shrink: 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
       .list-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        font-weight: 600;
+        color: #303133;
       }
 
       :deep(.el-card__body) {
         height: calc(100% - 56px);
         overflow-y: auto;
+        padding: 16px;
+      }
+
+      .el-tree {
+        border-radius: 6px;
+
+        :deep(.el-tree-node__content) {
+          padding: 8px 12px;
+          border-radius: 4px;
+          transition: all 0.3s ease;
+
+          &:hover {
+            background-color: #f5f7fa;
+          }
+
+          &.is-current {
+            background-color: #e6f7ff;
+            border-left: 3px solid #409eff;
+          }
+        }
       }
     }
 
     .config-editor {
       flex: 1;
       overflow-y: auto;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
       .editor-header {
         display: flex;
         justify-content: space-between;
         align-items: center;
+        padding-bottom: 16px;
+        border-bottom: 1px solid #e4e7ed;
+        margin-bottom: 24px;
 
         .scenario-info {
           h3 {
             margin: 0 0 8px 0;
+            font-size: 18px;
+            font-weight: 600;
+            color: #303133;
           }
+
+          .el-tag {
+            font-size: 12px;
+          }
+        }
+
+        .el-radio-group {
+          background: #f5f7fa;
+          padding: 4px;
+          border-radius: 6px;
         }
       }
 
@@ -829,44 +946,75 @@ onMounted(() => {
 
         .variable-hint {
           margin-top: 8px;
-          padding: 8px 12px;
-          background: #f4f4f5;
-          border-radius: 4px;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, #f0f9ff 0%, #e6f7ff 100%);
+          border-radius: 6px;
           font-size: 13px;
-          color: #606266;
+          color: #409eff;
           display: flex;
           align-items: center;
           gap: 8px;
+          border-left: 4px solid #409eff;
         }
       }
 
       .variables-section {
         margin-top: 32px;
+        background: #fafbfc;
+        border-radius: 8px;
+        padding: 20px;
+        border: 1px solid #e4e7ed;
 
         .section-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 16px;
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid #e4e7ed;
 
           .header-left {
             h4 {
-              margin: 0 0 4px 0;
-              font-size: 16px;
+              margin: 0 0 8px 0;
+              font-size: 18px;
+              font-weight: 600;
               color: #303133;
+              display: flex;
+              align-items: center;
+              gap: 8px;
+
+              &::before {
+                content: '';
+                width: 4px;
+                height: 20px;
+                background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+                border-radius: 2px;
+              }
             }
 
             .desc {
               margin: 0;
               font-size: 13px;
-              color: #909399;
+              color: #606266;
+              display: flex;
+              align-items: center;
+              gap: 8px;
             }
           }
         }
 
         :deep(.el-table) {
+          border-radius: 6px;
+          overflow: hidden;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+          .el-table__header {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e9ecf0 100%);
+          }
+
           .el-tag {
             border: none;
+            font-weight: 500;
           }
         }
       }

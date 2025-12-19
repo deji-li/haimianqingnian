@@ -3,24 +3,37 @@ import request from '@/utils/request'
 // AI客户洞察相关
 export function getCustomerInsights(params: any) {
   return request({
-    url: '/ai-marketing/insights/list',
+    url: '/ai-marketing/assistant/insights',
+    method: 'get',
+    params: {
+      ...params,
+      source: 'chat_analysis', // 指定使用聊天记录分析模式
+    },
+  })
+}
+
+export function getInsightStats(params: any = {}) {
+  return request({
+    url: '/ai-marketing/assistant/insights/stats',
     method: 'get',
     params,
   })
 }
 
-export function getInsightStats() {
+// 从聊天记录提取洞察
+export function extractInsightsFromChat(data: { startDate?: string, endDate?: string }) {
   return request({
-    url: '/ai-marketing/insights/stats',
-    method: 'get',
+    url: '/ai-marketing/assistant/insights/extract',
+    method: 'post',
+    data,
   })
 }
 
 export function getCustomerList() {
   return request({
-    url: '/customer/list',
+    url: '/customer',
     method: 'get',
-    params: { limit: 1000 },
+    params: { pageSize: 100 },
   })
 }
 
@@ -59,8 +72,8 @@ export function getReportList(params: any) {
 
 export function getUserList() {
   return request({
-    url: '/user/list',
+    url: '/user',
     method: 'get',
-    params: { limit: 1000 },
+    params: { pageSize: 100 },
   })
 }

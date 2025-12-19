@@ -1,4 +1,4 @@
-import { IsOptional, IsInt, IsEnum, IsDateString, Min, Max } from 'class-validator';
+import { IsOptional, IsInt, IsEnum, IsDateString, IsString, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CommissionRecordQueryDto {
@@ -30,4 +30,8 @@ export class CommissionRecordQueryDto {
   @IsOptional()
   @IsDateString({}, { message: '结束日期格式不正确' })
   endDate?: string;
+
+  @IsOptional()
+  @IsString({ message: '订单号必须是字符串' })
+  orderNo?: string;
 }

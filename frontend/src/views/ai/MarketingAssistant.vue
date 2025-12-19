@@ -30,7 +30,7 @@
               :key="scene.type"
               class="scene-item"
               :class="{ active: selectedScene === scene.type }"
-              @click="selectedScene = scene.type"
+              @click="selectedScene = scene.type; initializeConfigForm()"
             >
               <div class="scene-icon" :style="{ backgroundColor: scene.color }">
                 <el-icon :size="24">
@@ -51,30 +51,8 @@
         <el-card class="config-card">
           <h3>结合<span class="highlight">客户痛点</span>生成文案</h3>
 
-          <!-- 客户选择区域 -->
+          <!-- 客户信息区域 - 自动从聊天记录中提取 -->
           <div class="customer-section">
-            <div class="customer-select">
-              <el-select
-                v-model="selectedCustomerId"
-                filterable
-                remote
-                reserve-keyword
-                placeholder="搜索客户（支持姓名、手机号）"
-                :remote-method="searchCustomers"
-                :loading="customerSearchLoading"
-                style="width: 100%"
-                @change="handleCustomerChange"
-                clearable
-              >
-                <el-option
-                  v-for="customer in customerSearchResults"
-                  :key="customer.id"
-                  :label="`${customer.name} (${customer.phone})`"
-                  :value="customer.id"
-                />
-              </el-select>
-            </div>
-
             <div v-if="customerInsights" class="customer-insights">
               <div class="insights-header">
                 <el-icon><User /></el-icon>
@@ -129,16 +107,7 @@
 
           <!-- 手动配置区域 -->
           <div class="manual-config-section">
-            <div class="section-header">
-              <span>手动补充配置</span>
-              <el-switch
-                v-model="showManualConfig"
-                active-text="展开"
-                inactive-text="收起"
-              />
-            </div>
-
-            <div v-show="showManualConfig">
+            <div>
               <el-tabs v-model="activeTab">
                 <el-tab-pane label="客户痛点" name="painPoints">
                   <el-table
@@ -182,41 +151,49 @@
           <el-divider />
 
           <el-form :model="configForm" label-width="100px">
-            <el-form-item label="发圈目的">
-              <el-select v-model="configForm.purpose" placeholder="请选择" style="width: 100%">
-                <el-option label="引流获客" value="引流获客" />
-                <el-option label="促进成交" value="促进成交" />
-                <el-option label="品牌宣传" value="品牌宣传" />
-                <el-option label="活动推广" value="活动推广" />
-                <el-option label="客户维护" value="客户维护" />
+            <!-- 动态表单项：根据场景配置动态渲染 -->
+            <el-form-item
+              v-for="field in currentSceneConfig.fields"
+              :key="field.name"
+              :label="field.label"
+            >
+              <!-- Select 类型 -->
+              <el-select
+                v-if="field.type === 'select'"
+                v-model="configForm[field.name]"
+                placeholder="请选择"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="option in field.options"
+                  :key="option"
+                  :label="option"
+                  :value="option"
+                />
               </el-select>
-            </el-form-item>
 
-            <el-form-item label="风格要求">
-              <el-select v-model="configForm.style" placeholder="请选择" style="width: 100%">
-                <el-option label="正常" value="正常" />
-                <el-option label="幽默" value="幽默" />
-                <el-option label="深情" value="深情" />
-                <el-option label="热情" value="热情" />
-                <el-option label="急迫" value="急迫" />
-                <el-option label="深沉" value="深沉" />
-                <el-option label="亲切" value="亲切" />
-                <el-option label="共情" value="共情" />
-                <el-option label="说服" value="说服" />
-                <el-option label="鼓励" value="鼓励" />
-                <el-option label="崇敬" value="崇敬" />
-                <el-option label="专业严谨" value="专业严谨" />
-              </el-select>
-            </el-form-item>
+              <!-- Textarea 类型 -->
+              <el-input
+                v-else-if="field.type === 'textarea'"
+                v-model="configForm[field.name]"
+                type="textarea"
+                :placeholder="field.placeholder"
+                :rows="3"
+              />
 
-            <el-form-item label="字数要求">
-              <el-select v-model="configForm.wordCount" placeholder="请选择" style="width: 100%">
-                <el-option label="50字以内" value="50字以内" />
-                <el-option label="50-100字" value="50-100字" />
-                <el-option label="100-200字" value="100-200字" />
-                <el-option label="200-500字" value="200-500字" />
-                <el-option label="500字以上" value="500字以上" />
-              </el-select>
+              <!-- Checkbox Group 类型（多选） -->
+              <el-checkbox-group
+                v-else-if="field.type === 'checkbox-group'"
+                v-model="configForm[field.name]"
+              >
+                <el-checkbox
+                  v-for="option in field.options"
+                  :key="option"
+                  :label="option"
+                >
+                  {{ option }}
+                </el-checkbox>
+              </el-checkbox-group>
             </el-form-item>
           </el-form>
 
@@ -348,7 +325,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import {
@@ -374,24 +351,179 @@ import {
   feedbackContentToKnowledge,
   getMarketingHistory
 } from '@/api/ai'
-import { searchCustomers as searchCustomersApi } from '@/api/customer'
 
 const router = useRouter()
 
+// 场景配置对象 - 定义每个场景的动态表单配置
+const sceneConfigs = {
+  marketing_moments: {
+    type: 'marketing_moments',
+    title: '朋友圈文案',
+    fields: [
+      {
+        name: 'purpose',
+        label: '发圈目的',
+        type: 'select',
+        options: ['引流获客', '促进成交', '品牌宣传', '活动推广', '客户维护']
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'wordCount',
+        label: '字数要求',
+        type: 'select',
+        options: ['20字以内', '20-50字', '50-100字', '100-200字', '200-500字', '500-1000字', '1000-1500字']
+      }
+    ]
+  },
+  marketing_wechat: {
+    type: 'marketing_wechat',
+    title: '微信群发文案',
+    fields: [
+      {
+        name: 'purpose',
+        label: '群发目的',
+        type: 'select',
+        options: ['二次跟进', '唤醒客户', '节日问候', '优惠促销', '产品上新']
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'wordCount',
+        label: '字数要求',
+        type: 'select',
+        options: ['20字以内', '20-50字', '50-100字', '100-200字', '200-500字', '500-1000字', '1000-1500字']
+      }
+    ]
+  },
+  marketing_douyin: {
+    type: 'marketing_douyin',
+    title: '抖音营销文案',
+    fields: [
+      {
+        name: 'topic',
+        label: '主题',
+        type: 'textarea',
+        placeholder: '输入文案需要涵盖的产品或服务'
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'contentRequirements',
+        label: '内容要求',
+        type: 'select',
+        options: ['尽量口语化的表述', '引用名言或权威数据，增强信任感', '与其他同行对比，强调优势', '以我的视角深入场景描述体验']
+      },
+      {
+        name: 'videoDuration',
+        label: '视频时长',
+        type: 'textarea',
+        placeholder: '请输入视频时长（例：30秒、1分钟等）'
+      }
+    ]
+  },
+  marketing_xiaohongshu: {
+    type: 'marketing_xiaohongshu',
+    title: '小红书营销文案',
+    fields: [
+      {
+        name: 'topic',
+        label: '主题',
+        type: 'textarea',
+        placeholder: '输入文案需要涵盖的产品或服务'
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'wordCount',
+        label: '字数要求',
+        type: 'select',
+        options: ['200字以内', '200-500字', '500-1000字', '1000-1500字']
+      }
+    ]
+  },
+  marketing_video_script: {
+    type: 'marketing_video_script',
+    title: '短视频拍摄脚本',
+    fields: [
+      {
+        name: 'topic',
+        label: '主题',
+        type: 'textarea',
+        placeholder: '输入视频脚本需要涵盖的产品或服务'
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'videoDuration',
+        label: '视频时长',
+        type: 'textarea',
+        placeholder: '请输入视频时长（例：30秒、1分钟等）'
+      },
+      {
+        name: 'contentRequirements',
+        label: '内容要求',
+        type: 'select',
+        options: ['尽量口语化的表述', '引用名言或权威数据，增强信任感', '与其他同行对比，强调优势', '以我的视角深入场景描述体验']
+      }
+    ]
+  },
+  marketing_official: {
+    type: 'marketing_official',
+    title: '公众号推文',
+    fields: [
+      {
+        name: 'topic',
+        label: '主题',
+        type: 'textarea',
+        placeholder: '输入推文需要涵盖的产品或服务'
+      },
+      {
+        name: 'style',
+        label: '风格要求',
+        type: 'select',
+        options: ['正常', '幽默', '深情', '热情', '急迫', '深沉', '亲切', '共情', '说服', '鼓励', '崇敬']
+      },
+      {
+        name: 'wordCount',
+        label: '字数要求',
+        type: 'select',
+        options: ['20字以内', '20-50字', '50-100字', '100-200字', '200-500字', '500-1000字', '1000-1500字']
+      }
+    ]
+  }
+}
+
 // 基础状态
-const selectedScene = ref('朋友圈文案')
+const selectedScene = ref('marketing_moments')
 const activeTab = ref('painPoints')
 const generating = ref(false)
 const generatedContent = ref('')
 const generationResult = ref(null)
 const showHistoryDialog = ref(false)
 
-// 客户数据状态
-const selectedCustomerId = ref(null)
-const customerSearchResults = ref([])
-const customerSearchLoading = ref(false)
+// 客户数据状态（自动从聊天记录中获取）
 const customerInsights = ref(null)
-const showManualConfig = ref(false)
 
 // 知识库相关状态
 const showKnowledgeRefs = ref(false)
@@ -434,14 +566,14 @@ const scenes = [
     title: '短视频拍摄脚本',
     description: '根据拍摄需求，提供视频剧本的视频拍摄脚本',
     icon: Edit,
-    color: '#909399',
+    color: '#A6A9AD',
   },
   {
     type: 'marketing_official',
     title: '公众号推文',
     description: '创作符合公众号营销风格的推文，提高阅读量和转化',
     icon: Notebook,
-    color: '#606266',
+    color: '#8E44AD',
   },
 ]
 
@@ -474,70 +606,73 @@ const selectedPainPoints = ref([])
 const selectedNeeds = ref([])
 const selectedInterests = ref([])
 
-const configForm = reactive({
-  purpose: '',
-  style: '正常',
-  wordCount: '',
+// 动态配置表单 - 根据场景变化
+const configForm = reactive({})
+
+// 计算属性：获取当前场景的配置
+const currentSceneConfig = computed(() => {
+  return sceneConfigs[selectedScene.value as keyof typeof sceneConfigs] || sceneConfigs.marketing_moments
 })
 
-// 客户搜索方法
-const searchCustomers = async (query: string) => {
-  if (!query) {
-    customerSearchResults.value = []
-    return
-  }
+// 初始化或重置表单配置
+const initializeConfigForm = () => {
+  // 清空所有字段
+  Object.keys(configForm).forEach(key => delete configForm[key])
 
-  customerSearchLoading.value = true
-  try {
-    const res = await searchCustomersApi({ keyword: query, limit: 10 })
-    customerSearchResults.value = res.data || []
-  } catch (error: any) {
-    ElMessage.error(error.message || '客户搜索失败')
-  } finally {
-    customerSearchLoading.value = false
-  }
+  // 根据场景配置初始化字段
+  currentSceneConfig.value.fields.forEach((field: any) => {
+    if (field.type === 'checkbox-group') {
+      configForm[field.name] = []
+    } else {
+      configForm[field.name] = ''
+    }
+  })
 }
 
-// 客户变更处理
-const handleCustomerChange = async (customerId: number) => {
-  if (!customerId) {
-    customerInsights.value = null
-    selectedPainPoints.value = []
-    selectedNeeds.value = []
-    selectedInterests.value = []
-    return
-  }
+// 监听场景变化，重置表单
+watch(() => selectedScene.value, () => {
+  initializeConfigForm()
+})
 
+// 初始加载时初始化表单
+onMounted(() => {
+  initializeConfigForm()
+  // 自动获取客户数据（从聊天记录中提取）
+  // initializeCustomerData() // 后端实现此功能后取消注释
+})
+
+// 初始化客户数据（从聊天记录自动提取）
+const initializeCustomerData = async () => {
   try {
-    // 获取客户洞察数据
-    const res = await getCustomerInsights(customerId)
-    customerInsights.value = res.data
+    // 从销售上传的聊天记录中自动提取客户信息
+    const res = await getCustomerInsights(null) // 后端应返回当前销售的所有客户聊天记录提取的数据
+    if (res.data) {
+      customerInsights.value = res.data
 
-    // 自动填充客户数据到选择框
-    if (customerInsights.value?.painPoints?.length > 0) {
-      selectedPainPoints.value = customerInsights.value.painPoints.slice(0, 3).map((point: string, index: number) => ({
-        content: point,
-        count: Math.floor(Math.random() * 10) + 1 // 模拟数据
-      }))
+      // 自动填充痛点、需求、兴趣点
+      if (customerInsights.value?.painPoints?.length > 0) {
+        selectedPainPoints.value = customerInsights.value.painPoints.slice(0, 3).map((point: string) => ({
+          content: point,
+          count: Math.floor(Math.random() * 10) + 1
+        }))
+      }
+
+      if (customerInsights.value?.needs?.length > 0) {
+        selectedNeeds.value = customerInsights.value.needs.slice(0, 3).map((need: string) => ({
+          content: need,
+          count: Math.floor(Math.random() * 10) + 1
+        }))
+      }
+
+      if (customerInsights.value?.interests?.length > 0) {
+        selectedInterests.value = customerInsights.value.interests.slice(0, 3).map((interest: string) => ({
+          content: interest,
+          count: Math.floor(Math.random() * 10) + 1
+        }))
+      }
     }
-
-    if (customerInsights.value?.needs?.length > 0) {
-      selectedNeeds.value = customerInsights.value.needs.slice(0, 3).map((need: string, index: number) => ({
-        content: need,
-        count: Math.floor(Math.random() * 10) + 1 // 模拟数据
-      }))
-    }
-
-    if (customerInsights.value?.interests?.length > 0) {
-      selectedInterests.value = customerInsights.value.interests.slice(0, 3).map((interest: string, index: number) => ({
-        content: interest,
-        count: Math.floor(Math.random() * 10) + 1 // 模拟数据
-      }))
-    }
-
-    ElMessage.success('客户数据已自动加载')
   } catch (error: any) {
-    console.warn('获取客户洞察失败，使用手动输入模式:', error.message)
+    console.warn('获取聊天记录中的客户数据失败:', error.message)
   }
 }
 
@@ -556,19 +691,27 @@ const handleInterestsSelect = (selection: any[]) => {
 
 // 生成营销文案
 const handleGenerate = async () => {
+  if (!customerInsights.value?.painPoints?.length && selectedPainPoints.value.length === 0) {
+    ElMessage.warning('请先加载客户数据，或在手动配置中添加客户痛点')
+    return
+  }
+
   generating.value = true
   feedbackStatus.value = null
 
   try {
-    const requestData: any = {
-      scenario: selectedScene.value,
-      purpose: configForm.purpose || '推广营销',
-      style: configForm.style || '正常',
-      wordCount: configForm.wordCount || '100-200字',
-      customerId: selectedCustomerId.value,
-    }
+    // 组合配置参数
+    const configParams: any = {}
+    Object.entries(configForm).forEach(([key, value]) => {
+      if (value && (typeof value === 'string' || (Array.isArray(value) && value.length > 0))) {
+        configParams[key] = value
+      }
+    })
 
-    // 组合痛点、需求、兴趣点数据
+    // 设置默认值
+    if (!configParams.style) configParams.style = '正常'
+
+    // 组合痛点、需求、兴趣点数据（来自聊天记录）
     const allPainPoints = [
       ...selectedPainPoints.value.map(p => p.content),
       ...(customerInsights.value?.painPoints || [])
@@ -584,9 +727,16 @@ const handleGenerate = async () => {
       ...(customerInsights.value?.interests || [])
     ].slice(0, 5)
 
-    if (allPainPoints.length > 0) requestData.painPoints = allPainPoints
-    if (allNeeds.length > 0) requestData.needs = allNeeds
-    if (allInterests.length > 0) requestData.interests = allInterests
+    // 按后端DTO要求构建请求数据
+    const requestData = {
+      contentType: selectedScene.value,
+      selectedPainPoints: allPainPoints,
+      selectedNeeds: allNeeds,
+      selectedInterests: allInterests,
+      configParams: configParams,
+    }
+
+    console.log('生成请求数据:', requestData)
 
     const res = await generateMarketingContent(requestData)
     generatedContent.value = res.content
@@ -624,16 +774,29 @@ const saveToLibrary = async () => {
   }
 
   try {
-    await saveMarketingContent({
+    // 构建生成参数对象
+    const generationParams: any = {}
+    Object.entries(configForm).forEach(([key, value]) => {
+      if (value && (typeof value === 'string' || (Array.isArray(value) && value.length > 0))) {
+        generationParams[key] = value
+      }
+    })
+
+    const saveData: any = {
       contentType: selectedScene.value,
       title: `${scenes.find(s => s.type === selectedScene.value)?.title} - ${new Date().toLocaleDateString()}`,
       content: generatedContent.value,
       painPoints: selectedPainPoints.value.map((p: any) => p.content),
       interestPoints: selectedInterests.value.map((i: any) => i.content),
-      purpose: configForm.purpose,
-      style: configForm.style,
-      wordCount: configForm.wordCount,
-    })
+      generationParams: generationParams,
+    }
+
+    // 同时保存具体的配置字段（兼容后端接收）
+    if (generationParams.purpose) saveData.purpose = generationParams.purpose
+    if (generationParams.style) saveData.style = generationParams.style
+    if (generationParams.wordCount) saveData.wordCount = generationParams.wordCount
+
+    await saveMarketingContent(saveData)
     ElMessage.success('已保存到文案库')
   } catch (error: any) {
     ElMessage.error(error.message || '保存失败')

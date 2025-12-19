@@ -16,17 +16,17 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import CreateKnowledgeForm from '@/views/ai/components/CreateKnowledgeForm.vue'
+import CreateKnowledgeForm from '../ai/components/CreateKnowledgeForm.vue'
 
 const router = useRouter()
 
 const goBack = () => {
-  router.push('/ai/enterprise-knowledge/management')
+  router.push('/enterprise-knowledge/management')
 }
 
 const handleCreateSuccess = (result: any) => {
   ElMessage.success('知识库创建成功')
-  router.push('/ai/enterprise-knowledge/management')
+  router.push('/enterprise-knowledge/management')
 }
 </script>
 

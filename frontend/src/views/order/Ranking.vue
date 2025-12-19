@@ -10,8 +10,9 @@
       <el-form :model="queryParams" :inline="true" class="filter-form">
         <el-form-item label="排名类型">
           <el-select v-model="queryParams.type" placeholder="请选择" style="width: 120px">
-            <el-option label="订单金额" value="amount" />
-            <el-option label="订单数量" value="count" />
+            <el-option label="营收金额" value="revenue" />
+            <el-option label="订单数量" value="orderCount" />
+            <el-option label="学员数量" value="studentCount" />
           </el-select>
         </el-form-item>
 
@@ -189,12 +190,12 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, Money, Document, User, TrendCharts } from '@element-plus/icons-vue'
-import { orderRankingApi } from '@/api/ranking'
+import { campusRankingApi } from '@/api/ranking'
 import { getCampusList } from '@/api/campus'
 
 // 查询参数
 const queryParams = reactive({
-  type: 'amount',
+  type: 'revenue',
   timeRange: 'month',
   campusId: null
 })
@@ -277,8 +278,8 @@ const handleQuery = async () => {
       params.campusId = queryParams.campusId
     }
 
-  const response = await orderRankingApi(params)
-    rankingData.value = response.data.data || []
+  const response = await campusRankingApi(params)
+  rankingData.value = response.data || []
 
     if (rankingData.value.length === 0) {
       ElMessage.info('当前条件下暂无排行榜数据')
@@ -310,7 +311,7 @@ const handleViewOrder = (order: any) => {
 const loadCampusList = async () => {
   try {
     const response = await getCampusList()
-    campusList.value = response.data.data || []
+    campusList.value = response.data || []
   } catch (error) {
     console.error('获取校区列表失败:', error)
   }

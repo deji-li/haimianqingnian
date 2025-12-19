@@ -549,19 +549,39 @@ const fetchData = async () => {
       queryParams.endDate = ''
     }
 
+    console.log('=== 订单列表查询 ===')
     console.log('发送的查询参数:', JSON.stringify(queryParams, null, 2))
     const res = await getOrderList(queryParams)
-    console.log('订单列表完整响应:', JSON.stringify(res, null, 2))
-    console.log('订单列表响应keys:', Object.keys(res))
-    console.log('订单列表res.data:', res.data)
-    console.log('订单列表res.list:', res.list)
+    console.log('API原始响应:', res)
+    console.log('响应类型:', typeof res)
+    console.log('响应是否为null:', res === null)
+    console.log('响应是否为undefined:', res === undefined)
+
+    if (!res) {
+      console.error('API返回空值或未定义')
+      orderList.value = []
+      total.value = 0
+      return
+    }
+
+    console.log('响应所有字段:', Object.keys(res).join(', '))
+    console.log('订单列表 (list):', res.list)
+    console.log('总数 (total):', res.total)
+    console.log('当前页 (page):', res.page)
+    console.log('页大小 (pageSize):', res.pageSize)
     console.log('实际返回的数据条数:', res.list?.length || 0)
-    console.log('期望的数据条数 (pageSize):', queryParams.pageSize)
-    // 修复数据解析：直接使用 res.list 而不是 res.data?.list
+
+    // 直接使用 res 的字段
     orderList.value = res.list || []
     total.value = res.total || 0
+
+    console.log('设置后的total.value:', total.value)
+    console.log('设置后的orderList.value.length:', orderList.value.length)
   } catch (error) {
-    console.error('Failed to fetch orders:', error)
+    console.error('获取订单列表失败:', error)
+    ElMessage.error('获取订单列表失败：' + (error as any)?.message || '未知错误')
+    orderList.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }

@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { login as loginApi, getUserInfo as getUserInfoApi, type LoginParams, type UserInfo } from '@/api/auth'
 import router from '@/router'
 import { ElMessage } from 'element-plus'
@@ -32,6 +32,12 @@ export const useUserStore = defineStore(
       if (userInfo.value.roleCode === 'admin' || userInfo.value.roleCode === 'super_admin') return true
       return perms.some(p => permissions.value.includes(p))
     }
+
+    // 检查是否为管理员
+    const isAdmin = computed(() => {
+      if (!userInfo.value) return false
+      return userInfo.value.roleCode === 'admin' || userInfo.value.roleCode === 'super_admin'
+    })
 
     // 登录
     const login = async (loginParams: LoginParams) => {
@@ -74,6 +80,7 @@ export const useUserStore = defineStore(
       permissions,
       hasPermission,
       hasAnyPermission,
+      isAdmin,
       login,
       getUserInfo,
       logout,

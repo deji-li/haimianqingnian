@@ -29,26 +29,39 @@ export class AiCacheService {
       const redisPassword = this.configService.get<string>('REDIS_PASSWORD');
       const redisDb = this.configService.get<number>('REDIS_DB', 0);
 
+      // 检查是否禁用Redis缓存
+      const redisDisabled = this.configService.get<boolean>('REDIS_DISABLED', false);
+      if (redisDisabled) {
+        this.logger.log('Redis缓存已禁用');
+        return;
+      }
+
       this.redisClient = createClient({
         socket: {
           host: redisHost,
           port: redisPort,
+          connectTimeout: 5000, // 5秒连接超时
         },
         password: redisPassword,
         database: redisDb,
       });
 
       this.redisClient.on('error', (err) => {
-        this.logger.error('Redis连接错误:', err);
+        this.logger.warn('Redis连接错误，将跳过缓存功能:', err.message);
       });
 
       this.redisClient.on('connect', () => {
         this.logger.log('Redis连接成功');
       });
 
-      await this.redisClient.connect();
+      // 尝试连接，但不阻塞应用启动
+      await this.redisClient.connect().catch((err) => {
+        this.logger.warn('Redis连接失败，应用将在无缓存模式下运行:', err.message);
+        this.redisClient = null;
+      });
     } catch (error) {
-      this.logger.error('Redis初始化失败:', error);
+      this.logger.warn('Redis初始化失败，应用将在无缓存模式下运行:', error.message);
+      this.redisClient = null;
     }
   }
 
@@ -71,9 +84,8 @@ export class AiCacheService {
    */
   async getOcrCache(imagePath: string): Promise<string | null> {
     try {
-      if (!this.redisClient || !this.redisClient.isOpen) {
-        this.logger.warn('Redis未连接，跳过缓存');
-        return null;
+      if (!this.redisClient) {
+        return null; // 静默跳过缓存，不输出日志
       }
 
       const key = this.generateCacheKey('ocr', imagePath);
@@ -85,7 +97,7 @@ export class AiCacheService {
 
       return cached;
     } catch (error) {
-      this.logger.error('获取OCR缓存失败:', error);
+      this.logger.warn('获取OCR缓存失败:', error.message);
       return null;
     }
   }
@@ -98,16 +110,15 @@ export class AiCacheService {
    */
   async setOcrCache(imagePath: string, ocrText: string, ttl?: number): Promise<void> {
     try {
-      if (!this.redisClient || !this.redisClient.isOpen) {
-        this.logger.warn('Redis未连接，跳过缓存');
-        return;
+      if (!this.redisClient) {
+        return; // 静默跳过缓存
       }
 
       const key = this.generateCacheKey('ocr', imagePath);
       await this.redisClient.setEx(key, ttl || this.cacheTTL, ocrText);
       this.logger.log(`OCR缓存已保存: ${imagePath}`);
     } catch (error) {
-      this.logger.error('设置OCR缓存失败:', error);
+      this.logger.warn('设置OCR缓存失败:', error.message);
     }
   }
 
@@ -117,9 +128,8 @@ export class AiCacheService {
    */
   async getAnalysisCache(chatText: string): Promise<any | null> {
     try {
-      if (!this.redisClient || !this.redisClient.isOpen) {
-        this.logger.warn('Redis未连接，跳过缓存');
-        return null;
+      if (!this.redisClient) {
+        return null; // 静默跳过缓存
       }
 
       const key = this.generateCacheKey('analysis', chatText);
@@ -132,7 +142,7 @@ export class AiCacheService {
 
       return null;
     } catch (error) {
-      this.logger.error('获取AI分析缓存失败:', error);
+      this.logger.warn('获取AI分析缓存失败:', error.message);
       return null;
     }
   }

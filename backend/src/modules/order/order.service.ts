@@ -241,10 +241,37 @@ export class OrderService {
       }
     });
 
-    // 获取总数
-    const countSql = sql.replace(/SELECT.*?FROM.*?LEFT JOIN.*?LEFT JOIN.*?LEFT JOIN.*?WHERE/, 'SELECT COUNT(*) FROM orders o WHERE').replace(/ORDER BY.*$/, '');
-    const totalResult = await this.dataSource.query(countSql, params);
-    const total = parseInt(totalResult[0].count);
+    // 获取总数 - 重新构建count查询以避免正则表达式问题
+    let countSql = 'SELECT COUNT(*) as count FROM orders o WHERE 1=1';
+    const countParams: any[] = [];
+
+    // 复制所有WHERE条件
+    if (dataScope?.salesId) {
+      countSql += ` AND o.sales_id = ?`;
+      countParams.push(dataScope.salesId);
+    }
+    if (dataScope?.campusId) {
+      countSql += ` AND o.campus_id = ?`;
+      countParams.push(dataScope.campusId);
+    }
+    if (keyword) {
+      countSql += ` AND (o.order_no LIKE ? OR o.wechat_id LIKE ? OR o.phone LIKE ? OR o.wechat_nickname LIKE ?)`;
+      const keywordPattern = `%${keyword}%`;
+      countParams.push(keywordPattern, keywordPattern, keywordPattern, keywordPattern);
+    }
+    if (startDate && endDate) {
+      countSql += ` AND o.payment_time BETWEEN ? AND ?`;
+      countParams.push(`${startDate} 00:00:00`, `${endDate} 23:59:59`);
+    }
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        countSql += ` AND o.${key} = ?`;
+        countParams.push(value);
+      }
+    });
+
+    const totalResult = await this.dataSource.query(countSql, countParams);
+    const total = parseInt(totalResult[0]?.count || '0') || 0;
 
     // 添加排序和分页
     sql += ` ORDER BY o.payment_time DESC LIMIT ? OFFSET ?`;

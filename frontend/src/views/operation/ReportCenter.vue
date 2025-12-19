@@ -30,7 +30,11 @@
             <div class="template-content">
               <div class="template-icon" :style="{ backgroundColor: template.color }">
                 <el-icon size="24">
-                  <component :is="template.icon" />
+                  <Document v-if="template.icon === 'Document'" />
+                  <DataAnalysis v-else-if="template.icon === 'DataAnalysis'" />
+                  <TrendCharts v-else-if="template.icon === 'TrendCharts'" />
+                  <PieChart v-else-if="template.icon === 'PieChart'" />
+                  <User v-else />
                 </el-icon>
               </div>
               <div class="template-info">
@@ -135,7 +139,7 @@
               v-if="row.status === 'completed'"
               link
               type="success"
-              @click="previewReport(row)"
+              @click="handlePreviewReport(row)"
             >
               预览
             </el-button>
@@ -248,13 +252,13 @@
     <!-- 预览对话框 -->
     <el-dialog
       v-model="showPreviewDialog"
-      :title="`${previewReport?.name} - 预览`"
+      :title="previewTitle"
       width="80%"
       top="5vh"
     >
       <div class="preview-content">
         <div class="preview-toolbar">
-          <el-button size="small" @click="downloadReport(previewReport!)">
+          <el-button size="small" @click="downloadReport(previewReportData.value || {})">
             <el-icon><Download /></el-icon>
             下载
           </el-button>
@@ -276,7 +280,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Download, DataAnalysis, TrendCharts, PieChart, Document, User } from '@element-plus/icons-vue'
 import { userApi } from '@/api/user'
@@ -292,6 +296,11 @@ const showCreateDialog = ref(false)
 const showPreviewDialog = ref(false)
 const previewReportData = ref<any>(null)
 const previewUrl = ref('')
+
+// 计算属性 - 安全地获取预览标题
+const previewTitle = computed(() => {
+  return `${previewReportData.value?.name || '报表'} - 预览`
+})
 
 // 筛选表单
 const filterForm = reactive({
@@ -392,9 +401,12 @@ const fetchReports = async () => {
 // 获取用户列表
 const fetchUsers = async () => {
   try {
-    const response = await userApi.getUserList()
+    const response = await userApi.getUserList({
+      page: 1,
+      pageSize: 1000
+    })
     userList.value = response.list || []
-    operatorList.value = response.list?.filter(u => u.role === 'operation') || []
+    operatorList.value = response.list?.filter(u => u.roleCode === 'operation') || []
   } catch (error) {
     console.error('获取用户列表失败:', error)
   }
@@ -469,12 +481,16 @@ const confirmCreate = async () => {
 // 下载报表
 const downloadReport = (row: any) => {
   // 模拟下载
+  if (!row || !row.name) {
+    ElMessage.warning('无法下载：报表信息无效')
+    return
+  }
   ElMessage.success(`正在下载: ${row.name}`)
   // 实际应该调用下载API
 }
 
 // 预览报表
-const previewReport = (row: any) => {
+const handlePreviewReport = (row: any) => {
   previewReportData.value = row
   showPreviewDialog.value = true
   // 模拟预览URL

@@ -82,7 +82,7 @@
             <span class="stat-label">商品总数</span>
           </div>
           <div class="stat-content">
-            <div class="stat-value">{{ productList.length }}</div>
+            <div class="stat-value">{{ totalStats.totalProducts }}</div>
             <div class="stat-unit">种</div>
           </div>
         </el-card>
@@ -132,27 +132,27 @@
 
             <!-- 课程信息 -->
             <div class="course-info">
-              <div class="course-name">{{ item.courseName }}</div>
-              <div class="course-meta">校区: {{ item.campusName }}</div>
+              <div class="course-name">{{ item.courseName || '未知课程' }}</div>
+              <div class="course-meta">校区: {{ item.campusName || '未知校区' }}</div>
             </div>
 
             <!-- 销售数据 -->
             <div class="sales-data">
               <div class="data-item">
                 <span class="label">销量</span>
-                <span class="value">{{ item.quantity }} 节</span>
+                <span class="value">{{ (parseFloat(item.quantity) || 0).toFixed(0) }} 节</span>
               </div>
               <div class="data-item">
                 <span class="label">金额</span>
-                <span class="value">¥{{ formatMoney(item.totalAmount) }}</span>
+                <span class="value">¥{{ formatMoney(parseFloat(item.totalAmount) || 0) }}</span>
               </div>
             </div>
 
             <!-- 进度条 -->
             <div class="sales-info">
-              <div class="amount">¥{{ formatMoney(item.totalAmount) }}</div>
+              <div class="amount">¥{{ formatMoney(parseFloat(item.totalAmount) || 0) }}</div>
               <div class="progress-wrapper">
-                <div class="progress-bar" :style="{ width: Math.round((item.totalAmount / totalAmount) * 100) + '%', backgroundColor: getProgressColor(index) }"></div>
+                <div class="progress-bar" :style="{ width: totalAmount > 0 ? Math.round(((parseFloat(item.totalAmount) || 0) / totalAmount) * 100) + '%' : '0%', backgroundColor: getProgressColor(index) }"></div>
               </div>
             </div>
 
@@ -189,14 +189,20 @@ const customDateRange = ref<[string, string]>([])
 const productList = ref<any[]>([])
 const campuses = ref<any[]>([])
 const loading = ref(false)
+const totalStats = ref({
+  totalOrders: 0,
+  totalQuantity: 0,
+  totalAmount: 0,
+  totalProducts: 0
+})
 
-// 统计数据
+// 统计数据（使用后端返回的总统计）
 const totalQuantity = computed(() => {
-  return productList.value.reduce((sum, item) => sum + item.quantity, 0)
+  return totalStats.value.totalQuantity || 0
 })
 
 const totalAmount = computed(() => {
-  return productList.value.reduce((sum, item) => sum + item.totalAmount, 0)
+  return totalStats.value.totalAmount || 0
 })
 
 const avgPrice = computed(() => {
@@ -209,32 +215,28 @@ const handleQuery = async () => {
   try {
     loading.value = true
 
-    // 计算日期范围
-    const now = new Date()
-    let startDate = queryParams.startDate
-    let endDate = queryParams.endDate
+    // 构建API参数，让后端处理时间范围计算
+    const params = new URLSearchParams({
+      timeRange: queryParams.timeRange,
+      sortBy: queryParams.sortBy
+    })
 
-    if (queryParams.timeRange === 'month' && !startDate) {
-      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1)
-      startDate = firstDay.toISOString().split('T')[0]
-      endDate = now.toISOString().split('T')[0]
-    } else if (queryParams.timeRange === 'day' && !startDate) {
-      const today = now.toISOString().split('T')[0]
-      startDate = today
-      endDate = today
-    } else if (queryParams.timeRange === 'week' && !startDate) {
-      const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-      startDate = weekAgo.toISOString().split('T')[0]
-      endDate = now.toISOString().split('T')[0]
-    } else if (queryParams.timeRange === 'year' && !startDate) {
-      const yearAgo = new Date(now.getFullYear(), 0, 1)
-      startDate = yearAgo.toISOString().split('T')[0]
-      endDate = now.toISOString().split('T')[0]
+    // 如果是自定义时间，才传递日期参数
+    if (queryParams.timeRange === 'custom' && queryParams.startDate && queryParams.endDate) {
+      params.append('startDate', queryParams.startDate)
+      params.append('endDate', queryParams.endDate)
     }
 
-    // 获取订单数据
-    const url = `/api/order?startDate=${startDate}&endDate=${endDate}${queryParams.campusId ? `&campusId=${queryParams.campusId}` : ''}`
+    // 如果有校区筛选，添加校区参数
+    if (queryParams.campusId) {
+      params.append('campusId', queryParams.campusId.toString())
+    }
+
+    // 使用专门的产品排行榜API
+    const url = `/api/ranking/product?${params.toString()}`
     console.log('请求URL:', url)
+    console.log('时间范围:', queryParams.timeRange)
+    console.log('自定义日期:', queryParams.startDate, queryParams.endDate)
 
     const response = await fetch(url, {
       headers: {
@@ -244,42 +246,22 @@ const handleQuery = async () => {
     const result = await response.json()
     console.log('API响应:', result)
 
-    if (result.code === 200 && result.data && result.data.list) {
-      // 按课程聚合数据
-      const courseMap = new Map<string, any>()
-
-      result.data.list.forEach((order: any) => {
-        const courseName = order.courseName || '未知课程'
-        if (!courseMap.has(courseName)) {
-          courseMap.set(courseName, {
-            courseName,
-            campusName: order.campusName || '',
-            quantity: 0,
-            totalAmount: 0,
-            orderCount: 0
-          })
-        }
-
-        const course = courseMap.get(courseName)!
-        course.quantity += 1
-        course.totalAmount += parseFloat(order.paymentAmount || '0')
-        course.orderCount += 1
-      })
-
-      // 转换为数组并计算平均单价
-      let products = Array.from(courseMap.values()).map((item: any) => ({
-        ...item,
-        avgPrice: item.totalAmount / item.quantity
-      }))
-
-      // 排序
-      if (queryParams.sortBy === 'quantity') {
-        products.sort((a, b) => b.quantity - a.quantity)
-      } else {
-        products.sort((a, b) => b.totalAmount - a.totalAmount)
+    if (result.code === 200 || result.status === 'ok') {
+      // 后端返回的数据结构: {code: 200, data: {data: [...], total: {...}, ...}}
+      productList.value = result.data?.data || []
+      totalStats.value = result.data?.total || {
+        totalOrders: 0,
+        totalQuantity: 0,
+        totalAmount: 0,
+        totalProducts: 0
       }
-
-      productList.value = products
+      console.log('设置的商品列表数据:', productList.value)
+      console.log('总统计数据:', totalStats.value)
+      console.log('第一条数据示例:', productList.value[0])
+    } else {
+      console.error('API返回错误:', result)
+      productList.value = []
+      totalStats.value = { totalOrders: 0, totalQuantity: 0, totalAmount: 0, totalProducts: 0 }
     }
   } catch (error) {
     console.error('加载数据失败:', error)
@@ -321,7 +303,7 @@ const loadCampuses = async () => {
 
 // 格式化金额
 const formatMoney = (value: number): string => {
-  if (!value) return '0.00'
+  if (value === null || value === undefined || isNaN(value) || !isFinite(value)) return '0.00'
   return new Intl.NumberFormat('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2

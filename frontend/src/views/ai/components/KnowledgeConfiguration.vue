@@ -6,7 +6,7 @@
         <el-col :span="8">
           <el-card>
             <div class="stat-item">
-              <div class="stat-value">{{ knowledgeData.totalKnowledge || 0 }}</div>
+              <div class="stat-value">{{ knowledgeData?.totalKnowledge || 0 }}</div>
               <div class="stat-label">知识库总条目</div>
             </div>
           </el-card>
@@ -14,7 +14,7 @@
         <el-col :span="8">
           <el-card>
             <div class="stat-item">
-              <div class="stat-value">{{ knowledgeData.approvedKnowledge || 0 }}</div>
+              <div class="stat-value">{{ knowledgeData?.approvedKnowledge || 0 }}</div>
               <div class="stat-label">已审核知识</div>
             </div>
           </el-card>
@@ -22,7 +22,7 @@
         <el-col :span="8">
           <el-card>
             <div class="stat-item">
-              <div class="stat-value">{{ knowledgeData.autoUpdatedCount || 0 }}</div>
+              <div class="stat-value">{{ knowledgeData?.autoUpdatedCount || 0 }}</div>
               <div class="stat-label">本月自动更新</div>
             </div>
           </el-card>
@@ -410,9 +410,25 @@ interface KnowledgeData {
   enableIndustryRecommend?: boolean
 }
 
-const props = defineProps<{
-  modelValue: KnowledgeData
-}>()
+const props = withDefaults(defineProps<{
+  modelValue?: KnowledgeData
+}>(), {
+  modelValue: () => ({
+    totalKnowledge: 0,
+    approvedKnowledge: 0,
+    autoUpdatedCount: 0,
+    weight: 70,
+    searchStrategy: 'semantic',
+    updateFrequency: 'daily',
+    autoLearning: true,
+    qualityThreshold: 70,
+    enableFeedbackProcessing: true,
+    enableIndustryRecommend: true,
+  })
+})
+
+// 为了在模板中方便访问，创建一个computed属性
+const knowledgeData = computed(() => props.modelValue || {})
 
 const emit = defineEmits<{
   'update:modelValue': [value: KnowledgeData]

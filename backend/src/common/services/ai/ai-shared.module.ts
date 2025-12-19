@@ -14,7 +14,13 @@ import { AiFieldMappingConfig } from '../../../modules/ai-config/entities/ai-fie
     TypeOrmModule.forFeature([AiFieldMappingConfig]),
     AiConfigModule, // 导入AI配置模块
   ],
-  providers: [AiConfigCallerService, FieldMappingService],
-  exports: [AiConfigCallerService, FieldMappingService],
+  providers: [
+    AiConfigCallerService,
+    FieldMappingService,
+  ],
+  exports: [
+    AiConfigCallerService,
+    FieldMappingService,
+  ],
 })
 export class AiSharedModule {}

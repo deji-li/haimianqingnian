@@ -269,7 +269,7 @@ import {
   type DailyReportQuery
 } from '@/api/operation'
 import { userApi } from '@/api/user'
-import { campusApi } from '@/api/campus'
+import { getCampusList } from '@/api/campus'
 
 // 响应式数据
 const loading = ref(false)
@@ -361,8 +361,8 @@ const fetchOperators = async () => {
 // 获取校区列表
 const fetchCampuses = async () => {
   try {
-    const response = await campusApi.getCampusList()
-    campusList.value = response.list || []
+    const response = await getCampusList()
+    campusList.value = response?.list || []
   } catch (error) {
     console.error('获取校区列表失败:', error)
   }

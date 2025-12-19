@@ -4,6 +4,8 @@ import { Repository, Between } from 'typeorm'
 import { AiStaffQualityRecord } from '../ai-marketing/entities/ai-staff-quality-record.entity'
 import { AiSopRule } from '../ai-marketing/entities/ai-sop-rule.entity'
 import { AiViolationRule } from '../ai-marketing/entities/ai-violation-rule.entity'
+import { AiChatRecord } from '../ai-chat/entities/ai-chat-record.entity'
+import { WeWorkChatRecord } from '../wework/entities/wework-chat-record.entity'
 import { DeepseekAnalysisService } from '../../common/services/ai/deepseek-analysis.service'
 
 export interface QualityCheckResult {
@@ -600,6 +602,148 @@ export class AiQualityService {
     } catch (error) {
       this.logger.error('批量质检失败:', error)
       throw error
+    }
+  }
+
+  /**
+   * 从聊天记录触发质检检查
+   */
+  async triggerQualityCheckFromChats(startDate?: Date, endDate?: Date): Promise<void> {
+    try {
+      this.logger.log(`开始从聊天记录触发质检检查，时间范围: ${startDate} - ${endDate}`)
+
+      // 1. 获取需要质检的聊天记录（已分析完成但未质检的）
+      const unCheckedRecords = await this.getUnCheckedChatRecords(startDate, endDate)
+
+      this.logger.log(`找到 ${unCheckedRecords.length} 条未质检的聊天记录`)
+
+      // 2. 逐条进行质检
+      for (const record of unCheckedRecords) {
+        try {
+          // 检查是否已存在质检记录
+          const existingQuality = await this.qualityRepository.findOne({
+            where: { chatRecordId: record.id }
+          })
+
+          if (existingQuality) {
+            this.logger.debug(`聊天记录 ${record.id} 已存在质检记录，跳过`)
+            continue
+          }
+
+          // 获取聊天文本内容
+          const chatContent = this.getChatTextContent(record)
+
+          // 执行质检检查
+          const chatRecordData = {
+            id: record.id,
+            userId: record.userId,
+            customerId: record.customerId,
+            chatContent,
+            messageCount: record.messageCount || 0,
+            chatDate: record.chatDate,
+            intentionScore: record.intentionScore,
+            riskLevel: record.riskLevel,
+            analysisTime: record.analysisTime,
+          }
+
+          await this.performQualityCheck(chatRecordData)
+          this.logger.debug(`聊天记录 ${record.id} 质检完成`)
+
+        } catch (error) {
+          this.logger.error(`聊天记录 ${record.id} 质检失败:`, error)
+        }
+      }
+
+      this.logger.log(`聊天记录质检触发完成`)
+
+    } catch (error) {
+      this.logger.error('触发聊天记录质检失败:', error)
+      throw error
+    }
+  }
+
+  /**
+   * 获取未质检的聊天记录
+   */
+  private async getUnCheckedChatRecords(startDate?: Date, endDate?: Date): Promise<any[]> {
+    // 合并个人微信和企业微信的聊天记录
+    const unCheckedRecords = []
+
+    // 获取个人微信聊天记录
+    const aiChatQuery = this.createChatRecordQuery('ai_chat_records', startDate, endDate)
+    try {
+      const aiChatRecords = await aiChatQuery.getRawMany()
+      unCheckedRecords.push(...aiChatRecords.map(record => ({
+        ...record,
+        source: 'ai_chat'
+      })))
+    } catch (error) {
+      this.logger.warn('获取个人微信聊天记录失败:', error)
+    }
+
+    // 获取企业微信聊天记录
+    const weworkChatQuery = this.createChatRecordQuery('wework_chat_records', startDate, endDate)
+    try {
+      const weworkChatRecords = await weworkChatQuery.getRawMany()
+      unCheckedRecords.push(...weworkChatRecords.map(record => ({
+        ...record,
+        source: 'wework_chat'
+      })))
+    } catch (error) {
+      this.logger.warn('获取企业微信聊天记录失败:', error)
+    }
+
+    // 按时间排序
+    return unCheckedRecords.sort((a, b) => new Date(b.chatDate).getTime() - new Date(a.chatDate).getTime())
+  }
+
+  /**
+   * 创建聊天记录查询
+   */
+  private createChatRecordQuery(tableName: string, startDate?: Date, endDate?: Date): any {
+    const query = this.qualityRepository.manager.createQueryBuilder()
+      .select([
+        `${tableName}.id`,
+        `${tableName}.customer_id as customerId`,
+        `${tableName}.user_id as userId`,
+        `${tableName}.chat_date as chatDate`,
+        `${tableName}.message_count as messageCount`,
+        `${tableName}.intention_score as intentionScore`,
+        `${tableName}.risk_level as riskLevel`,
+        `${tableName}.analysis_time as analysisTime`,
+        `CASE
+          WHEN ${tableName}.ocr_text IS NOT NULL THEN ${tableName}.ocr_text
+          WHEN ${tableName}.raw_text IS NOT NULL THEN ${tableName}.raw_text
+          WHEN ${tableName}.text_content IS NOT NULL THEN ${tableName}.text_content
+          ELSE ''
+        END as chatContent`
+      ])
+      .from(tableName, tableName)
+      .where(`${tableName}.analysis_status = :status`, { status: '已完成' })
+      .andWhere(`${tableName}.ai_analysis_result IS NOT NULL`)
+      .andWhere(`${tableName}.chatContent != ''`, { chatContent: '' })
+
+    // 排除已质检的记录
+    query.andWhere(`NOT EXISTS (
+      SELECT 1 FROM ai_staff_quality_records
+      WHERE ai_staff_quality_records.chat_record_id = ${tableName}.id
+    )`)
+
+    if (startDate && endDate) {
+      query.andWhere(`${tableName}.chat_date BETWEEN :startDate AND :endDate`, { startDate, endDate })
+    }
+
+    return query
+  }
+
+  /**
+   * 获取聊天文本内容
+   */
+  private getChatTextContent(record: any): string {
+    if (record.source === 'ai_chat') {
+      return record.ocrText || record.rawText || record.chatContent || ''
+    } else {
+      return record.text_content || record.ocrText || record.chatContent || ''
     }
   }
 }

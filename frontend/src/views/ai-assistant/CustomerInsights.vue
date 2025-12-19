@@ -47,6 +47,16 @@
             <el-option label="售后服务" value="after_sales" />
           </el-select>
         </el-form-item>
+        <el-form-item label="时间范围">
+          <el-date-picker
+            v-model="filter.dateRange"
+            type="daterange"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            range-separator="至"
+            placeholder="选择时间范围"
+          />
+        </el-form-item>
         <el-form-item label="客户">
           <el-select v-model="filter.customerId" filterable clearable>
             <el-option
@@ -60,6 +70,9 @@
         <el-form-item>
           <el-button type="primary" @click="handleFilter">查询</el-button>
           <el-button @click="resetFilter">重置</el-button>
+          <el-button type="success" @click="extractInsights" :loading="extracting">
+            {{ extracting ? '提取中...' : '提取洞察' }}
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -140,7 +153,7 @@
 import { ref, onMounted, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
-import { getCustomerInsights, getInsightStats, getCustomerList } from '@/api/ai-assistant'
+import { getCustomerInsights, getInsightStats, getCustomerList, extractInsightsFromChat } from '@/api/ai-assistant'
 
 const router = useRouter()
 
@@ -157,7 +170,11 @@ const relatedChats = ref([])
 const filter = reactive({
   insightType: '',
   customerId: null,
+  dateRange: [],
 })
+
+// 提取状态
+const extracting = ref(false)
 
 // 分页
 const pagination = reactive({
@@ -270,6 +287,7 @@ const resetFilter = () => {
   Object.assign(filter, {
     insightType: '',
     customerId: null,
+    dateRange: [],
   })
   handleFilter()
 }
@@ -296,6 +314,34 @@ const viewCustomer = (customerId: number) => {
 
 const viewChatDetail = (chatId: number) => {
   router.push(`/ai/chat/detail/${chatId}`)
+}
+
+// 提取客户洞察
+const extractInsights = async () => {
+  extracting.value = true
+  try {
+    ElMessage.info('开始从聊天记录提取客户洞察，请稍候...')
+
+    const result = await extractInsightsFromChat({
+      // 可以根据筛选条件设置时间范围
+      startDate: filter.dateRange?.[0],
+      endDate: filter.dateRange?.[1],
+    })
+
+    ElMessage.success(`成功从 ${result.processedCount || 0} 条聊天记录中提取了 ${result.insightCount || 0} 个洞察`)
+
+    // 刷新数据
+    await Promise.all([
+      fetchStats(),
+      fetchInsights()
+    ])
+
+  } catch (error) {
+    console.error('提取洞察失败:', error)
+    ElMessage.error('提取洞察失败，请稍后重试')
+  } finally {
+    extracting.value = false
+  }
 }
 
 // 初始化

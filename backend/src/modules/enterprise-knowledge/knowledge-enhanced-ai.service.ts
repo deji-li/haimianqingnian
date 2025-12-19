@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { EnterpriseKnowledgeBase, KnowledgeUsageLog } from '../entities/index';
+import { EnterpriseKnowledgeBase, KnowledgeUsageLog } from './entities/index';
 import { AiConfigCallerService } from '../../common/services/ai/ai-config-caller.service';
 
 /**
@@ -63,38 +63,35 @@ export class KnowledgeEnhancedAIService {
 
     try {
       // 1. 搜索相关知识
+      this.logger.log('步骤1: 搜索相关知识...');
       const knowledgeResults = await this.searchRelevantKnowledge(request);
+      this.logger.log(`搜索到 ${knowledgeResults.length} 条相关知识`);
 
-      // 2. 确定响应策略
-      const responseStrategy = this.determineResponseStrategy(knowledgeResults, request);
-
-      // 3. 生成响应
-      let response: EnhancedAIResponse;
-
-      switch (responseStrategy) {
-        case 'KNOWLEDGE_BASED':
-          response = await this.generateKnowledgeBasedResponse(request, knowledgeResults);
-          break;
-        case 'KNOWLEDGE_ENHANCED':
-          response = await this.generateKnowledgeEnhancedResponse(request, knowledgeResults);
-          break;
-        case 'GENERAL_AI':
-          response = await this.generateGeneralAIResponse(request);
-          break;
-        default:
-          throw new Error(`不支持的响应策略: ${responseStrategy}`);
-      }
+      // 2. 使用智能融合策略
+      this.logger.log('步骤2: 使用智能融合响应策略...');
+      const response = await this.generateIntelligentFusionResponse(request, knowledgeResults);
 
       // 4. 记录使用日志
+      this.logger.log('步骤4: 记录使用日志...');
       await this.logUsage(request, response, knowledgeResults);
 
       // 5. 计算处理时间
       response.processingTime = Date.now() - startTime;
+      this.logger.log(`AI响应生成成功，处理时间: ${response.processingTime}ms`);
 
       return response;
 
     } catch (error) {
       this.logger.error(`生成增强AI响应失败: ${error.message}`, error.stack);
+      this.logger.error(`错误详情: ${JSON.stringify({
+        message: error.message,
+        name: error.name,
+        stack: error.stack,
+        request: {
+          functionType: request.functionType,
+          queryLength: request.query?.length || 0
+        }
+      }, null, 2)}`);
 
       // 降级到基础AI响应
       return {
@@ -193,6 +190,8 @@ export class KnowledgeEnhancedAIService {
     const primaryKnowledge = knowledgeResults[0];
     const secondaryKnowledge = knowledgeResults.slice(1, 3);
 
+    this.logger.log(`生成基于知识库的响应，主要知识: ${primaryKnowledge.knowledge.title}`);
+
     try {
       // 使用知识库内容生成回答
       const prompt = `
@@ -212,17 +211,24 @@ export class KnowledgeEnhancedAIService {
         请基于这些知识，直接、准确地回答用户问题。如果知识内容不够完整，可以适当补充，但要保持与知识库内容一致。
       `;
 
+      this.logger.log('调用AI配置服务: ai_script_mixed');
       const aiResponse = await this.aiConfigCallerService.callAI(
-        'knowledge_based_response',
+        'ai_script_mixed', // 使用现有的话术混合配置
         {
           prompt,
+          userInput: request.query,
+          scenarioInfo: request.context?.scenario ? `场景：${request.context.scenario}` : '',
+          techniqueInfo: request.context?.technique ? `技巧：${request.context.technique}` : '',
+          referenceContent: '', // 知识库内容
           context: request.context,
           functionType: request.functionType,
         },
       );
 
+      this.logger.log(`AI配置服务调用成功，响应: ${JSON.stringify(aiResponse).substring(0, 200)}...`);
+
       return {
-        content: aiResponse.content || aiResponse.answer,
+        content: typeof aiResponse === 'string' ? aiResponse : (aiResponse.content || aiResponse.answer),
         knowledgeSources: knowledgeResults.map(kr => ({
           id: kr.knowledge.id,
           title: kr.knowledge.title,
@@ -239,7 +245,7 @@ export class KnowledgeEnhancedAIService {
       };
 
     } catch (error) {
-      this.logger.error(`生成基于知识库的响应失败: ${error.message}`);
+      this.logger.error(`生成基于知识库的响应失败: ${error.message}`, error.stack);
       throw error;
     }
   }
@@ -272,7 +278,7 @@ export class KnowledgeEnhancedAIService {
       `;
 
       const aiResponse = await this.aiConfigCallerService.callAI(
-        'knowledge_enhanced_response',
+        'knowledge_qa_extraction', // 使用现有的知识库问答提取配置
         {
           prompt,
           context: { ...request.context, knowledgeContext },
@@ -281,7 +287,7 @@ export class KnowledgeEnhancedAIService {
       );
 
       return {
-        content: aiResponse.content || aiResponse.answer,
+        content: typeof aiResponse === 'string' ? aiResponse : (aiResponse.content || aiResponse.answer),
         knowledgeSources: knowledgeResults.map(kr => ({
           id: kr.knowledge.id,
           title: kr.knowledge.title,
@@ -318,16 +324,19 @@ export class KnowledgeEnhancedAIService {
       `;
 
       const aiResponse = await this.aiConfigCallerService.callAI(
-        'general_ai_response',
+        'ai_script_pure', // 使用现有的纯话术配置
         {
           prompt,
+          userInput: request.query,
+          scenarioInfo: request.context?.scenario ? `场景：${request.context.scenario}` : '',
+          techniqueInfo: request.context?.technique ? `技巧：${request.context.technique}` : '',
           context: request.context,
           functionType: request.functionType,
         },
       );
 
       return {
-        content: aiResponse.content || aiResponse.answer,
+        content: typeof aiResponse === 'string' ? aiResponse : (aiResponse.content || aiResponse.answer),
         confidence: 0.6, // 通用AI的较低置信度
         responseStrategy: 'GENERAL_AI',
         processingTime: 0,
@@ -448,6 +457,223 @@ export class KnowledgeEnhancedAIService {
   }
 
   /**
+   * 智能融合响应生成
+   */
+  private async generateIntelligentFusionResponse(
+    request: EnhancedAIRequest,
+    knowledgeResults: KnowledgeSearchResult[],
+  ): Promise<EnhancedAIResponse> {
+    this.logger.log('开始智能融合响应生成...');
+
+    try {
+      // 1. 计算各因素的匹配度
+      const scenarioMatchScore = await this.calculateScenarioMatch(request, knowledgeResults);
+      const techniqueMatchScore = await this.calculateTechniqueMatch(request, knowledgeResults);
+      const knowledgeRelevanceScore = knowledgeResults.length > 0 ? knowledgeResults[0].relevanceScore : 0;
+
+      this.logger.log(`匹配度 - 场景: ${scenarioMatchScore}, 技巧: ${techniqueMatchScore}, 知识库: ${knowledgeRelevanceScore}`);
+
+      // 2. 动态计算权重
+      const weights = this.calculateDynamicWeights({
+        scenarioMatch: scenarioMatchScore,
+        techniqueMatch: techniqueMatchScore,
+        knowledgeRelevance: knowledgeRelevanceScore,
+      });
+
+      this.logger.log(`权重分配 - 场景: ${weights.scenario.toFixed(2)}, 技巧: ${weights.technique.toFixed(2)}, 知识库: ${weights.knowledge.toFixed(2)}, AI: ${weights.ai.toFixed(2)}`);
+
+      // 3. 构建融合的提示词变量
+      const fusedVariables = await this.buildFusedPromptVariables(request, knowledgeResults, weights, scenarioMatchScore, techniqueMatchScore);
+
+      // 4. 调用AI生成响应
+      this.logger.log('调用AI配置服务: ai_script_intelligent_fusion');
+      const aiResponse = await this.aiConfigCallerService.callAI(
+        'ai_script_intelligent_fusion',
+        fusedVariables,
+      );
+
+      // 5. 解析AI响应
+      let content: string;
+      let thinkingProcess: string = '';
+      let keyPoints: string[] = [];
+      let confidenceScore: number = 0.75;
+
+      if (typeof aiResponse === 'string') {
+        content = aiResponse;
+      } else if (aiResponse.scriptSuggestion) {
+        // JSON格式响应
+        content = aiResponse.scriptSuggestion;
+        thinkingProcess = aiResponse.thinkingProcess || '';
+        keyPoints = aiResponse.keyPoints || [];
+        confidenceScore = aiResponse.confidenceScore || 0.75;
+      } else {
+        content = aiResponse.content || aiResponse.answer || '无法生成话术';
+      }
+
+      return {
+        content,
+        knowledgeSources: knowledgeResults.map(kr => ({
+          id: kr.knowledge.id,
+          title: kr.knowledge.title,
+          relevanceScore: kr.relevanceScore,
+          usedSections: kr.matchedSections,
+        })),
+        confidence: confidenceScore,
+        responseStrategy: 'INTELLIGENT_FUSION',
+        processingTime: 0,
+        metadata: {
+          weights,
+          scenarioMatchScore,
+          techniqueMatchScore,
+          knowledgeRelevanceScore,
+          thinkingProcess,
+          keyPoints,
+        },
+      };
+
+    } catch (error) {
+      this.logger.error(`智能融合响应生成失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 计算场景匹配度
+   */
+  private async calculateScenarioMatch(
+    request: EnhancedAIRequest,
+    knowledgeResults: KnowledgeSearchResult[],
+  ): Promise<number> {
+    const scenarioName = request.context?.scenario || request.context?.scenarioName || '';
+    if (!scenarioName) return 0;
+
+    let matchScore = 0;
+
+    // 1. 查询中包含场景关键词
+    const scenarioKeywords = scenarioName.split(/[、，,\s]+/).filter(k => k.length > 0);
+    for (const keyword of scenarioKeywords) {
+      if (request.query.includes(keyword)) {
+        matchScore += 0.3;
+      }
+    }
+
+    // 2. 知识库中有场景相关内容
+    for (const kr of knowledgeResults) {
+      if (kr.knowledge.title.includes(scenarioName) || kr.knowledge.content.includes(scenarioName)) {
+        matchScore += kr.relevanceScore * 0.4;
+      }
+    }
+
+    // 3. 基础匹配度（场景总是相关的）
+    matchScore += 0.3;
+
+    return Math.min(matchScore, 1);
+  }
+
+  /**
+   * 计算技巧匹配度
+   */
+  private async calculateTechniqueMatch(
+    request: EnhancedAIRequest,
+    knowledgeResults: KnowledgeSearchResult[],
+  ): Promise<number> {
+    const techniqueName = request.context?.technique || request.context?.techniqueName || '';
+    if (!techniqueName) return 0;
+
+    let matchScore = 0;
+
+    // 1. 查询中包含技巧关键词
+    const techniqueKeywords = techniqueName.split(/[、，,\s]+/).filter(k => k.length > 0);
+    for (const keyword of techniqueKeywords) {
+      if (request.query.includes(keyword)) {
+        matchScore += 0.3;
+      }
+    }
+
+    // 2. 知识库中有技巧相关内容
+    for (const kr of knowledgeResults) {
+      if (kr.knowledge.title.includes(techniqueName) || kr.knowledge.content.includes(techniqueName)) {
+        matchScore += kr.relevanceScore * 0.4;
+      }
+    }
+
+    // 3. 基础匹配度（技巧总是相关的）
+    matchScore += 0.3;
+
+    return Math.min(matchScore, 1);
+  }
+
+  /**
+   * 动态权重计算
+   */
+  private calculateDynamicWeights(scores: {
+    scenarioMatch: number;
+    techniqueMatch: number;
+    knowledgeRelevance: number;
+  }): { scenario: number; technique: number; knowledge: number; ai: number } {
+    const total = scores.scenarioMatch + scores.techniqueMatch + scores.knowledgeRelevance;
+
+    if (total === 0) {
+      // 如果没有匹配，AI联想权重最高
+      return { scenario: 0.1, technique: 0.1, knowledge: 0.1, ai: 0.7 };
+    }
+
+    // 根据匹配度动态分配权重
+    // 场景和技巧总权重为0.6，知识库权重为0.2，AI联想保留0.2
+    return {
+      scenario: (scores.scenarioMatch / total) * 0.35,
+      technique: (scores.techniqueMatch / total) * 0.35,
+      knowledge: (scores.knowledgeRelevance / total) * 0.2,
+      ai: 0.1, // AI联想始终保留一定权重用于补充
+    };
+  }
+
+  /**
+   * 构建融合的提示词变量
+   */
+  private async buildFusedPromptVariables(
+    request: EnhancedAIRequest,
+    knowledgeResults: KnowledgeSearchResult[],
+    weights: { scenario: number; technique: number; knowledge: number; ai: number },
+    scenarioMatchScore: number,
+    techniqueMatchScore: number,
+  ): Promise<Record<string, any>> {
+    // 获取场景和技巧的详细信息
+    const scenarioName = request.context?.scenario || request.context?.scenarioName || '未指定场景';
+    const scenarioDescription = request.context?.scenarioDescription || '通用沟通场景';
+    const techniqueName = request.context?.technique || request.context?.techniqueName || '未指定技巧';
+    const techniqueDescription = request.context?.techniqueDescription || '专业销售技巧';
+
+    // 构建知识库内容
+    let knowledgeContent = '';
+    if (knowledgeResults.length > 0) {
+      knowledgeContent = knowledgeResults.slice(0, 3).map((kr, index) =>
+        `${index + 1}. ${kr.knowledge.title}\n${kr.knowledge.content.substring(0, 200)}...`
+      ).join('\n\n');
+    } else {
+      knowledgeContent = '暂无相关知识库内容';
+    }
+
+    const knowledgeRelevanceScore = knowledgeResults.length > 0 ? knowledgeResults[0].relevanceScore : 0;
+
+    return {
+      userInput: request.query,
+      scenarioName,
+      scenarioDescription,
+      scenarioMatchScore: (scenarioMatchScore * 100).toFixed(0) + '%',
+      techniqueName,
+      techniqueDescription,
+      techniqueMatchScore: (techniqueMatchScore * 100).toFixed(0) + '%',
+      knowledgeContent,
+      knowledgeRelevanceScore: (knowledgeRelevanceScore * 100).toFixed(0) + '%',
+      scenarioWeight: (weights.scenario * 100).toFixed(0) + '%',
+      techniqueWeight: (weights.technique * 100).toFixed(0) + '%',
+      knowledgeWeight: (weights.knowledge * 100).toFixed(0) + '%',
+      aiWeight: (weights.ai * 100).toFixed(0) + '%',
+    };
+  }
+
+  /**
    * 记录使用日志
    */
   private async logUsage(
@@ -459,14 +685,12 @@ export class KnowledgeEnhancedAIService {
       const usageLog = this.usageLogRepository.create({
         userId: request.userId || 0,
         customerId: request.customerId,
-        functionType: request.functionType,
-        query: request.query,
-        response: response.content,
-        knowledgeId: response.knowledgeSources?.[0]?.id,
-        hasKnowledge: response.knowledgeSources && response.knowledgeSources.length > 0,
-        responseStrategy: response.responseStrategy,
-        confidence: response.confidence,
-        usageTime: new Date(),
+        usageScene: request.functionType,
+        queryText: request.query,
+        finalAnswer: response.content,
+        matchedKnowledgeIds: response.knowledgeSources?.map(source => source.id) || [],
+        aiDecision: response.knowledgeSources && response.knowledgeSources.length > 0 ? 'use_knowledge' : 'use_ai_generate',
+        createTime: new Date(),
       });
 
       await this.usageLogRepository.save(usageLog);

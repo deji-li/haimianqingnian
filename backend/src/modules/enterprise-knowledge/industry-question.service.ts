@@ -235,6 +235,28 @@ export class IndustryQuestionService {
   }
 
   /**
+   * 根据行业获取问题列表
+   */
+  async getQuestionsByIndustry(industry: string, limit: number = 20) {
+    this.logger.log(`根据行业获取问题列表 - 行业: ${industry}, 限制: ${limit}`);
+
+    const questions = await this.industryQuestionRepository.find({
+      where: { industryName: industry },
+      order: {
+        usageCount: 'DESC',
+        createTime: 'DESC',
+      },
+      take: limit,
+    });
+
+    return {
+      success: true,
+      data: questions,
+      count: questions.length,
+    };
+  }
+
+  /**
    * 获取行业问题统计
    */
   async getIndustryQuestionStats() {

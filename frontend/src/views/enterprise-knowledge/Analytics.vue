@@ -82,7 +82,7 @@
           <el-card class="stat-card">
             <div class="stat-item">
               <div class="stat-icon satisfaction">
-                <el-icon><Thumb /></el-icon>
+                <el-icon><SuccessFilled /></el-icon>
               </div>
               <div class="stat-content">
                 <div class="stat-number">{{ overview.satisfactionRate }}%</div>
@@ -296,7 +296,7 @@ import {
   Document,
   Star,
   View,
-  Thumb,
+  SuccessFilled,
   ArrowUp,
   ArrowDown,
   Refresh,

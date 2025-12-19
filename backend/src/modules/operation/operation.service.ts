@@ -300,23 +300,98 @@ export class OperationService {
   // ==================== 提成管理 ====================
 
   async findAllCommissions(query: CommissionRecordQueryDto) {
-    const { page = 1, pageSize = 10, operatorId, status, startDate, endDate } = query;
+    try {
+      const { page = 1, pageSize = 10, operatorId, status, startDate, endDate, orderNo } = query;
 
+      console.log('findAllCommissions called with:', query);
+
+      // 检查 repository 是否可用
+      if (!this.commissionRepository) {
+        throw new Error('commissionRepository is not defined');
+      }
+
+      const queryBuilder = this.commissionRepository
+        .createQueryBuilder('commission')
+        .leftJoinAndSelect('commission.operator', 'operator')
+        .leftJoinAndSelect('commission.customer', 'customer')
+        .leftJoinAndSelect('commission.order', 'order')
+        .leftJoinAndSelect('commission.approver', 'approver');
+
+      if (operatorId) {
+        queryBuilder.andWhere('commission.operatorId = :operatorId', { operatorId });
+      }
+
+      if (status) {
+        queryBuilder.andWhere('commission.status = :status', { status });
+      }
+
+      if (startDate && endDate) {
+        queryBuilder.andWhere('commission.createTime BETWEEN :startDate AND :endDate', {
+          startDate,
+          endDate,
+        });
+      } else if (startDate) {
+        queryBuilder.andWhere('commission.createTime >= :startDate', { startDate });
+      } else if (endDate) {
+        queryBuilder.andWhere('commission.createTime <= :endDate', { endDate });
+      }
+
+      if (orderNo && orderNo.trim()) {
+        queryBuilder.andWhere('order.orderNo LIKE :orderNo', { orderNo: `%${orderNo}%` });
+      }
+
+      queryBuilder.orderBy('commission.createTime', 'DESC');
+
+      console.log('Executing query...');
+      const [list, total] = await queryBuilder
+        .skip((page - 1) * pageSize)
+        .take(pageSize)
+        .getManyAndCount();
+
+      console.log('Query executed successfully. Found', total, 'records');
+
+      // 添加虚拟字段
+      const formattedList = list.map((commission) => ({
+        ...commission,
+        operatorName: commission.operator?.realName || commission.operator?.username,
+        customerName: commission.customer?.realName || commission.customer?.wechatNickname,
+        orderNo: commission.order?.orderNo,
+        approverName: commission.approver?.realName || commission.approver?.username,
+      }));
+
+      return {
+        list: formattedList,
+        total,
+        page,
+        pageSize,
+      };
+    } catch (error) {
+      console.error('Error in findAllCommissions:', error);
+      throw error;
+    }
+  }
+
+  async updateCommissionStatus(id: number, dto: UpdateCommissionStatusDto) {
+    const commission = await this.commissionRepository.findOne({ where: { id } });
+    if (!commission) {
+      throw new NotFoundException(`提成记录ID ${id} 不存在`);
+    }
+
+    Object.assign(commission, dto);
+    return await this.commissionRepository.save(commission);
+  }
+
+  async getCommissionSummary(operatorId?: number, startDate?: string, endDate?: string) {
     const queryBuilder = this.commissionRepository
       .createQueryBuilder('commission')
-      .leftJoinAndSelect('commission.operator', 'operator')
-      .leftJoinAndSelect('commission.customer', 'customer')
-      .leftJoinAndSelect('commission.order', 'order')
-      .leftJoinAndSelect('commission.approver', 'approver');
+      .leftJoinAndSelect('commission.operator', 'operator');
 
+    // 如果指定了运营人员，只查询该人员的数据
     if (operatorId) {
-      queryBuilder.andWhere('commission.operator_id = :operatorId', { operatorId });
+      queryBuilder.where('commission.operatorId = :operatorId', { operatorId });
     }
 
-    if (status) {
-      queryBuilder.andWhere('commission.status = :status', { status });
-    }
-
+    // 日期范围筛选
     if (startDate && endDate) {
       queryBuilder.andWhere('commission.create_time BETWEEN :startDate AND :endDate', {
         startDate,
@@ -328,38 +403,26 @@ export class OperationService {
       queryBuilder.andWhere('commission.create_time <= :endDate', { endDate });
     }
 
-    queryBuilder.orderBy('commission.create_time', 'DESC');
+    const commissions = await queryBuilder.getMany();
 
-    const [list, total] = await queryBuilder
-      .skip((page - 1) * pageSize)
-      .take(pageSize)
-      .getManyAndCount();
-
-    // 添加虚拟字段
-    const formattedList = list.map((commission) => ({
-      ...commission,
-      operatorName: commission.operator?.realName || commission.operator?.username,
-      customerName: commission.customer?.realName || commission.customer?.wechatNickname,
-      orderNo: commission.order?.orderNo,
-      approverName: commission.approver?.realName || commission.approver?.username,
-    }));
+    // 统计数据
+    const totalCount = commissions.length;
+    const pendingCount = commissions.filter(c => c.status === '待发放').length;
+    const approvedCount = commissions.filter(c => c.status === '已发放').length;
+    const rejectedCount = commissions.filter(c => c.status === '已拒绝').length;
+    const totalAmount = commissions.reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
+    const pendingAmount = commissions
+      .filter(c => c.status === '待发放')
+      .reduce((sum, c) => sum + (c.commissionAmount || 0), 0);
 
     return {
-      list: formattedList,
-      total,
-      page,
-      pageSize,
+      totalCount,
+      pendingCount,
+      approvedCount,
+      rejectedCount,
+      totalAmount,
+      pendingAmount,
     };
-  }
-
-  async updateCommissionStatus(id: number, dto: UpdateCommissionStatusDto) {
-    const commission = await this.commissionRepository.findOne({ where: { id } });
-    if (!commission) {
-      throw new NotFoundException(`提成记录ID ${id} 不存在`);
-    }
-
-    Object.assign(commission, dto);
-    return await this.commissionRepository.save(commission);
   }
 
   // ==================== 统计数据 ====================

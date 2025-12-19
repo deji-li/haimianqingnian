@@ -368,7 +368,12 @@ const fetchCommissions = async () => {
     pagination.total = response.total
   } catch (error) {
     console.error('获取提成列表失败:', error)
-    ElMessage.error('获取提成列表失败')
+    if (error.response?.data) {
+      console.error('详细错误信息:', JSON.stringify(error.response.data, null, 2))
+      ElMessage.error(`获取提成列表失败: ${error.response.data.message || error.response.data.error || '未知错误'}`)
+    } else {
+      ElMessage.error('获取提成列表失败')
+    }
   } finally {
     loading.value = false
   }
