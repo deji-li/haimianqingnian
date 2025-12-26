@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
+import { RequirePermissions } from '../../common/decorators/permission.decorator';
 import { EnterpriseKnowledgeService } from './enterprise-knowledge.service';
 import { KnowledgeUsageService } from './knowledge-usage.service';
 import {
@@ -24,7 +26,7 @@ import {
 
 @ApiTags('企业知识库')
 @Controller('enterprise-knowledge')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class EnterpriseKnowledgeController {
   constructor(
@@ -37,6 +39,7 @@ export class EnterpriseKnowledgeController {
    */
   @Post()
   @ApiOperation({ summary: '创建知识库条目' })
+  @RequirePermissions('knowledge:base:create')
   async create(@Body() createDto: CreateKnowledgeDto, @Request() req) {
     return await this.enterpriseKnowledgeService.create(createDto, req.user.userId);
   }
@@ -46,6 +49,7 @@ export class EnterpriseKnowledgeController {
    */
   @Put(':id')
   @ApiOperation({ summary: '更新知识库条目' })
+  @RequirePermissions('knowledge:base:update')
   async update(@Param('id') id: number, @Body() updateDto: UpdateKnowledgeDto) {
     return await this.enterpriseKnowledgeService.update(id, updateDto);
   }
@@ -55,6 +59,7 @@ export class EnterpriseKnowledgeController {
    */
   @Delete(':id')
   @ApiOperation({ summary: '删除知识库条目' })
+  @RequirePermissions('knowledge:base:delete')
   async remove(@Param('id') id: number) {
     return await this.enterpriseKnowledgeService.remove(id);
   }
@@ -64,6 +69,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('list')
   @ApiOperation({ summary: '查询知识库列表' })
+  @RequirePermissions('knowledge:base:view')
   async findAll(@Query() query: QueryKnowledgeDto) {
     return await this.enterpriseKnowledgeService.findAll(query);
   }
@@ -73,6 +79,7 @@ export class EnterpriseKnowledgeController {
    */
   @Post('intelligent-search')
   @ApiOperation({ summary: '智能搜索知识库（AI语义匹配）' })
+  @RequirePermissions('knowledge:search:use')
   async intelligentSearch(@Body() searchDto: IntelligentSearchDto) {
     return await this.enterpriseKnowledgeService.intelligentSearch(searchDto);
   }
@@ -82,6 +89,7 @@ export class EnterpriseKnowledgeController {
    */
   @Post('batch-import')
   @ApiOperation({ summary: '批量导入知识库' })
+  @RequirePermissions('knowledge:document:upload')
   async batchImport(@Body() batchDto: BatchImportKnowledgeDto, @Request() req) {
     return await this.enterpriseKnowledgeService.batchImport(batchDto, req.user.userId);
   }
@@ -91,6 +99,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('categories')
   @ApiOperation({ summary: '获取知识库分类统计' })
+  @RequirePermissions('knowledge:base:view')
   async getCategories() {
     return await this.enterpriseKnowledgeService.getCategories();
   }
@@ -100,6 +109,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('stats/overview')
   @ApiOperation({ summary: '获取知识库统计概览' })
+  @RequirePermissions('knowledge:analytics:view')
   async getOverview() {
     return await this.enterpriseKnowledgeService.getOverview();
   }
@@ -109,6 +119,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('usage/stats/:id')
   @ApiOperation({ summary: '获取单条知识库使用统计（使用次数、场景分布、趋势等）' })
+  @RequirePermissions('knowledge:analytics:view')
   async getKnowledgeUsageStats(@Param('id') id: number) {
     return await this.knowledgeUsageService.getUsageStats(id);
   }
@@ -118,6 +129,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('usage/global-stats')
   @ApiOperation({ summary: '获取全局使用统计（总使用量、今日使用、趋势等）' })
+  @RequirePermissions('knowledge:analytics:view')
   async getGlobalUsageStats() {
     return await this.knowledgeUsageService.getGlobalUsageStats();
   }
@@ -127,6 +139,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get('usage/hot-knowledge')
   @ApiOperation({ summary: '获取热门知识库Top10' })
+  @RequirePermissions('knowledge:analytics:view')
   async getHotKnowledge() {
     return await this.knowledgeUsageService.getHotKnowledge(10);
   }
@@ -137,6 +150,7 @@ export class EnterpriseKnowledgeController {
    */
   @Get(':id')
   @ApiOperation({ summary: '获取知识库详情' })
+  @RequirePermissions('knowledge:base:view')
   async findOne(@Param('id') id: number) {
     return await this.enterpriseKnowledgeService.findOne(id);
   }

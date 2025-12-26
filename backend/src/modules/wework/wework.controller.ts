@@ -1,34 +1,35 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common'
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
+import { PermissionGuard } from '../../common/guards/permission.guard'
+import { RequirePermissions } from '../../common/decorators/permission.decorator'
 import { WeWorkService } from './wework.service'
 import { WeWorkConfigService } from './config/wework-config.service'
-// AI services temporarily commented out due to compilation errors
-// import { WeWorkWebhookService } from './api/webhook.service'
-// import { WeWorkMessageProcessor } from './chat/message-processor.service'
-// import { WeWorkAITriggerEngine } from './ai/trigger-engine.service'
-// Sync services temporarily commented out due to compilation errors
-// import { WeWorkSyncService } from './sync/wework-sync.service'
-// import { WeWorkSchedulerService } from './sync/scheduler.service'
+import { WeWorkWebhookService } from './api/webhook.service'
+import { WeWorkMessageProcessor } from './chat/message-processor.service'
+import { WeWorkAITriggerEngine } from './ai/trigger-engine.service'
+import { WeWorkSyncService } from './sync/wework-sync.service'
+import { WeWorkSchedulerService } from './sync/scheduler.service'
 
 @ApiTags('企业微信管理')
 @ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @Controller('wework')
 export class WeWorkController {
   constructor(
     private readonly weworkService: WeWorkService,
     private readonly configService: WeWorkConfigService,
-    // AI services temporarily commented out
-    // private readonly webhookService: WeWorkWebhookService,
-    // private readonly messageProcessor: WeWorkMessageProcessor,
-    // private readonly triggerEngine: WeWorkAITriggerEngine,
-    // Sync services temporarily commented out
-    // private readonly syncService: WeWorkSyncService,
-    // private readonly schedulerService: WeWorkSchedulerService,
+    private readonly webhookService: WeWorkWebhookService,
+    private readonly messageProcessor: WeWorkMessageProcessor,
+    private readonly triggerEngine: WeWorkAITriggerEngine,
+    private readonly syncService: WeWorkSyncService,
+    private readonly schedulerService: WeWorkSchedulerService,
   ) {}
 
   @Get('config')
   @ApiOperation({ summary: '获取企业微信配置' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:config:view')
   async getConfig() {
     return this.configService.getConfig()
   }
@@ -36,6 +37,7 @@ export class WeWorkController {
   @Post('config')
   @ApiOperation({ summary: '保存企业微信配置' })
   @ApiResponse({ status: 200, description: '保存成功' })
+  @RequirePermissions('wework:config:update')
   async saveConfig(@Body() configData: any) {
     return this.configService.saveConfig(configData)
   }
@@ -43,6 +45,7 @@ export class WeWorkController {
   @Post('test-connection')
   @ApiOperation({ summary: '测试企业微信API连接' })
   @ApiResponse({ status: 200, description: '测试成功' })
+  @RequirePermissions('wework:config:view')
   async testConnection() {
     return this.configService.testConnection()
   }
@@ -50,6 +53,7 @@ export class WeWorkController {
   @Get('contacts')
   @ApiOperation({ summary: '获取外部联系人列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:contacts:view')
   async getContacts(@Query() query: any) {
     return this.weworkService.getContacts(query)
   }
@@ -57,6 +61,7 @@ export class WeWorkController {
   @Get('contacts/statistics')
   @ApiOperation({ summary: '获取同步统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:contacts:view')
   async getSyncStatistics() {
     return this.weworkService.getSyncStatistics()
   }
@@ -64,6 +69,7 @@ export class WeWorkController {
   @Post('sync/contacts')
   @ApiOperation({ summary: '同步联系人到CRM' })
   @ApiResponse({ status: 200, description: '同步成功' })
+  @RequirePermissions('wework:sync:execute')
   async syncContacts(@Body() syncData: any) {
     return this.weworkService.syncContacts(syncData)
   }
@@ -71,6 +77,7 @@ export class WeWorkController {
   @Get('contacts/:id')
   @ApiOperation({ summary: '获取联系人详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:contacts:view')
   async getContactDetail(@Param('id') id: number) {
     return this.weworkService.getContactDetail(id)
   }
@@ -78,6 +85,7 @@ export class WeWorkController {
   @Put('contacts/:id')
   @ApiOperation({ summary: '更新联系人信息' })
   @ApiResponse({ status: 200, description: '更新成功' })
+  @RequirePermissions('wework:contacts:view')
   async updateContact(
     @Param('id') id: number,
     @Body() updateData: any,
@@ -88,6 +96,7 @@ export class WeWorkController {
   @Delete('contacts/:id')
   @ApiOperation({ summary: '删除联系人' })
   @ApiResponse({ status: 200, description: '删除成功' })
+  @RequirePermissions('wework:contacts:view')
   async deleteContact(@Param('id') id: number) {
     return this.weworkService.deleteContact(id)
   }
@@ -95,6 +104,7 @@ export class WeWorkController {
   @Post('contacts/sync-batch')
   @ApiOperation({ summary: '批量同步联系人' })
   @ApiResponse({ status: 200, description: '批量同步成功' })
+  @RequirePermissions('wework:contacts:import')
   async batchSyncContacts(@Body() data: { externalUserIds: string[] }) {
     return this.weworkService.syncMultipleContacts(data.externalUserIds)
   }
@@ -102,6 +112,7 @@ export class WeWorkController {
   @Delete('contacts/batch')
   @ApiOperation({ summary: '批量删除联系人' })
   @ApiResponse({ status: 200, description: '批量删除成功' })
+  @RequirePermissions('wework:contacts:view')
   async batchDeleteContacts(@Body() data: { ids: number[] }) {
     return this.weworkService.batchDeleteContacts(data.ids)
   }
@@ -109,6 +120,7 @@ export class WeWorkController {
   @Post('contacts/:id/associate-customer')
   @ApiOperation({ summary: '关联联系人到CRM客户' })
   @ApiResponse({ status: 200, description: '关联成功' })
+  @RequirePermissions('wework:contacts:import')
   async associateWithCustomer(
     @Param('id') id: number,
     @Body() data: { customerId: number },
@@ -119,6 +131,7 @@ export class WeWorkController {
   @Delete('contacts/:id/disassociate-customer')
   @ApiOperation({ summary: '取消关联CRM客户' })
   @ApiResponse({ status: 200, description: '取消关联成功' })
+  @RequirePermissions('wework:contacts:import')
   async disassociateFromCustomer(@Param('id') id: number) {
     return this.weworkService.disassociateFromCustomer(id)
   }
@@ -127,6 +140,7 @@ export class WeWorkController {
   @Post('sync/single-contact')
   @ApiOperation({ summary: '同步单个联系人' })
   @ApiResponse({ status: 200, description: '同步成功' })
+  @RequirePermissions('wework:sync:execute')
   async syncSingleContact(@Body() data: { externalUserId: string }) {
     const success = await this.weworkService.syncSingleContact(data.externalUserId)
     return { success }
@@ -161,6 +175,7 @@ export class WeWorkController {
   @Get('chat-records')
   @ApiOperation({ summary: '获取聊天记录列表' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:chat:view')
   async getChatRecords(@Query() query: {
     page?: number
     pageSize?: number
@@ -176,6 +191,7 @@ export class WeWorkController {
   @Get('chat-records/:id')
   @ApiOperation({ summary: '获取聊天记录详情' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:chat:view')
   async getChatRecordDetail(@Param('id') id: string) {
     return { message: '聊天记录详情功能待实现', id }
   }
@@ -305,6 +321,7 @@ export class WeWorkController {
   @Get('analytics/chat-stats')
   @ApiOperation({ summary: '获取聊天统计分析' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:chat:analysis')
   async getChatAnalytics(@Query() query: {
     startDate?: string
     endDate?: string
@@ -316,6 +333,7 @@ export class WeWorkController {
   @Get('analytics/ai-stats')
   @ApiOperation({ summary: '获取AI分析统计' })
   @ApiResponse({ status: 200, description: '获取成功' })
+  @RequirePermissions('wework:chat:analysis')
   async getAIAnalytics(@Query() query: {
     startDate?: string
     endDate?: string

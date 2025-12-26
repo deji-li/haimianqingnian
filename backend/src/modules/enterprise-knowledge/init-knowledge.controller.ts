@@ -8,6 +8,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
+import { RequirePermissions } from '../../common/decorators/permission.decorator';
 import { InitKnowledgeService } from './init-knowledge.service';
 import {
   CreateBasicInfoDto,
@@ -19,7 +21,7 @@ import {
 
 @ApiTags('企业知识库-初始化')
 @Controller('enterprise-knowledge/init')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class InitKnowledgeController {
   constructor(private readonly initKnowledgeService: InitKnowledgeService) {}
@@ -29,6 +31,7 @@ export class InitKnowledgeController {
    */
   @Post('step1/basic-info')
   @ApiOperation({ summary: '步骤1: 提交企业基础信息（支持手动/文件/AI生成）' })
+  @RequirePermissions('knowledge:base:create')
   async initStep1BasicInfo(@Body() dto: CreateBasicInfoDto, @Request() req) {
     return await this.initKnowledgeService.initStep1BasicInfo(dto, req.user.userId);
   }
@@ -38,6 +41,7 @@ export class InitKnowledgeController {
    */
   @Post('step2/faq')
   @ApiOperation({ summary: '步骤2: 提交FAQ列表' })
+  @RequirePermissions('knowledge:base:create')
   async initStep2Faq(@Body() dto: CreateFaqDto, @Request() req) {
     return await this.initKnowledgeService.initStep2Faq(dto, req.user.userId);
   }
@@ -47,6 +51,7 @@ export class InitKnowledgeController {
    */
   @Post('step3/mining')
   @ApiOperation({ summary: '步骤3: AI挖掘微信聊天记录' })
+  @RequirePermissions('knowledge:mining:use')
   async initStep3Mining(@Body() dto: MiningChatDto, @Request() req) {
     return await this.initKnowledgeService.initStep3Mining(dto, req.user.userId);
   }
@@ -56,6 +61,7 @@ export class InitKnowledgeController {
    */
   @Post('step4/generate')
   @ApiOperation({ summary: '步骤4: 生成与整合知识库' })
+  @RequirePermissions('knowledge:base:create')
   async initStep4Generate(@Body() dto: GenerateKnowledgeDto, @Request() req) {
     return await this.initKnowledgeService.initStep4Generate(dto, req.user.userId);
   }
@@ -65,6 +71,7 @@ export class InitKnowledgeController {
    */
   @Post('advanced/product-knowledge')
   @ApiOperation({ summary: '深度配置: 添加产品知识（可选）' })
+  @RequirePermissions('knowledge:base:create')
   async addProductKnowledge(@Body() dto: ProductKnowledgeDto, @Request() req) {
     return await this.initKnowledgeService.addProductKnowledge(dto, req.user.userId);
   }
@@ -74,6 +81,7 @@ export class InitKnowledgeController {
    */
   @Get('status')
   @ApiOperation({ summary: '获取知识库初始化状态' })
+  @RequirePermissions('knowledge:base:view')
   async getInitStatus(@Request() req) {
     return await this.initKnowledgeService.getInitStatus(req.user.userId);
   }

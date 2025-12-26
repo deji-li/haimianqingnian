@@ -20,8 +20,8 @@ import { RequirePermissions } from '../../common/decorators/permission.decorator
 
 @ApiTags('订单同步管理')
 @Controller('order-sync')
-// @UseGuards(JwtAuthGuard, PermissionGuard) // 临时移除身份验证进行调试
-// @ApiBearerAuth()
+@UseGuards(JwtAuthGuard, PermissionGuard)
+@ApiBearerAuth()
 export class OrderSyncController {
   constructor(
     private readonly orderSyncService: OrderSyncService,
@@ -30,14 +30,14 @@ export class OrderSyncController {
 
   @Post('trigger')
   @ApiOperation({ summary: '手动触发同步' })
-  // @RequirePermissions('order:sync') // 临时移除权限验证进行测试
+  @RequirePermissions('order:sync')
   async triggerSync(@Body() dto: TriggerSyncDto) {
     return this.orderSyncService.syncOrders(dto);
   }
 
   @Get('logs')
   @ApiOperation({ summary: '查询同步日志' })
-  // @RequirePermissions('order:sync') // 临时移除权限验证进行测试
+  @RequirePermissions('order:sync:logs')
   async getSyncLogs(@Query() query: any) {
     // 添加默认的 limit 值并处理缺失的属性
     const params = {
@@ -55,7 +55,7 @@ export class OrderSyncController {
 
   @Get('config')
   @ApiOperation({ summary: '获取同步配置' })
-  // @RequirePermissions('order:sync') // 临时移除权限验证进行测试
+  @RequirePermissions('order:sync:config')
   async getSyncConfig() {
     // 使用业务配置服务获取同步相关配置
     const configs = {};
@@ -86,7 +86,7 @@ export class OrderSyncController {
 
   @Put('config')
   @ApiOperation({ summary: '更新同步配置' })
-  // @RequirePermissions('order:sync') // 临时移除权限验证进行测试
+  @RequirePermissions('order:sync:config')
   async updateSyncConfig(@Body() dto: UpdateSyncConfigDto) {
     console.log('🔥 PUT /api/order-sync/config 被调用:', dto);
     try {
@@ -102,7 +102,7 @@ export class OrderSyncController {
 
   @Get('statistics')
   @ApiOperation({ summary: '获取同步统计' })
-  // @RequirePermissions('order:sync') // 临时移除权限验证进行测试
+  @RequirePermissions('order:sync:view')
   async getSyncStatistics(@Query() query: any) {
     const params = {
       startDate: query.startDate,

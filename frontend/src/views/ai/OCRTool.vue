@@ -254,7 +254,7 @@ import {
   CopyDocument,
 } from '@element-plus/icons-vue'
 import { ocrApi } from '@/api/ocr'
-import { aiApiKeyApi } from '@/api/aiApiKey'
+// import { aiApiKeyApi } from '@/api/aiApiKey' // API已移除
 
 // 响应式数据
 const selectedFile = ref<File | null>(null)
@@ -372,6 +372,8 @@ const saveConfig = async () => {
     }
 
     // 检查是否已存在百度OCR配置
+    // TODO: API已移除，需要使用其他方式管理OCR配置
+    /*
     const existingConfigs = await aiApiKeyApi.getList()
     const existingBaiduOcr = existingConfigs.data.find((config: any) => config.provider === 'baidu_ocr')
 
@@ -384,6 +386,8 @@ const saveConfig = async () => {
       await aiApiKeyApi.create(configData)
       ElMessage.success('百度OCR配置创建成功')
     }
+    */
+    ElMessage.warning('OCR配置功能暂时不可用，请联系管理员')
 
     showSettings.value = false
     await validateConfig()
@@ -438,6 +442,8 @@ onMounted(async () => {
   await validateConfig()
 
   // 尝试加载现有配置
+  // TODO: API已移除，需要使用其他方式管理OCR配置
+  /*
   try {
     const configs = await aiApiKeyApi.getList()
     const baiduOcrConfig = configs.data.find((config: any) => config.provider === 'baidu_ocr')
@@ -453,6 +459,7 @@ onMounted(async () => {
   } catch (error) {
     console.error('加载配置失败:', error)
   }
+  */
 })
 </script>
 

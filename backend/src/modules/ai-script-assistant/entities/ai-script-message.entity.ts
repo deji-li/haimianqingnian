@@ -43,6 +43,15 @@ export class AiScriptMessage {
   @Column({ type: 'int', nullable: true, name: 'processing_time', comment: '处理时间(毫秒)' })
   processingTime: number | null;
 
+  @Column({ type: 'int', default: 0, name: 'usage_count', comment: '使用次数' })
+  usageCount: number;
+
+  @Column({ type: 'int', default: 0, name: 'success_usage_count', comment: '成功使用次数' })
+  successUsageCount: number;
+
+  @Column({ type: 'boolean', default: false, name: 'is_featured', comment: '是否为精选话术' })
+  isFeatured: boolean;
+
   @CreateDateColumn({ name: 'create_time', comment: '创建时间' })
   createTime: Date;
 

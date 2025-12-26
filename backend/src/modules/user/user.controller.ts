@@ -33,7 +33,7 @@ export class UserController {
   }
 
   @Get()
-  // @RequirePermissions('user:view')  // 临时注释权限检查用于调试
+  @RequirePermissions('user:view')
   @ApiOperation({ summary: '获取用户列表' })
   findAll(@Query() queryDto: QueryUserDto) {
     return this.userService.findAll(queryDto);

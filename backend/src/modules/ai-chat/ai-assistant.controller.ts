@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
+import { RequirePermissions } from '../../common/decorators/permission.decorator';
 import { AiAssistantService } from './ai-assistant.service';
 import { AiAssistantChatDto, AiAssistantFeedbackDto } from './dto/ai-assistant.dto';
 import { Type } from 'class-transformer';
@@ -29,7 +31,7 @@ class GetConversationHistoryDto {
 
 @ApiTags('AI助手（实时对话-知识库优先）')
 @Controller('ai-assistant')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 @ApiBearerAuth()
 export class AiAssistantController {
   constructor(private readonly aiAssistantService: AiAssistantService) {}
@@ -57,6 +59,7 @@ export class AiAssistantController {
    */
   @Get('history')
   @ApiOperation({ summary: '获取AI助手对话历史' })
+  @RequirePermissions('ai:script:view')
   async getHistory(@Query() query: GetConversationHistoryDto, @Request() req) {
     return await this.aiAssistantService.getConversationHistory({
       userId: req.user.userId,

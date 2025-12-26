@@ -33,6 +33,8 @@ import { AiQualityModule } from './modules/ai-quality/ai-quality.module';
 // import { BaiduOcrModule } from './modules/ai-tools/baidu-ocr.module';
 import { WeWorkBasicModule } from './modules/wework/wework-basic.module';
 import { AiScriptAssistantModule } from './modules/ai-script-assistant/ai-script-assistant.module';
+import { TrainingCoachModule } from './modules/training-coach/training-coach.module';
+import { FollowUpReminderModule } from './modules/follow-up-reminder/follow-up-reminder.module';
 
 // 导入所有实体
 import { User } from './modules/user/entities/user.entity';
@@ -94,6 +96,11 @@ import {
   AiScriptTechnique,
   AiScriptFeedback,
 } from './modules/ai-script-assistant/entities/index';
+import { CustomerPersona } from './modules/training-coach/entities/customer-persona.entity';
+import { TrainingScript } from './modules/training-coach/entities/training-script.entity';
+import { TrainingSession } from './modules/training-coach/entities/training-session.entity';
+import { FollowUpReminderConfig } from './modules/follow-up-reminder/entities/follow-up-config.entity';
+import { FollowUpReminderTask } from './modules/follow-up-reminder/entities/follow-up-task.entity';
 
 @Module({
   imports: [
@@ -173,6 +180,11 @@ import {
           AiScriptScenario,
           AiScriptTechnique,
           AiScriptFeedback,
+          CustomerPersona,
+          TrainingScript,
+          TrainingSession,
+          FollowUpReminderConfig,
+          FollowUpReminderTask,
               ],
         synchronize: configService.get('DB_SYNCHRONIZE') === 'true',
         logging: configService.get('DB_LOGGING') === 'true',
@@ -220,6 +232,8 @@ import {
     // BaiduOcrModule,
     WeWorkBasicModule,
     AiScriptAssistantModule,
+    TrainingCoachModule,
+    FollowUpReminderModule,
   ],
 })
 export class AppModule {}

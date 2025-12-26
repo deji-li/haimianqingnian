@@ -36,7 +36,7 @@ export class MarketingAssistantController {
 
   @Get('insights')
   @ApiOperation({ summary: '获取用户客户洞察数据（聊天记录版）' })
-  // @RequirePermissions('ai-marketing:use')  // 临时注释权限检查用于调试
+  @RequirePermissions('ai:marketing:use')
   async getCustomerInsights(@Request() req, @Query() query: any) {
     console.log('Controller getCustomerInsights called with:', { query, user: req.user });
 
@@ -49,7 +49,7 @@ export class MarketingAssistantController {
 
   @Get('insights/stats')
   @ApiOperation({ summary: '获取客户洞察统计数据（聊天记录版）' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async getInsightStats(@Request() req, @Query() query: any) {
     const startDate = query.startDate ? new Date(query.startDate) : undefined;
     const endDate = query.endDate ? new Date(query.endDate) : undefined;
@@ -58,7 +58,7 @@ export class MarketingAssistantController {
 
   @Post('insights/extract')
   @ApiOperation({ summary: '从聊天记录提取客户洞察' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async extractInsightsFromChat(@Body() body: { startDate?: string, endDate?: string }) {
     const startDate = body.startDate ? new Date(body.startDate) : undefined;
     const endDate = body.endDate ? new Date(body.endDate) : undefined;
@@ -67,7 +67,7 @@ export class MarketingAssistantController {
 
   @Get('insights/:customerId')
   @ApiOperation({ summary: '获取特定客户的洞察数据' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async getCustomerInsightsByCustomerId(
     @Param('customerId') customerId: number,
     @Request() req,
@@ -80,7 +80,7 @@ export class MarketingAssistantController {
 
   @Post('insights')
   @ApiOperation({ summary: '添加客户洞察' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async addCustomerInsight(
     @Body() dto: AddCustomerInsightDto,
     @Request() req,
@@ -91,7 +91,7 @@ export class MarketingAssistantController {
   // ==================== 营销文案生成 ====================
 
   @Post('generate')
-  @Public()
+  @RequirePermissions('ai:marketing:use')
   @ApiOperation({ summary: '生成营销文案' })
   async generateMarketingContent(
     @Body() dto: GenerateMarketingContentDto,
@@ -106,21 +106,21 @@ export class MarketingAssistantController {
 
   @Get('history')
   @ApiOperation({ summary: '查询历史记录' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async queryHistory(@Query() query: QueryHistoryDto, @Request() req) {
     return this.marketingAssistantService.queryHistory(query, req.user.userId);
   }
 
   @Get('history/:id')
   @ApiOperation({ summary: '获取历史记录详情' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async getHistoryDetail(@Param('id') id: number, @Request() req) {
     return this.marketingAssistantService.getHistoryDetail(id, req.user.userId);
   }
 
   @Post('history/batch-delete')
   @ApiOperation({ summary: '批量删除历史记录' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async batchDelete(@Body() dto: BatchDeleteDto, @Request() req) {
     return this.marketingAssistantService.batchDelete(dto, req.user.userId);
   }
@@ -129,7 +129,7 @@ export class MarketingAssistantController {
 
   @Post('feedback')
   @ApiOperation({ summary: '提交反馈' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async submitFeedback(
     @Body() dto: SubmitFeedbackDto,
     @Request() req,
@@ -141,7 +141,7 @@ export class MarketingAssistantController {
 
   @Post('recommend')
   @ApiOperation({ summary: '推荐到文案库' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async recommendToLibrary(
     @Body() dto: RecommendContentDto,
     @Request() req,
@@ -153,7 +153,7 @@ export class MarketingAssistantController {
 
   @Post('feedback-to-knowledge/:historyId')
   @ApiOperation({ summary: '反哺内容到知识库' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async feedbackContentToKnowledge(
     @Param('historyId') historyId: number,
     @Request() req,
@@ -168,7 +168,7 @@ export class MarketingAssistantController {
 
   @Get('knowledge/recommended/:scenario')
   @ApiOperation({ summary: '获取推荐知识库内容' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async getRecommendedKnowledge(
     @Param('scenario') scenario: string,
     @Query('limit') limit?: number,
@@ -186,7 +186,7 @@ export class MarketingAssistantController {
 
   @Get('knowledge/popular')
   @ApiOperation({ summary: '获取热门知识库内容' })
-  @RequirePermissions('ai-marketing:use')
+  @RequirePermissions('ai:marketing:use')
   async getPopularKnowledge(@Query('limit') limit?: number) {
     // 这个方法需要通过知识库集成服务实现
     // 暂时返回空数组，后续可以集成

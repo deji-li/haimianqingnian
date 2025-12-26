@@ -6,6 +6,8 @@ import { Order } from '../order/entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { CustomerFollowRecord } from '../customer/entities/customer-follow-record.entity';
 import { SalesTarget } from '../target/entities/sales-target.entity';
+import { Department } from '../system/entities/department.entity';
+import { Campus } from '../system/entities/campus.entity';
 import {
   TeamMemberPerformanceDto,
   TeamOverviewDto,
@@ -27,6 +29,10 @@ export class TeamStatsService {
     private followRecordRepository: Repository<CustomerFollowRecord>,
     @InjectRepository(SalesTarget)
     private salesTargetRepository: Repository<SalesTarget>,
+    @InjectRepository(Department)
+    private departmentRepository: Repository<Department>,
+    @InjectRepository(Campus)
+    private campusRepository: Repository<Campus>,
   ) {}
 
   /**
@@ -132,13 +138,31 @@ export class TeamStatsService {
       const totalAmount = parseFloat(orderStats.totalAmount || '0');
       const orderCount = parseInt(orderStats.count || '0', 10);
 
+      // 查询部门和校区名称
+      let departmentName: string | undefined;
+      let campusName: string | undefined;
+
+      if (user.departmentId) {
+        const department = await this.departmentRepository.findOne({
+          where: { id: user.departmentId }
+        });
+        departmentName = department?.departmentName;
+      }
+
+      if (user.campusId) {
+        const campus = await this.campusRepository.findOne({
+          where: { id: user.campusId }
+        });
+        campusName = campus?.campusName;
+      }
+
       performanceList.push({
         userId: user.id,
         userName: user.username,
         realName: user.realName,
         avatar: user.avatar,
-        departmentName: undefined, // TODO: 需要关联查询部门表
-        campusName: undefined, // TODO: 需要关联查询校区表
+        departmentName,
+        campusName,
         totalAmount,
         orderCount,
         customerCount,
@@ -295,12 +319,11 @@ export class TeamStatsService {
 
     const departmentIds = (await departmentQuery.getRawMany()).map(d => d.departmentId);
 
-    // TODO: 需要查询department表获取部门名称
-    // 目前暂时使用部门ID作为名称
-    const departments = departmentIds.map(id => ({
-      departmentId: id,
-      departmentName: `部门${id}`
-    }));
+    // 查询部门信息
+    const departments = await this.departmentRepository
+      .createQueryBuilder('dept')
+      .where('dept.id IN (:...departmentIds)', { departmentIds })
+      .getMany();
 
     const performanceList: DepartmentPerformanceDto[] = [];
 
@@ -308,7 +331,7 @@ export class TeamStatsService {
       // 获取部门成员
       const memberQuery = this.userRepository
         .createQueryBuilder('user')
-        .where('user.departmentId = :departmentId', { departmentId: dept.departmentId })
+        .where('user.departmentId = :departmentId', { departmentId: dept.id })
         .andWhere('user.status = :status', { status: 1 });
 
       const memberCount = await memberQuery.getCount();
@@ -352,7 +375,7 @@ export class TeamStatsService {
       const orderCount = parseInt(orderStats.count || '0', 10);
 
       performanceList.push({
-        departmentId: dept.departmentId,
+        departmentId: dept.id,
         departmentName: dept.departmentName,
         memberCount,
         totalAmount,
@@ -387,12 +410,11 @@ export class TeamStatsService {
 
     const campusIds = (await campusQuery.getRawMany()).map(c => c.campusId);
 
-    // TODO: 需要查询campus表获取校区名称
-    // 目前暂时使用校区ID作为名称
-    const campuses = campusIds.map(id => ({
-      campusId: id,
-      campusName: `校区${id}`
-    }));
+    // 查询校区信息
+    const campuses = await this.campusRepository
+      .createQueryBuilder('campus')
+      .where('campus.id IN (:...campusIds)', { campusIds })
+      .getMany();
 
     const performanceList: CampusPerformanceDto[] = [];
 
@@ -400,7 +422,7 @@ export class TeamStatsService {
       // 获取校区成员
       const memberQuery = this.userRepository
         .createQueryBuilder('user')
-        .where('user.campusId = :campusId', { campusId: campus.campusId })
+        .where('user.campusId = :campusId', { campusId: campus.id })
         .andWhere('user.status = :status', { status: 1 });
 
       if (departmentId) {
@@ -448,7 +470,7 @@ export class TeamStatsService {
       const orderCount = parseInt(orderStats.count || '0', 10);
 
       performanceList.push({
-        campusId: campus.campusId,
+        campusId: campus.id,
         campusName: campus.campusName,
         memberCount,
         totalAmount,

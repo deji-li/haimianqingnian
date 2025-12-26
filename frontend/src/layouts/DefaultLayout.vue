@@ -33,9 +33,6 @@
           </template>
           <el-menu-item index="/order/list">订单列表</el-menu-item>
           <el-menu-item index="/order/sync-config">订单同步</el-menu-item>
-          <el-menu-item index="/order/campus-ranking">校区排行榜</el-menu-item>
-          <el-menu-item index="/order/product-ranking">商品排行榜</el-menu-item>
-          <el-menu-item index="/order/sales-ranking">销售排行榜</el-menu-item>
           <el-menu-item index="/order/ranking-overview">排行榜总览</el-menu-item>
         </el-sub-menu>
 
@@ -45,7 +42,6 @@
             <span>老师管理</span>
           </template>
           <el-menu-item index="/teacher/list">老师列表</el-menu-item>
-          <el-menu-item index="/teacher/ranking">老师排行榜</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/finance">
@@ -58,21 +54,16 @@
           <el-menu-item index="/finance/commission-schemes">提成方案</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/target">
-          <el-icon><Flag /></el-icon>
-          <span>目标管理</span>
-        </el-menu-item>
-
         <el-sub-menu index="/sales-tools">
           <template #title>
             <el-icon><MagicStick /></el-icon>
             <span>销售工具</span>
           </template>
           <el-menu-item index="/sales-tools/chat-analysis">聊天分析</el-menu-item>
-          <el-menu-item index="/sales-tools/tools">AI工具</el-menu-item>
-          <el-menu-item index="/sales-tools/ocr">OCR识别</el-menu-item>
+          <el-menu-item index="/sales-tools/marketing-assistant">AI营销助手</el-menu-item>
           <el-menu-item index="/sales-tools/tags">标签管理</el-menu-item>
           <el-menu-item index="/sales-tools/marketing-scenarios">AI营销场景</el-menu-item>
+          <el-menu-item index="/training-coach/dashboard">培训陪练</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/ai-script">
@@ -80,19 +71,11 @@
             <el-icon><ChatDotRound /></el-icon>
             <span>AI话术助手</span>
           </template>
-          <el-menu-item index="/ai-script/conversation">会话模式</el-menu-item>
-          <el-menu-item index="/ai-script/conversation-history">对话记录</el-menu-item>
+          <el-menu-item index="/ai-script/deal-assist">帮你谈单</el-menu-item>
+          <el-menu-item index="/ai-script/reply-assist">帮你回复</el-menu-item>
           <el-menu-item index="/ai-script/opening-lines">开场白生成</el-menu-item>
           <el-menu-item index="/ai-script/script-polish">话术润色</el-menu-item>
-        </el-sub-menu>
-
-        <el-sub-menu index="/ai-marketing">
-          <template #title>
-            <el-icon><MagicStick /></el-icon>
-            <span>AI营销助手</span>
-          </template>
-          <el-menu-item index="/ai-marketing/assistant">AI营销助手</el-menu-item>
-          <el-menu-item index="/ai-marketing/content-library">营销文案库</el-menu-item>
+          <el-menu-item index="/ai-script/conversation-history">对话记录</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/enterprise-knowledge">
@@ -101,12 +84,9 @@
             <span>企业知识库</span>
           </template>
           <el-menu-item index="/enterprise-knowledge/management">知识库管理</el-menu-item>
-          <el-menu-item index="/enterprise-knowledge/create">创建知识库</el-menu-item>
           <el-menu-item index="/enterprise-knowledge/search">智能搜索</el-menu-item>
           <el-menu-item index="/enterprise-knowledge/mining">知识挖掘</el-menu-item>
           <el-menu-item index="/enterprise-knowledge/analytics">知识分析</el-menu-item>
-          <el-menu-item index="/enterprise-knowledge/statistics">使用统计</el-menu-item>
-          <el-menu-item index="/enterprise-knowledge/feedback">负反馈管理</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/analytics">
@@ -114,14 +94,13 @@
             <el-icon><TrendCharts /></el-icon>
             <span>数据分析</span>
           </template>
-          <el-menu-item index="/analytics/dashboard">数据看板</el-menu-item>
           <el-menu-item index="/analytics/personal">个人统计</el-menu-item>
           <el-menu-item index="/analytics/funnel">销售漏斗</el-menu-item>
           <el-menu-item index="/analytics/advanced">高级分析</el-menu-item>
-          <el-menu-item index="/analytics/leaderboard">团队排行榜</el-menu-item>
           <el-menu-item index="/analytics/team-statistics">团队统计</el-menu-item>
           <el-menu-item index="/analytics/ai-analytics">AI人效分析</el-menu-item>
           <el-menu-item index="/analytics/ai-reports">AI诊断报告</el-menu-item>
+          <el-menu-item index="/datascreen">数据大屏</el-menu-item>
         </el-sub-menu>
 
         <el-sub-menu index="/ai-assistant">
@@ -133,11 +112,6 @@
           <el-menu-item index="/ai-assistant/staff-quality">员工质检</el-menu-item>
         </el-sub-menu>
 
-        <el-menu-item index="/datascreen">
-          <el-icon><DataAnalysis /></el-icon>
-          <span>数据大屏</span>
-        </el-menu-item>
-
         <el-sub-menu index="/operation">
           <template #title>
             <el-icon><DataLine /></el-icon>
@@ -145,16 +119,8 @@
           </template>
           <el-menu-item index="/operation/daily-reports">运营日报</el-menu-item>
           <el-menu-item index="/operation/accounts">账号管理</el-menu-item>
-          <el-menu-item index="/operation/dashboard">数据看板</el-menu-item>
           <el-menu-item index="/operation/customers">客户转化</el-menu-item>
-          <el-menu-item index="/operation/commissions">提成管理</el-menu-item>
-          <el-menu-item index="/operation/reports">报表中心</el-menu-item>
         </el-sub-menu>
-
-        <el-menu-item index="/automation">
-          <el-icon><Operation /></el-icon>
-          <span>自动化工作流</span>
-        </el-menu-item>
 
         <el-sub-menu index="/system" v-if="userStore.isAdmin">
           <template #title>
@@ -169,10 +135,15 @@
           <el-menu-item index="/system/operation-log">操作日志</el-menu-item>
           <el-menu-item index="/system/ai-config">AI配置</el-menu-item>
           <el-menu-item index="/system/business-config">业务配置</el-menu-item>
-          <el-menu-item index="/system/ai-api-keys">AI API密钥</el-menu-item>
-          <el-menu-item index="/system/wework-config">企业微信配置</el-menu-item>
-          <el-menu-item index="/system/wework-contacts">联系人管理</el-menu-item>
-          <el-menu-item index="/system/wework-sync-logs">同步日志</el-menu-item>
+          <el-menu-item index="/system/automation">跟进配置</el-menu-item>
+          <el-sub-menu index="/system/wework">
+            <template #title>
+              <span>企业微信</span>
+            </template>
+            <el-menu-item index="/system/wework-config">企业微信配置</el-menu-item>
+            <el-menu-item index="/system/wework-contacts">联系人管理</el-menu-item>
+            <el-menu-item index="/system/wework-sync-logs">同步日志</el-menu-item>
+          </el-sub-menu>
         </el-sub-menu>
       </el-menu>
     </el-aside>
@@ -254,7 +225,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/store/user'
 import { useRecentStore } from '@/store/recent'
 import { ElMessageBox } from 'element-plus'
-import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation, Reading, UserFilled, ChatDotRound } from '@element-plus/icons-vue'
+import { Bell, Wallet, Money, TrendCharts, Setting, Monitor, Trophy, DataAnalysis, Flag, User, Document, DataLine, Clock, MagicStick, Expand, Operation, Reading, UserFilled, ChatDotRound, ChatLineSquare } from '@element-plus/icons-vue'
 import { getUnreadCount } from '@/api/notification'
 
 const route = useRoute()

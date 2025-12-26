@@ -354,6 +354,11 @@
       </template>
     </el-dialog>
         </el-tab-pane>
+
+        <!-- AI培训陪练配置 -->
+        <el-tab-pane label="AI培训陪练配置" name="training-coach">
+          <TrainingCoachConfig />
+        </el-tab-pane>
       </el-tabs>
     </el-card>
   </div>
@@ -367,6 +372,7 @@ import request from '@/utils/request'
 import { useUserStore } from '@/store/user'
 import ApiKeyManagement from '@/components/system/ApiKeyManagement.vue'
 import FieldMappingConfig from '@/components/system/FieldMappingConfig.vue'
+import TrainingCoachConfig from '@/components/system/TrainingCoachConfig.vue'
 import KnowledgeConfiguration from '@/views/ai/components/KnowledgeConfiguration.vue'
 
 const userStore = useUserStore()

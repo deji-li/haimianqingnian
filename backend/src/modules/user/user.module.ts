@@ -10,6 +10,8 @@ import { Order } from '../order/entities/order.entity';
 import { Customer } from '../customer/entities/customer.entity';
 import { CustomerFollowRecord } from '../customer/entities/customer-follow-record.entity';
 import { SalesTarget } from '../target/entities/sales-target.entity';
+import { Department } from '../system/entities/department.entity';
+import { Campus } from '../system/entities/campus.entity';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { SalesTarget } from '../target/entities/sales-target.entity';
       Customer,
       CustomerFollowRecord,
       SalesTarget,
+      Department,
+      Campus,
     ]),
   ],
   providers: [UserService, TeamStatsService],

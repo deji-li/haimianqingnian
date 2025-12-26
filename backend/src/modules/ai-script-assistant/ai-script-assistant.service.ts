@@ -14,6 +14,7 @@ import { Customer } from '../customer/entities/customer.entity';
 import { User } from '../user/entities/user.entity';
 import { AiConfigCallerService } from '../../common/services/ai/ai-config-caller.service';
 import { KnowledgeEnhancedAIService, EnhancedAIResponse } from '../enterprise-knowledge/knowledge-enhanced-ai.service';
+import { EnterpriseKnowledgeService } from '../enterprise-knowledge/enterprise-knowledge.service';
 
 @Injectable()
 export class AiScriptAssistantService {
@@ -39,6 +40,8 @@ export class AiScriptAssistantService {
     private readonly aiConfigCallerService: AiConfigCallerService,
     @Inject(forwardRef(() => KnowledgeEnhancedAIService))
     private readonly knowledgeEnhancedAIService: KnowledgeEnhancedAIService,
+    @Inject(forwardRef(() => EnterpriseKnowledgeService))
+    private readonly knowledgeService: EnterpriseKnowledgeService,
   ) {}
 
   /**
@@ -850,16 +853,30 @@ export class AiScriptAssistantService {
   private async addScriptToKnowledge(recommendation: AiScriptRecommendation) {
     try {
       // 调用企业知识库服务添加知识
-      // 这里需要与 EnterpriseKnowledgeService 集成
       this.logger.log(`将话术添加到知识库: 推荐ID=${recommendation.id}`);
 
-      // TODO: 实现实际的知识库添加逻辑
-      // await this.knowledgeService.create({
-      //   title: `优质话术 - ${recommendation.functionType}`,
-      //   content: recommendation.scriptContent,
-      //   category: 'SCRIPT_TEMPLATE',
-      //   ...
-      // });
+      // 映射功能类型到知识库类别
+      const categoryMap = {
+        opening_lines: '开场技巧',
+        deal_assist: '成交技巧',
+        reply_assist: '应对异议',
+        script_polish: '话术模板',
+      };
+
+      const category = categoryMap[recommendation.functionType] || '其他';
+
+      // 创建知识库条目
+      const knowledge = await this.knowledgeService.create({
+        title: `优质话术 - ${category}`,
+        content: recommendation.scriptContent,
+        sceneCategory: category,
+        questionType: 'FAQ',
+        sourceType: 'ai_generated',
+      }, recommendation.userId);
+
+      this.logger.log(`话术已添加到知识库: 知识ID=${knowledge.id}`);
+
+      return knowledge;
 
     } catch (error) {
       this.logger.error(`添加到知识库失败: ${error.message}`, error.stack);
@@ -1102,5 +1119,106 @@ export class AiScriptAssistantService {
     };
 
     return defaults[functionType] || '抱歉，AI服务暂时不可用，请稍后再试。';
+  }
+
+  /**
+   * 提交反馈
+   */
+  async submitFeedback(userId: number, dto: { messageId: number; feedbackType: 'like' | 'dislike'; feedbackReason?: string }) {
+    try {
+      // 验证消息是否存在
+      const message = await this.messageRepository.findOne({
+        where: { id: dto.messageId }
+      });
+
+      if (!message) {
+        throw new NotFoundException('消息不存在');
+      }
+
+      // 检查是否已经反馈过
+      const existingFeedback = await this.feedbackRepository.findOne({
+        where: {
+          messageId: dto.messageId,
+          userId,
+        }
+      });
+
+      if (existingFeedback) {
+        // 更新现有反馈
+        existingFeedback.feedbackType = dto.feedbackType;
+        existingFeedback.feedbackReason = dto.feedbackReason || null;
+        await this.feedbackRepository.save(existingFeedback);
+
+        this.logger.log(`用户${userId}更新了消息${dto.messageId}的反馈`);
+        return { message: '反馈已更新', feedback: existingFeedback };
+      }
+
+      // 创建新反馈
+      const feedback = this.feedbackRepository.create({
+        messageId: dto.messageId,
+        userId,
+        feedbackType: dto.feedbackType,
+        feedbackReason: dto.feedbackReason || null,
+        isLearned: false,
+      });
+
+      const savedFeedback = await this.feedbackRepository.save(feedback);
+
+      this.logger.log(`用户${userId}提交了反馈: 消息ID=${dto.messageId}, 类型=${dto.feedbackType}`);
+
+      // 如果是好评，标记消息为高质量
+      if (dto.feedbackType === 'like') {
+        message.isFeatured = true;
+        await this.messageRepository.save(message);
+      }
+
+      return { message: '反馈提交成功', feedback: savedFeedback };
+
+    } catch (error) {
+      this.logger.error(`提交反馈失败: ${error.message}`, error.stack);
+      throw error;
+    }
+  }
+
+  /**
+   * 记录话术使用
+   */
+  async recordScriptUsage(userId: number, messageId: number, success: boolean) {
+    try {
+      // 验证消息是否存在
+      const message = await this.messageRepository.findOne({
+        where: { id: messageId },
+        relations: ['conversation']
+      });
+
+      if (!message) {
+        throw new NotFoundException('消息不存在');
+      }
+
+      // 更新消息的使用次数
+      message.usageCount = (message.usageCount || 0) + 1;
+
+      // 如果使用成功，更新成功率相关字段
+      if (success) {
+        message.successUsageCount = (message.successUsageCount || 0) + 1;
+      }
+
+      await this.messageRepository.save(message);
+
+      this.logger.log(`记录话术使用: 消息ID=${messageId}, 用户ID=${userId}, 成功=${success}`);
+
+      return {
+        message: '使用记录成功',
+        usageCount: message.usageCount,
+        successUsageCount: message.successUsageCount,
+        successRate: message.usageCount > 0
+          ? Math.round((message.successUsageCount / message.usageCount) * 100)
+          : 0
+      };
+
+    } catch (error) {
+      this.logger.error(`记录话术使用失败: ${error.message}`, error.stack);
+      throw error;
+    }
   }
 }

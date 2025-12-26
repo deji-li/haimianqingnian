@@ -62,7 +62,7 @@ export class CustomerController {
 
   @Get()
   @ApiOperation({ summary: '获取客户列表' })
-  // @RequirePermissions('customer:view')  // 临时注释权限检查用于调试
+  @RequirePermissions('customer:view')
   async findAll(@Query() queryDto: QueryCustomerDto, @Request() req) {
     return this.customerService.findAll(queryDto, req.dataScope || {});
   }
@@ -121,12 +121,14 @@ export class CustomerController {
 
   @Get(':id/follow-records')
   @ApiOperation({ summary: '获取客户跟进记录' })
+  @RequirePermissions('customer:view')
   async getFollowRecords(@Param('id') id: string) {
     return this.customerService.getFollowRecords(+id);
   }
 
   @Get('pending-followups/list')
   @ApiOperation({ summary: '获取待回访客户列表' })
+  @RequirePermissions('customer:view')
   async getPendingFollowUps(@Request() req) {
     // 使用dataScope进行数据权限过滤，如果不存在则使用空对象
     return this.customerService.getPendingFollowUps(req.dataScope || {});
@@ -134,12 +136,14 @@ export class CustomerController {
 
   @Get('follow/today')
   @ApiOperation({ summary: '获取今日待跟进列表' })
+  @RequirePermissions('customer:view')
   async getTodayFollowList(@Request() req) {
     return this.customerService.getPendingFollowUps(req.dataScope || {});
   }
 
   @Get('follow/statistics')
   @ApiOperation({ summary: '获取跟进统计数据' })
+  @RequirePermissions('customer:view')
   async getFollowStatistics(@Request() req) {
     return this.customerService.getFollowStatistics(req.dataScope || {});
   }

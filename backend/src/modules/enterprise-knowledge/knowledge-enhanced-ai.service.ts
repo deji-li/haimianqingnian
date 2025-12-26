@@ -519,7 +519,7 @@ export class KnowledgeEnhancedAIService {
           usedSections: kr.matchedSections,
         })),
         confidence: confidenceScore,
-        responseStrategy: 'INTELLIGENT_FUSION',
+        responseStrategy: 'KNOWLEDGE_ENHANCED',
         processingTime: 0,
         metadata: {
           weights,

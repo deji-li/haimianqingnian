@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermissions } from '../../common/decorators/permission.decorator';
 import { AiScriptAssistantService } from './ai-script-assistant.service';
 import { CreateConversationDto, SendMessageDto, QueryConversationsDto, CreateFeedbackDto, FunctionType, RecommendScriptDto, QueryRecommendationsDto, ApproveRecommendationDto } from './dto/index';
@@ -21,7 +22,7 @@ import { CreateConversationDto, SendMessageDto, QueryConversationsDto, CreateFee
 @ApiTags('AI话术助手')
 @ApiBearerAuth()
 @Controller('ai-script-assistant')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class AiScriptAssistantController {
   constructor(private readonly aiScriptAssistantService: AiScriptAssistantService) {}
 
@@ -101,8 +102,7 @@ export class AiScriptAssistantController {
     @Request() req,
     @Body() createFeedbackDto: CreateFeedbackDto,
   ) {
-    // TODO: 实现反馈功能
-    return { message: '反馈提交成功' };
+    return this.aiScriptAssistantService.submitFeedback(req.user.id, createFeedbackDto);
   }
 
   // 兼容旧版API接口
@@ -159,9 +159,9 @@ export class AiScriptAssistantController {
   async recordScriptUsageCompat(
     @Param('id', ParseIntPipe) id: number,
     @Body('success') success: boolean,
+    @Request() req,
   ) {
-    // TODO: 实现使用记录功能
-    return { message: '使用记录成功' };
+    return this.aiScriptAssistantService.recordScriptUsage(req.user.id, id, success);
   }
 
   // 话术推荐到知识库功能

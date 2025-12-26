@@ -13,6 +13,19 @@
           <!-- 左侧：输入区域 -->
           <el-col :span="12">
             <div class="input-section">
+              <el-alert
+                title="开场白生成工具说明"
+                type="info"
+                :closable="false"
+                style="margin-bottom: 20px"
+              >
+                <template #default>
+                  <p>• <strong>适用场景</strong>：初次联系客户、开始新对话</p>
+                  <p>• <strong>功能特点</strong>：根据场景和技巧快速生成专业开场白</p>
+                  <p>• <strong>使用方式</strong>：选择场景技巧，输入客户信息，一键生成</p>
+                </template>
+              </el-alert>
+
               <h3 class="section-title">输入信息</h3>
 
               <el-form :model="form" label-width="100px" label-position="top">

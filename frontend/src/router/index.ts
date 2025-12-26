@@ -124,6 +124,7 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/CampusRanking.vue'),
             meta: {
               title: '校区排行榜',
+              hidden: true,
             },
           },
           {
@@ -132,6 +133,7 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/ProductRanking.vue'),
             meta: {
               title: '商品排行榜',
+              hidden: true,
             },
           },
           {
@@ -140,6 +142,7 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/order/SalesRankingOptimized.vue'),
             meta: {
               title: '销售排行榜',
+              hidden: true,
             },
           },
           {
@@ -186,6 +189,7 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/teacher/Ranking.vue'),
             meta: {
               title: '老师排行榜',
+              hidden: true,
             },
           },
           {
@@ -218,19 +222,11 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'tools',
-            name: 'AITools',
-            component: () => import('@/views/ai/ToolCenter.vue'),
+            path: 'marketing-assistant',
+            name: 'MarketingAssistant',
+            component: () => import('@/views/ai/MarketingAssistant.vue'),
             meta: {
-              title: 'AI工具',
-            },
-          },
-          {
-            path: 'ocr',
-            name: 'OCRTool',
-            component: () => import('@/views/ai/OCRTool.vue'),
-            meta: {
-              title: 'OCR识别',
+              title: 'AI营销助手',
             },
           },
           {
@@ -292,11 +288,38 @@ const routes: RouteRecordRaw[] = [
         },
         children: [
           {
-            path: 'conversation',
-            name: 'ScriptConversation',
-            component: () => import('@/views/ai-script/conversation/Index.vue'),
+            path: 'deal-assist',
+            name: 'DealAssist',
+            component: () => import('@/views/ai-script/conversation/DealAssist.vue'),
             meta: {
-              title: '会话模式',
+              title: '帮你谈单',
+              permissions: ['ai:script:use'],
+            },
+          },
+          {
+            path: 'reply-assist',
+            name: 'ReplyAssist',
+            component: () => import('@/views/ai-script/conversation/ReplyAssist.vue'),
+            meta: {
+              title: '帮你回复',
+              permissions: ['ai:script:use'],
+            },
+          },
+          {
+            path: 'opening-lines',
+            name: 'OpeningLines',
+            component: () => import('@/views/ai-script/tools/OpeningLines.vue'),
+            meta: {
+              title: '开场白生成',
+              permissions: ['ai:script:use'],
+            },
+          },
+          {
+            path: 'script-polish',
+            name: 'ScriptPolish',
+            component: () => import('@/views/ai-script/tools/Polish.vue'),
+            meta: {
+              title: '话术润色',
               permissions: ['ai:script:use'],
             },
           },
@@ -307,24 +330,6 @@ const routes: RouteRecordRaw[] = [
             meta: {
               title: '对话记录',
               permissions: ['ai:script:view'],
-            },
-          },
-          {
-            path: 'opening-lines',
-            name: 'ScriptOpeningLines',
-            component: () => import('@/views/ai-script/tools/OpeningLines.vue'),
-            meta: {
-              title: '开场白生成',
-              permissions: ['ai:script:use'],
-            },
-          },
-          {
-            path: 'script-polish',
-            name: 'ScriptPolishTool',
-            component: () => import('@/views/ai-script/tools/Polish.vue'),
-            meta: {
-              title: '话术润色',
-              permissions: ['ai:script:use'],
             },
           },
         ],
@@ -400,36 +405,46 @@ const routes: RouteRecordRaw[] = [
         ],
       },
 
-      // ========== AI营销 ==========
+      // ========== AI培训陪练 ==========
       {
-        path: 'ai-marketing',
-        name: 'AIMarketing',
-        redirect: '/ai-marketing/assistant',
+        path: 'training-coach',
+        name: 'TrainingCoach',
+        redirect: '/training-coach/dashboard',
         meta: {
-          title: 'AI营销',
-          icon: 'MagicStick',
+          title: 'AI培训陪练',
+          icon: 'ChatLineSquare',
         },
         children: [
           {
-            path: 'assistant',
-            name: 'AIMarketingAssistant',
-            component: () => import('@/views/ai/MarketingAssistant.vue'),
+            path: 'dashboard',
+            name: 'TrainingCoachDashboard',
+            component: () => import('@/views/training-coach/Dashboard.vue'),
             meta: {
-              title: 'AI营销助手',
+              title: '培训中心',
             },
           },
           {
-            path: 'content-library',
-            name: 'MarketingContentLibrary',
-            component: () => import('@/views/ai/MarketingContentLibrary.vue'),
+            path: 'session/:id',
+            name: 'TrainingSession',
+            component: () => import('@/views/training-coach/Session.vue'),
             meta: {
-              title: '营销文案库',
+              title: '培训会话',
+              hidden: true,
+            },
+          },
+          {
+            path: 'session/:id/report',
+            name: 'TrainingReport',
+            component: () => import('@/views/training-coach/Report.vue'),
+            meta: {
+              title: '评估报告',
+              hidden: true,
             },
           },
         ],
       },
 
-  
+
       // ========== 数据分析（整合所有分析功能） ==========
       {
         path: 'analytics',
@@ -470,14 +485,6 @@ const routes: RouteRecordRaw[] = [
             component: () => import('@/views/analytics/AdvancedAnalytics.vue'),
             meta: {
               title: '高级分析',
-            },
-          },
-          {
-            path: 'leaderboard',
-            name: 'TeamLeaderboard',
-            component: () => import('@/views/order/SalesRankingOptimized.vue'),
-            meta: {
-              title: '团队排行榜',
             },
           },
           {
@@ -611,22 +618,6 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'commissions',
-            name: 'OperationCommissions',
-            component: () => import('@/views/operation/CommissionManagement.vue'),
-            meta: {
-              title: '提成管理',
-            },
-          },
-          {
-            path: 'dashboard',
-            name: 'OperationDashboard',
-            component: () => import('@/views/operation/DataDashboard.vue'),
-            meta: {
-              title: '数据看板',
-            },
-          },
-          {
             path: 'customers',
             name: 'OperationCustomers',
             component: () => import('@/views/operation/CustomerConversion.vue'),
@@ -643,17 +634,6 @@ const routes: RouteRecordRaw[] = [
             },
           },
         ],
-      },
-
-      // ========== 自动化管理 ==========
-      {
-        path: 'automation',
-        name: 'Automation',
-        component: () => import('@/views/automation/RuleManagement.vue'),
-        meta: {
-          title: '自动化工作流',
-          icon: 'Operation',
-        },
       },
 
       // ========== 系统管理 ==========
@@ -731,11 +711,11 @@ const routes: RouteRecordRaw[] = [
             },
           },
           {
-            path: 'ai-api-keys',
-            name: 'SystemAiApiKeys',
-            component: () => import('@/views/system/AiApiKeyManagement.vue'),
+            path: 'automation',
+            name: 'SystemAutomation',
+            component: () => import('@/views/system/FollowUpReminder.vue'),
             meta: {
-              title: 'AI API密钥',
+              title: '跟进配置',
             },
           },
           {

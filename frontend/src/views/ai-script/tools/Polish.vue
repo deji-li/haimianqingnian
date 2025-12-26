@@ -13,6 +13,19 @@
           <!-- 左侧：输入区域 -->
           <el-col :span="12">
             <div class="input-section">
+              <el-alert
+                title="话术润色工具说明"
+                type="info"
+                :closable="false"
+                style="margin-bottom: 20px"
+              >
+                <template #default>
+                  <p>• <strong>适用场景</strong>：优化现有话术、提升表达效果</p>
+                  <p>• <strong>功能特点</strong>：专业润色、对比展示、一键替换</p>
+                  <p>• <strong>使用方式</strong>：输入原始话术，选择润色目标，获取优化版本</p>
+                </template>
+              </el-alert>
+
               <h3 class="section-title">原始话术</h3>
 
               <el-form :model="form" label-width="100px" label-position="top">

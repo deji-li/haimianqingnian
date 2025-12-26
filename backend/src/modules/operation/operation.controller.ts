@@ -27,7 +27,7 @@ import { PermissionGuard } from '../../common/guards/permission.guard';
 import { RequirePermissions } from '../../common/decorators/permission.decorator';
 
 @Controller('operation')
-// @UseGuards(JwtAuthGuard, PermissionGuard)
+@UseGuards(JwtAuthGuard, PermissionGuard)
 export class OperationController {
   constructor(private readonly operationService: OperationService) {}
 
@@ -136,8 +136,7 @@ export class OperationController {
   }
 
   @Get('commissions')
-  // @RequirePermissions('operation:commission:view')
-  // @SetMetadata('isPublic', true)
+  @RequirePermissions('finance:commission:view')
   async findAllCommissions(@Query() query: CommissionRecordQueryDto, @Request() req) {
     try {
       console.log('findAllCommissions called with query:', query);

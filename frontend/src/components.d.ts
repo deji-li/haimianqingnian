@@ -44,6 +44,7 @@ declare module 'vue' {
     ElMenu: typeof import('element-plus/es')['ElMenu']
     ElMenuItem: typeof import('element-plus/es')['ElMenuItem']
     ElOption: typeof import('element-plus/es')['ElOption']
+    ElPageHeader: typeof import('element-plus/es')['ElPageHeader']
     ElPagination: typeof import('element-plus/es')['ElPagination']
     ElProgress: typeof import('element-plus/es')['ElProgress']
     ElRadio: typeof import('element-plus/es')['ElRadio']
@@ -52,6 +53,7 @@ declare module 'vue' {
     ElRate: typeof import('element-plus/es')['ElRate']
     ElResult: typeof import('element-plus/es')['ElResult']
     ElRow: typeof import('element-plus/es')['ElRow']
+    ElScrollbar: typeof import('element-plus/es')['ElScrollbar']
     ElSelect: typeof import('element-plus/es')['ElSelect']
     ElSkeleton: typeof import('element-plus/es')['ElSkeleton']
     ElSlider: typeof import('element-plus/es')['ElSlider']
@@ -82,6 +84,7 @@ declare module 'vue' {
     SmartCreateCustomer: typeof import('./components/customer/SmartCreateCustomer.vue')['default']
     ThinkingProcess: typeof import('./components/ai-script-assistant/ThinkingProcess.vue')['default']
     ToolMode: typeof import('./components/ai-script-assistant/ToolMode.vue')['default']
+    TrainingCoachConfig: typeof import('./components/system/TrainingCoachConfig.vue')['default']
   }
   export interface ComponentCustomProperties {
     vLoading: typeof import('element-plus/es')['ElLoadingDirective']
